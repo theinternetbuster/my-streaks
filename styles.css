@@ -160,3 +160,36 @@ body{background:#1c1c1f;color:#f6f6f8}
   body.detail-mode .history-panel input{background:#fff;color:#263347;border-color:#cdd4dd}
   body.detail-mode .muted{color:#778395}
 }
+
+
+/* Polished orange branding and compact mobile-first controls */
+:root{--flame-orange:#ff5a12}
+.brand-icon{display:grid;place-items:center}
+.brand-flame{width:32px;height:32px;color:var(--flame-orange);fill:var(--flame-orange)}
+.card-flame{width:34px;height:34px;color:var(--flame-orange);fill:var(--flame-orange);flex:none}
+.page-heading{margin-bottom:20px}
+.page-heading h1 em{font-style:normal;color:var(--flame-orange)}
+.dot{color:var(--flame-orange)}
+.eyebrow{color:var(--flame-orange)}
+.primary-btn{background:#f65b1c;box-shadow:0 5px 20px #ff581625;color:white}
+.primary-btn:hover{background:#e94e10}
+.dashboard-toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:22px}
+.add-icon-btn{width:51px;height:51px;border-radius:15px;padding:0;font-size:30px;display:grid;place-items:center;line-height:1}
+.manage-toggle{min-height:44px;padding:10px 16px}
+.manage-toggle[aria-pressed="true"]{border-color:#fa6b32;color:#ff8b58}
+.habit-card.managing{cursor:default;min-height:126px}
+.manage-actions{display:flex;gap:8px;margin-top:16px}
+.manage-actions button{flex:1;border:1px solid #66666e;background:transparent;color:inherit;border-radius:10px;min-height:39px;font-size:20px}
+.manage-actions button:disabled{opacity:.25}
+.manage-actions .manage-delete{color:#ff8b78;border-color:#9e5451}
+.account-trigger{display:flex;align-items:center;justify-content:center;gap:8px;width:auto;min-height:44px;height:auto;padding:9px 13px;border-radius:26px;font-size:14px;font-weight:700;white-space:nowrap}
+.sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+.account-menu{position:fixed;top:calc(env(safe-area-inset-top, 0px) + 77px);right:max(16px,calc((100vw - 1080px)/2));width:min(340px,calc(100vw - 32px));max-height:calc(100dvh - 100px);overflow-y:auto;z-index:80}
+.account-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 8px 0;font-size:18px}
+.account-close{border:0;background:transparent;color:inherit;font-size:28px;line-height:1;padding:4px 10px;border-radius:9px;cursor:pointer}
+.account-section-label{font-size:10px;letter-spacing:.12em;font-weight:800;color:#fb8051;padding:15px 9px 6px}
+.setting-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 9px;border-radius:9px;font-size:13px}
+.setting-row small{font-size:11px;color:#a7a7b1}
+.account-menu .sign-out{border-top:1px solid #55555c;color:#ff9481;margin-top:8px;border-radius:0}
+@media(max-width:620px){.dashboard-toolbar{margin-bottom:23px}.page-heading{margin-bottom:15px}.habit-card{min-height:142px}.card-flame{width:29px;height:29px}.account-menu{top:calc(env(safe-area-inset-top, 0px) + 68px)}.brand strong{font-size:17px}.brand-icon{height:39px;width:39px}.brand-flame{height:29px;width:29px}}
+@media (prefers-color-scheme: light){.manage-actions button{border-color:#d6d9e0}.manage-actions .manage-delete{color:#d64b41;border-color:#e7c3c3}.setting-row small{color:#7c8796}.account-menu .sign-out{border-color:#e7e9f0;color:#c54e45}}
