@@ -818,3 +818,59 @@ html[data-theme="light"] .checklist-selection-rect{background:rgba(54,122,216,.2
   position:fixed!important;
   z-index:650!important;
 }
+
+/* Quiet Notion-style block toolbar: only reveal on hover, not while typing. */
+@media(hover:hover) and (pointer:fine){
+ .checklist-page .checklist-line-tools .checklist-insert,
+ .checklist-page .checklist-line-tools .checklist-handle,
+ .checklist-page .checklist-line .checklist-delete{
+   opacity:0!important;visibility:hidden;transition:opacity .14s ease,visibility .14s;
+ }
+ .checklist-page .checklist-line:hover .checklist-line-tools .checklist-insert,
+ .checklist-page .checklist-line:hover .checklist-line-tools .checklist-handle,
+ .checklist-page .checklist-line:hover .checklist-delete{
+   opacity:.8!important;visibility:visible;
+ }
+}
+@media(hover:none){
+ .checklist-page .checklist-line-tools .checklist-insert{opacity:.48}
+ .checklist-page .checklist-line-tools .checklist-handle{opacity:0}
+}
+/* Unify the native and cross-block selection paints. */
+.checklist-page .checklist-editor::selection,
+.checklist-page .checklist-note-editor::selection,
+.checklist-page .checklist-editor *::selection,
+.checklist-page .checklist-note-editor *::selection{
+ background:rgba(72,132,211,.39)!important;
+ color:inherit!important;
+}
+html[data-theme="light"] .checklist-page .checklist-editor::selection,
+html[data-theme="light"] .checklist-page .checklist-note-editor::selection{
+ background:rgba(69,128,206,.29)!important;
+}
+.checklist-selection-rect{background:rgba(72,132,211,.39)!important}
+html[data-theme="light"] .checklist-selection-rect{background:rgba(69,128,206,.29)!important}
+/* Dates should not be advertised on every blank task. */
+.checklist-page .checklist-date-pill:not(.has-date){display:none!important}
+.checklist-page .checklist-date-pill.has-date{opacity:1;max-width:none;min-width:0}
+.checklist-page .checklist-date-token{color:#e8a583;cursor:pointer;border-radius:4px}
+html[data-theme="light"] .checklist-page .checklist-date-token{color:#b95f37}
+.checklist-date-menu{
+ position:fixed;z-index:900;width:285px;max-width:calc(100vw - 24px);
+ border-radius:15px;background:#29292d;border:1px solid #515158;
+ box-shadow:0 24px 58px #0009;padding:14px;color:#eeeef3;
+ font:500 13px 'DM Sans',sans-serif;
+}
+.checklist-date-menu[hidden]{display:none!important}
+.checklist-date-menu-title{font-weight:800;font-size:12px;margin-bottom:10px}
+.checklist-date-menu button{background:transparent;border:0;color:inherit;cursor:pointer;font:inherit}
+.checklist-date-quick{display:flex;flex-direction:column;gap:2px}
+.checklist-date-quick button{display:flex;justify-content:space-between;padding:9px 10px;border-radius:8px;text-align:left}
+.checklist-date-quick button:hover,.checklist-date-quick button.selected{background:#3e3834;color:#ffab83}
+.checklist-date-custom{border-top:1px solid #45454c;padding-top:12px;margin-top:9px;display:flex;flex-direction:column;gap:7px}
+.checklist-date-custom input{width:100%;color:inherit;background:#202024;border:1px solid #55555c;border-radius:9px;padding:10px;font:inherit;color-scheme:dark}
+html[data-theme="light"] .checklist-date-menu{background:#fff;border-color:#dce0e8;color:#293043;box-shadow:0 18px 45px #13203025}
+html[data-theme="light"] .checklist-date-quick button:hover,
+html[data-theme="light"] .checklist-date-quick button.selected{background:#fff0e7;color:#a64a22}
+html[data-theme="light"] .checklist-date-custom{border-color:#e6e8ed}
+html[data-theme="light"] .checklist-date-custom input{background:#f7f8fa;border-color:#d9dee8;color-scheme:light}
