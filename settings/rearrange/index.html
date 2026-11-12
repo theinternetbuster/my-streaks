@@ -16,7 +16,7 @@
   <link rel="icon" type="image/svg+xml" href="app-icon.svg" />
   <meta name="description" content="A private streak tracker with weekly freezes and cloud sync." />
   <title>My Streaks</title>
-  <link rel="stylesheet" href="styles.css?v=20261111-film21" />
+  <link rel="stylesheet" href="styles.css?v=20261111-film22" />
   <style id="critical-landing-styles">
 /* Critical inline fallback is scoped to logged-out view so signed-in themes are unchanged. */
 [hidden]{display:none!important}
@@ -649,6 +649,131 @@ body:has(#loginPanel:not([hidden])) .shell,
 }
 
 
+/* v22 — full-bleed filmstrip like Apple's highlights: no enclosing card */
+#loginPanel.landing-panel .landing-film{
+  width:100vw!important;
+  max-width:100vw!important;
+  margin-left:calc(50% - 50vw)!important;
+  margin-right:0!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  overflow:visible!important;
+}
+#loginPanel .landing-film:before{display:none!important}
+#loginPanel .landing-film-heading{
+  max-width:1080px;
+  margin:0 auto 32px;
+  padding:0 24px;
+  text-align:center;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:10px;
+}
+#loginPanel .landing-film-heading .landing-film-eyebrow{
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  font-size:11px;color:#ff925f;letter-spacing:.17em;font-weight:800;
+}
+#loginPanel .landing-film-heading h2{
+  margin:5px 0 0;
+  color:#f8f8fa;
+  font:800 clamp(32px,4.5vw,56px)/1.06 'Outfit',system-ui,sans-serif;
+  letter-spacing:-.05em;
+}
+#loginPanel .landing-film-heading h2 em{font-style:normal;color:#ff6a2a}
+#loginPanel .landing-film-heading p{
+  margin:2px 0 0;font-size:15px;line-height:1.5;color:#a8a8b2;
+}
+#loginPanel .demo-stage{
+  width:100%!important;
+  max-width:100%!important;
+  height:500px;
+  margin:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  overflow:hidden!important;
+}
+#loginPanel .demo-carousel-rail{
+  --film-card-width:min(1000px,78vw);
+  --film-gap:clamp(16px,2vw,28px);
+  width:100%!important;
+  height:100%!important;
+  padding:0 calc((100% - var(--film-card-width))/2)!important;
+  gap:var(--film-gap)!important;
+}
+#loginPanel .demo-carousel-card{
+  flex:0 0 var(--film-card-width)!important;
+  width:var(--film-card-width)!important;
+  border-radius:27px!important;
+  border:1px solid #44444a!important;
+  background:#121214!important;
+  box-shadow:0 10px 40px #0004!important;
+}
+#loginPanel .demo-carousel-card.is-active{
+  box-shadow:0 20px 55px #0009!important;
+}
+#loginPanel .landing-film-bottom{
+  max-width:510px;
+  margin:24px auto 0;
+  padding:9px 10px!important;
+  grid-template-columns:1fr auto!important;
+  gap:13px!important;
+  min-height:58px!important;
+}
+#loginPanel .landing-film-meta{
+  grid-column:1/-1!important;
+  grid-row:1!important;
+  align-items:center!important;
+  justify-self:center!important;
+  text-align:center!important;
+  margin-bottom:10px;
+  gap:4px!important;
+}
+#loginPanel .landing-film-meta strong{font-size:12px;color:#bfbfc8}
+#loginPanel .demo-timeline-nav{
+  grid-column:1!important;grid-row:2!important;
+  justify-self:end;justify-content:center!important;
+  background:#202023;border-radius:100px;
+  padding:17px 18px;
+  gap:12px!important;
+}
+#loginPanel .demo-motion-toggle{
+  grid-column:2!important;grid-row:2!important;
+  justify-self:start!important;
+  width:49px!important;height:49px!important;
+  border-radius:50%!important;
+}
+@media(max-width:650px){
+  #loginPanel .landing-film-heading{padding:0 22px;margin-bottom:21px}
+  #loginPanel .landing-film-heading h2{font-size:clamp(32px,8vw,42px)}
+  #loginPanel .landing-film-heading p{font-size:13px;max-width:310px}
+  #loginPanel .demo-stage{height:360px}
+  #loginPanel .demo-carousel-rail{
+    --film-card-width:88vw;
+    --film-gap:12px;
+    padding:0 calc((100% - var(--film-card-width))/2)!important;
+    gap:var(--film-gap)!important;
+  }
+  #loginPanel .demo-carousel-card{border-radius:16px!important}
+  #loginPanel .landing-film-bottom{
+    max-width:100%;
+    width:max-content;
+    margin:16px auto 0;
+    grid-template-columns:1fr auto!important;
+    padding:0 7px!important;
+    gap:10px!important;
+  }
+  #loginPanel .landing-film-meta{margin-bottom:6px}
+  #loginPanel .demo-timeline-nav{gap:9px!important;padding:14px 14px}
+  #loginPanel .demo-motion-toggle{width:43px!important;height:43px!important}
+}
+
+
   </style>
 </head>
 <body>
@@ -672,7 +797,7 @@ body:has(#loginPanel:not([hidden])) .shell,
           <div class="landing-feature-row"><span><span class="landing-feature-dot"></span> Effortless check-ins</span><span><span class="landing-feature-dot blue"></span> Weekly streak freezes</span><span><span class="landing-feature-dot gray"></span> Your pace, your rules</span></div>
         </div>
         <div class="landing-film" aria-label="Animated preview of My Streaks using sample habits">
-          <div class="landing-film-bar"><div class="landing-film-eyebrow"><span class="landing-film-record"></span> WATCH MY STREAKS IN ACTION</div><div class="landing-film-demo">LIVE-STYLE DEMO · SAMPLE DATA</div></div>
+          <div class="landing-film-heading"><span class="landing-film-eyebrow"><span class="landing-film-record"></span> MY STREAKS IN ACTION</span><h2>See how it <em>works.</em></h2><p>Five little moments that make building habits feel good.</p></div>
           <div class="demo-stage" id="demoStage" aria-label="Five animated My Streaks feature scenes">
             <div class="demo-carousel-rail" id="demoRail" aria-hidden="true">
               <article class="demo-carousel-card is-active" data-slide="0" aria-hidden="true">
@@ -1183,6 +1308,6 @@ body:has(#loginPanel:not([hidden])) .shell,
 })();
 
   </script>
-  <script type="module" src="app.js?v=20261111-film21"></script>
+  <script type="module" src="app.js?v=20261111-film22"></script>
 </body>
 </html>
