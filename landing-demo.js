@@ -242,8 +242,10 @@
       const rect=element.getBoundingClientRect();
       if(rect.bottom<0||rect.top>viewHeight)continue;
       const normalized=(rect.top+rect.height*.5-viewHeight*.5)/viewHeight;
-      const shift=Math.max(-25,Math.min(25,-normalized*32));
+      const shift=Math.max(-64,Math.min(64,-normalized*96));
+      const scale=Math.max(.91,Math.min(1.035,1.035-Math.abs(normalized)*.22));
       element.style.setProperty('--story-shift',shift.toFixed(1)+'px');
+      element.style.setProperty('--story-scale',scale.toFixed(3));
     }
   }
   function onScroll(){
@@ -254,7 +256,7 @@
   motion.addEventListener?.('change',()=>{
     if(motion.matches){
       revealAll();
-      visuals.forEach(el=>el.style.removeProperty('--story-shift'));
+      visuals.forEach(el=>{el.style.removeProperty('--story-shift');el.style.removeProperty('--story-scale');});
       observer?.disconnect();
     }
     else onScroll();
