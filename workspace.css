@@ -718,3 +718,71 @@ html[data-theme="light"] .editor-day.empty:not(.outside) svg{
 html[data-theme="light"] .mini-day.empty svg{
  color:#9aa0ab!important;
 }
+
+/* Checklist: a plain todo has no disclosure UI; notes and subtasks are distinct types. */
+.checklist-line.checklist-type-todo .checklist-toggle-icon,
+.checklist-line.checklist-type-todo .checklist-details,
+.checklist-line.checklist-type-todo .checklist-detail-modes{display:none!important}
+.checklist-detail-modes{display:none!important}
+.checklist-type-todoNote .checklist-details,
+.checklist-type-todoList .checklist-details{margin-top:8px}
+.checklist-note-editor{
+ display:block;min-height:57px;width:100%;padding:10px 13px;
+ background:#303035;border-left:2px solid #ff793f;border-radius:0 9px 9px 0;
+ color:#d5d5de;font:450 14px/1.65 'DM Sans',sans-serif;
+ white-space:pre-wrap;overflow-wrap:anywhere;outline:none;cursor:text;
+ -webkit-user-select:text;user-select:text;
+}
+.checklist-note-editor:empty::before{
+ content:attr(data-placeholder);color:#9999a3;pointer-events:none;
+}
+.checklist-note-editor:focus{background:#333339;border-left-color:#ff945f}
+html[data-theme="light"] .checklist-note-editor{
+ background:#f4f5f8;color:#344052;border-left-color:#f27b49;
+}
+html[data-theme="light"] .checklist-note-editor:focus{background:#eff1f5}
+html[data-theme="light"] .checklist-note-editor:empty::before{color:#8993a2}
+@media(max-width:799px){.checklist-note-editor{font-size:16px;min-height:64px}}
+
+/* Editor and ordinary calendar must use exactly the same completed-day palette.
+   Specificity covers the light appearance without inheriting the old yellow tint. */
+html[data-theme="light"] body.detail-mode .calendar-day.done,
+html[data-theme="light"] body.detail-open .calendar-day.done,
+html[data-theme="light"] .editor-day.done{
+ background-color:#fff0e4!important;
+ border-color:transparent!important;
+ background-image:none!important;
+}
+html[data-theme="dark"] body.detail-mode .calendar-day.done,
+html[data-theme="dark"] body.detail-open .calendar-day.done,
+html[data-theme="dark"] .editor-day.done{
+ background-color:#5c2309!important;
+ border-color:transparent!important;
+ background-image:none!important;
+}
+html[data-theme="light"] body.detail-mode .calendar-day.done .day-flame{
+ color:#ef6419!important;fill:#ef6419!important;filter:none!important;
+}
+html[data-theme="dark"] body.detail-mode .calendar-day.done .day-flame{
+ color:#ff5005!important;fill:#ff5005!important;filter:none!important;
+}
+/* Desktop settings: log out is neutral even when hovered or focused. */
+@media(min-width:800px){
+ body.desktop-settings-route .account-sign-out,
+ body.desktop-settings-route .account-sign-out:hover,
+ body.desktop-settings-route .account-sign-out:focus,
+ body.desktop-settings-route .account-sign-out:active{
+  background:transparent!important;box-shadow:none!important;
+  color:inherit!important;
+ }
+ html[data-theme="light"] body.desktop-settings-route .account-sign-out,
+ html[data-theme="light"] body.desktop-settings-route .account-sign-out:hover,
+ html[data-theme="light"] body.desktop-settings-route .account-sign-out:focus{
+  color:#202020!important;
+ }
+ html[data-theme="dark"] body.desktop-settings-route .account-sign-out,
+ html[data-theme="dark"] body.desktop-settings-route .account-sign-out:hover,
+ html[data-theme="dark"] body.desktop-settings-route .account-sign-out:focus{
+  color:#fff!important;
+ }
+}
