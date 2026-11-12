@@ -18,6 +18,7 @@ const provider = new GoogleAuthProvider();
 provider.setCustomParameters({ prompt: 'select_account' });
 const el = id => document.getElementById(id);
 let user = null, unsubscribe = null, habits = [], selectedId = null, shownMonth = null, modalEditingId = null;
+let manageMode = false;
 let busy = false;
 const dateKey = date => `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
 const todayKey = () => dateKey(new Date());
@@ -28,7 +29,7 @@ function showToast(message){ const t=el('toast');t.textContent=message;t.classLi
 function setSync(message, online=false){ el('syncState').textContent=message; el('syncState').classList.toggle('online',online); }
 function display(view){ ['loginPanel','loadingPanel','dashboard','detail'].forEach(id=>el(id).hidden=id!==view); document.body.classList.toggle('detail-mode',view==='detail'); }
 function escapeHTML(str){ return String(str).replace(/[&<>"']/g, ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
-function normalise(raw){ return {id:raw.id,name:String(raw.name||'Habit'),createdDate:raw.createdDate||todayKey(),completions:Array.isArray(raw.completions)?[...new Set(raw.completions.filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x)))].sort():[]}; }
+function normalise(raw){ return {id:raw.id,name:String(raw.name||'Habit'),createdDate:raw.createdDate||todayKey(),createdAt:Number(raw.createdAt)||0,order:Number.isFinite(raw.order)?raw.order:null,completions:Array.isArray(raw.completions)?[...new Set(raw.completions.filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x)))].sort():[]}; }
 
 /**
  * Two weekly freezes belong to each habit. Count a missed day only while its
@@ -69,9 +70,28 @@ function habitDoc(id){ return doc(db,'users',user.uid,'habits',id); }
 function selectedHabit(){ return habits.find(h=>h.id===selectedId); }
 function renderDashboard(){
   const grid=el('habitGrid');
-  grid.innerHTML=habits.map(h=>{const info=evaluateHabit(h);return `<button class="habit-card" data-id="${escapeHTML(h.id)}"><h3>${escapeHTML(h.name)}</h3><div class="card-bottom"><span class="card-streak"><span class="emoji">🔥</span> ${info.streak}</span><span class="card-arrow">↗</span></div></button>`;}).join('');
-  grid.querySelectorAll('.habit-card').forEach(btn=>btn.addEventListener('click',()=>openHabit(btn.dataset.id)));
+  el('manageHabitsBtn').textContent=manageMode?'Done editing':'Edit habits';
+  el('manageHabitsBtn').setAttribute('aria-pressed',String(manageMode));
+  grid.innerHTML=habits.map((h,i)=>{
+    const info=evaluateHabit(h);
+    if(manageMode) return `<div class="habit-card managing"><h3>${escapeHTML(h.name)}</h3><div class="manage-actions"><button data-move="-1" data-id="${escapeHTML(h.id)}" aria-label="Move ${escapeHTML(h.name)} up" ${i===0?'disabled':''}>↑</button><button data-move="1" data-id="${escapeHTML(h.id)}" aria-label="Move ${escapeHTML(h.name)} down" ${i===habits.length-1?'disabled':''}>↓</button><button class="manage-delete" data-delete="${escapeHTML(h.id)}" aria-label="Delete ${escapeHTML(h.name)}">×</button></div></div>`;
+    return `<button class="habit-card" data-id="${escapeHTML(h.id)}"><h3>${escapeHTML(h.name)}</h3><div class="card-bottom"><span class="card-streak"><svg class="card-flame" viewBox="0 0 24 24" aria-hidden="true"><use href="#flame-solid"></use></svg> ${info.streak}</span><span class="card-arrow">↗</span></div></button>`;
+  }).join('');
+  grid.querySelectorAll('button.habit-card').forEach(btn=>btn.addEventListener('click',()=>openHabit(btn.dataset.id)));
+  grid.querySelectorAll('[data-move]').forEach(btn=>btn.addEventListener('click',()=>moveHabit(btn.dataset.id,Number(btn.dataset.move))));
+  grid.querySelectorAll('[data-delete]').forEach(btn=>btn.addEventListener('click',()=>quickDeleteHabit(btn.dataset.delete)));
   el('emptyState').hidden=habits.length!==0;
+}
+async function moveHabit(id,direction){
+  const index=habits.findIndex(h=>h.id===id),dest=index+direction;
+  if(index<0||dest<0||dest>=habits.length||busy)return;
+  const reordered=[...habits];[reordered[index],reordered[dest]]=[reordered[dest],reordered[index]];
+  await withBusy(async()=>{const batch=writeBatch(db);reordered.forEach((h,i)=>batch.update(habitDoc(h.id),{order:i}));await batch.commit();showToast('Order updated');});
+}
+async function quickDeleteHabit(id){
+  const h=habits.find(x=>x.id===id);if(!h)return;
+  if(!confirm(`Delete “${h.name}” and its streak history? This cannot be undone.`))return;
+  await withBusy(async()=>{await deleteDoc(habitDoc(id));showToast('Habit deleted');});
 }
 function openHabit(id){selectedId=id;shownMonth=new Date(new Date().getFullYear(),new Date().getMonth(),1);renderDetail();display('detail');window.scrollTo(0,0);}
 function renderDetail(){
@@ -119,7 +139,7 @@ function showModal(edit=false){
 function hideModal(){el('modalBackdrop').hidden=true;modalEditingId=null;}
 async function saveHabit(event){event.preventDefault();const name=el('habitName').value.trim();if(!name)return;const editing=modalEditingId;hideModal();await withBusy(async()=>{
  if(editing){await runTransaction(db,async tx=>{const ref=habitDoc(editing);if(!(await tx.get(ref)).exists())throw Error('Habit not found');tx.update(ref,{name});});showToast('Habit renamed');}
- else{await addDoc(habitCollection(),{name,createdDate:todayKey(),completions:[],createdAt:Date.now()});showToast('Habit created!');}
+ else{await addDoc(habitCollection(),{name,createdDate:todayKey(),completions:[],createdAt:Date.now(),order:habits.length?Math.max(...habits.map((h,i)=>h.order??i))+1:0});showToast('Habit created!');}
 });}
 async function removeHabit(){const h=selectedHabit();if(!h)return;if(!confirm(`Delete “${h.name}” and all its check-in history? This cannot be undone.`))return;hideModal();await withBusy(async()=>{await deleteDoc(habitDoc(h.id));selectedId=null;display('dashboard');showToast('Habit deleted');});}
 function exportBackup(){if(!user)return;const data={app:'my-streaks',version:1,exportedAt:new Date().toISOString(),habits:habits.map(({name,createdDate,completions})=>({name,createdDate,completions}))};const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`my-streaks-backup-${todayKey()}.json`;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);showToast('Backup downloaded');}
@@ -137,19 +157,29 @@ getRedirectResult(auth).catch(err=>showToast(errorMessage(err)));
 onAuthStateChanged(auth,u=>{
  if(unsubscribe){unsubscribe();unsubscribe=null;}
  user=u;habits=[];selectedId=null;
- el('userBtn').hidden=!u;el('accountMenu').hidden=true;
+ manageMode=false;
+ el('userBtn').hidden=!u;el('accountMenu').hidden=true;el('userBtn').setAttribute('aria-expanded','false');
  if(!u){setSync('Not signed in');display('loginPanel');return;}
+ const firstName=(u.displayName||u.email?.split('@')[0]||'there').trim().split(/\s+/)[0];
+ const greeting=firstName.charAt(0).toUpperCase()+firstName.slice(1);
+ el('userGreeting').textContent='Hi, '+greeting;
+ el('accountGreeting').textContent='Hi, '+greeting;
  el('accountEmail').textContent=u.email||'Signed in';setSync('Syncing…');display('loadingPanel');
  unsubscribe=onSnapshot(habitCollection(),snapshot=>{
-   habits=snapshot.docs.map(s=>normalise({id:s.id,...s.data()})).sort((a,b)=>a.name.localeCompare(b.name));
+   habits=snapshot.docs.map(s=>normalise({id:s.id,...s.data()})).sort((a,b)=>(a.order??(1000000+a.createdAt))-(b.order??(1000000+b.createdAt))||a.name.localeCompare(b.name));
    setSync(snapshot.metadata.hasPendingWrites?'Saving…':'Synced',!snapshot.metadata.hasPendingWrites);
    if(selectedId&&habits.some(h=>h.id===selectedId)){renderDetail();display('detail');}
    else{selectedId=null;renderDashboard();display('dashboard');}
  },err=>{console.error(err);setSync('Sync issue');display('dashboard');showToast(errorMessage(err));});
 });
 el('googleLogin').addEventListener('click',signIn);
-el('userBtn').addEventListener('click',()=>el('accountMenu').hidden=!el('accountMenu').hidden);
-el('signOutBtn').addEventListener('click',()=>signOut(auth).catch(err=>showToast(errorMessage(err))));
+function setAccountMenu(open){el('accountMenu').hidden=!open;el('userBtn').setAttribute('aria-expanded',String(open));}
+el('userBtn').addEventListener('click',event=>{event.stopPropagation();setAccountMenu(el('accountMenu').hidden);});
+el('closeAccountMenu').addEventListener('click',()=>setAccountMenu(false));
+document.addEventListener('pointerdown',event=>{if(!el('accountMenu').hidden&&!el('accountMenu').contains(event.target)&&!el('userBtn').contains(event.target))setAccountMenu(false);});
+document.addEventListener('keydown',event=>{if(event.key==='Escape'){setAccountMenu(false);if(!el('modalBackdrop').hidden)hideModal();}});
+el('manageHabitsBtn').addEventListener('click',()=>{manageMode=!manageMode;renderDashboard();});
+el('signOutBtn').addEventListener('click',()=>{setAccountMenu(false);signOut(auth).catch(err=>showToast(errorMessage(err)));});
 el('addHabitBtn').addEventListener('click',()=>showModal());el('emptyAdd').addEventListener('click',()=>showModal());
 el('backBtn').addEventListener('click',()=>{selectedId=null;renderDashboard();display('dashboard');});
 el('checkInBtn').addEventListener('click',checkIn);
