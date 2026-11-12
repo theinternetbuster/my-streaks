@@ -228,6 +228,87 @@
       }
       menu.hidden=false;
     }
+    // Due dates are explicit: users type @today/@tomorrow or choose a date.
+    // Nothing is displayed on a plain task until a date has been assigned.
+    let dateTargetId=null,dateSuggestionId=null;
+    const dateMenu=document.createElement('div');
+    dateMenu.className='checklist-date-menu';
+    dateMenu.setAttribute('role','dialog');
+    dateMenu.setAttribute('aria-label','Choose due date');
+    dateMenu.hidden=true;
+    document.body.appendChild(dateMenu);
+    const localDay=(delta=0)=>{
+      const d=new Date();d.setHours(12,0,0,0);d.setDate(d.getDate()+delta);return key(d);
+    };
+    const dateLabel=date=>{
+      if(!date)return '';
+      if(date===localDay())return 'Today';
+      if(date===localDay(1))return 'Tomorrow';
+      return new Date(date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    };
+    function closeDateMenu(){
+      dateMenu.hidden=true;dateTargetId=null;dateSuggestionId=null;
+    }
+    function openDateMenu(id,anchorEl=null,query=''){
+      const b=blocks.find(x=>x.id===id);
+      if(!b||!['todo','todoNote','todoList'].includes(b.type))return;
+      dateTargetId=id;
+      dateMenu.innerHTML='<div class="checklist-date-menu-title">'+(query?'ADD A DATE':'DUE DATE')+'</div>'+
+        '<div class="checklist-date-quick">'+
+        '<button type="button" data-date-quick="today">Today <span>'+dateLabel(localDay())+'</span></button>'+
+        '<button type="button" data-date-quick="tomorrow">Tomorrow <span>'+dateLabel(localDay(1))+'</span></button>'+
+        '<button type="button" data-date-quick="week">Next week <span>'+dateLabel(localDay(7))+'</span></button>'+
+        (b.dueDate?'<button type="button" data-date-quick="clear">Clear date</button>':'')+
+        '</div><div class="checklist-date-custom"><label for="checklistCustomDate">Choose a date</label>'+
+        '<input id="checklistCustomDate" type="date" value="'+safe(b.dueDate||localDay())+'" aria-label="Custom due date"/></div>';
+      dateMenu.hidden=false;
+      const el=anchorEl||root.querySelector('.checklist-editor[data-block-id="'+id+'"]');
+      let rect=el?.getBoundingClientRect();
+      const sel=window.getSelection();
+      if(el?.classList.contains('checklist-editor')&&sel?.rangeCount&&el.contains(sel.anchorNode)){
+        const range=sel.getRangeAt(0).cloneRange();range.collapse(true);
+        rect=range.getClientRects()[0]||rect;
+      }
+      const width=285,height=310;
+      dateMenu.style.left=Math.max(12,Math.min(rect?.left||12,innerWidth-width-12))+'px';
+      dateMenu.style.top=Math.max(12,Math.min((rect?.bottom||80)+7,innerHeight-height-12))+'px';
+    }
+    function suggestDate(field,b){
+      if(!['todo','todoNote','todoList'].includes(b.type))return;
+      const caret=editorCaretOffset(field);
+      const before=b.text.slice(0,caret);
+      const match=before.match(/(?:^|\s)@(today|tomorrow|next week|nextweek|next|to|t)?$/i);
+      if(match&&before.endsWith('@'+(match[1]||''))){
+        closeSlash();dateSuggestionId=b.id;openDateMenu(b.id,field,match[1]||'');
+      }else if(dateSuggestionId===b.id)closeDateMenu();
+    }
+    function applyDueDate(id,date,fromSuggestion=false){
+      const b=blocks.find(x=>x.id===id);if(!b)return;
+      if(fromSuggestion){
+        b.text=b.text.replace(/@(today|tomorrow|next week|nextweek|next|to)?$/i,
+          date?('@'+(date===localDay()?'Today':date===localDay(1)?'Tomorrow':dateLabel(date))):'');
+      }
+      b.dueDate=date||'';
+      closeDateMenu();renderChecklist(true);scheduleSave(true);
+      requestAnimationFrame(()=>focusBlock(b.id));
+    }
+    dateMenu.addEventListener('pointerdown',e=>{
+      if(e.target.closest('[data-date-quick]'))e.preventDefault();
+    });
+    dateMenu.addEventListener('click',e=>{
+      const button=e.target.closest('[data-date-quick]');
+      if(!button||!dateTargetId)return;
+      const value=button.dataset.dateQuick;
+      const date=value==='today'?localDay():value==='tomorrow'?localDay(1):value==='week'?localDay(7):'';
+      applyDueDate(dateTargetId,date,!!dateSuggestionId);
+    });
+    dateMenu.addEventListener('change',e=>{
+      if(e.target.matches('#checklistCustomDate')&&dateTargetId)
+        applyDueDate(dateTargetId,e.target.value,!!dateSuggestionId);
+    });
+    document.addEventListener('pointerdown',e=>{
+      if(!dateMenu.hidden&&!dateMenu.contains(e.target)&&!e.target.closest('[data-date-badge]'))closeDateMenu();
+    });
     function applyCommand(type){
       const id=slashFor;
       if(!id)return;
