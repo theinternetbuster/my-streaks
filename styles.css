@@ -508,3 +508,118 @@ html[data-theme="light"] .account-link.selected{color:#e65d20}
 html[data-theme="light"] .account-link.selected .account-chevron{color:#e65d20}
 html[data-theme="light"] .calendar-layout .mini-day.done{background:#fff0df}
 html[data-theme="light"] .calendar-layout .mini-day.freeze{background:#e4f0ff}
+
+
+/* v6 responsive dialogs and dedicated habit arrangement */
+#detail[hidden],#accountMenu[hidden],#habitEditToolbar[hidden]{display:none!important}
+@media(min-width:800px){
+  #detail{align-items:center;justify-content:center;padding:20px}
+  #detail .babbel-panel{
+    width:min(610px,calc(100vw - 38px));height:auto;
+    max-height:calc(100dvh - 44px);overflow-y:auto;
+    border-radius:23px;padding:23px 42px 30px;
+    border:1px solid #414146;box-shadow:0 20px 75px #0007;
+    animation:none!important;
+  }
+  #detail .babbel-top-actions{min-height:40px;margin-bottom:3px}
+  #detail .babbel-close{width:41px;height:41px;font-size:30px}
+  #detail .babbel-heading{text-align:center;margin:3px auto 28px;max-width:470px}
+  #detail .babbel-streak-title{font-size:clamp(32px,3.1vw,50px);white-space:normal;line-height:1.05}
+  #detail .babbel-description{font-size:14px;margin:11px 0 0}
+  #detail .babbel-month{width:min(100%,364px);margin:0 auto 17px}
+  #detail .babbel-month h2{font-size:16px}
+  #detail .month-nav button{font-size:28px!important;width:28px!important;height:32px!important}
+  #detail .weekdays,#detail .calendar-grid{
+    width:min(100%,364px);margin-left:auto;margin-right:auto;
+    column-gap:7px!important;row-gap:5px!important;
+  }
+  #detail .weekdays{margin-bottom:7px}
+  #detail .weekdays span{font-size:11px!important}
+  #detail .calendar-day{
+    aspect-ratio:1!important;min-height:0!important;
+    padding:2px 1px!important;border-radius:7px!important;
+    gap:0!important;justify-content:center!important;
+  }
+  #detail .calendar-day .number{font-size:11px!important;line-height:1.2}
+  #detail .calendar-day .day-flame{
+    width:17px!important;height:17px!important;margin-top:2px!important;
+  }
+  #detail .freeze-box{
+    width:min(100%,364px);margin:22px auto 0!important;
+    border-radius:12px!important;padding:14px!important;gap:11px!important;
+  }
+  #detail .freeze-icon{width:22px!important;height:22px!important}
+  #detail .freeze-box h3{font-size:13px!important;margin:0 0 5px!important}
+  #detail .freeze-box p{font-size:11px!important;line-height:1.4!important}
+  #detail .detail-actions{width:min(100%,364px);margin:15px auto 0;gap:8px}
+  #detail .checkin{font-size:13px;min-height:39px;padding:9px}
+  #detail .secondary-btn{font-size:12px;padding:9px 11px}
+  #detail .detail-footer{margin:12px auto 0;gap:18px}
+  #detail .text-btn{font-size:10px}
+  #detail .history-panel{width:min(100%,364px);margin:15px auto 0}
+}
+@media(max-width:799px){
+  #detail{padding:0;align-items:flex-end}
+  #detail .babbel-panel{
+    height:100dvh!important;max-height:100dvh!important;
+    width:100%;border-radius:30px 30px 0 0;
+    padding-top:calc(env(safe-area-inset-top,0px) + 20px)!important;
+    padding-bottom:calc(env(safe-area-inset-bottom,0px) + 36px)!important;
+    animation:sheet-rise .3s cubic-bezier(.2,.82,.26,1) both;
+  }
+  #detail.closing .babbel-panel{animation:sheet-dismiss .29s cubic-bezier(.32,.05,.67,.24) both}
+  #detail.closing .detail-scrim{opacity:0;transition:opacity .29s}
+  .account-sheet.closing{animation:sheet-dismiss .28s cubic-bezier(.32,.05,.67,.24) both}
+}
+@keyframes sheet-dismiss{from{transform:translateY(0)}to{transform:translateY(100%)}}
+@media(prefers-reduced-motion:reduce){
+ #detail .babbel-panel,#detail.closing .babbel-panel,.account-sheet.closing{animation:none!important}
+}
+/* Long hold completion on home cards; filled cards are the day's completed habits */
+.habit-card{position:relative;overflow:hidden;isolation:isolate}
+.habit-card .habit-card-head,.habit-card .card-bottom,.habit-card .mini-calendar{position:relative;z-index:2;pointer-events:none}
+.hold-progress{position:absolute;inset:0;border-radius:inherit;
+  background:linear-gradient(108deg,#b43b0e,#ff5a12);opacity:.86;
+  transform:scaleX(0);transform-origin:left center;z-index:1;pointer-events:none}
+.habit-card.holding .hold-progress{animation:hold-checkin 850ms linear forwards}
+.habit-card.holding{border-color:#ff6b31!important}
+@keyframes hold-checkin{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+html[data-theme="dark"] .habit-card.completed-today{
+ background:linear-gradient(120deg,#51200e,#35201b)!important;border-color:#b94a22!important
+}
+html[data-theme="light"] .habit-card.completed-today{
+ background:linear-gradient(120deg,#ffeadf,#fff4eb)!important;border-color:#f1a37d!important
+}
+.habit-card.completed-today .card-arrow{color:#ff7b42}
+.habit-card.completed-today .card-flame{color:#ff742f;fill:#ff742f}
+@media(hover:hover){.habit-card:not(.completed-today):hover{border-color:#80523d}}
+/* Dedicated rearrange screen with a draggable handle, à la iOS device ordering */
+.reorder-list{display:flex;flex-direction:column;gap:0;border-radius:19px;overflow:visible;background:var(--surface,#222);border:1px solid #484848}
+.reorder-item{
+ display:flex;align-items:center;justify-content:space-between;gap:16px;
+ min-height:65px;padding:7px 12px 7px 20px;
+ background:#242426;color:#f5f5f6;
+ border-bottom:1px solid #424244;
+ border-radius:0;touch-action:pan-y;
+}
+.reorder-item:first-child{border-radius:17px 17px 0 0}
+.reorder-item:last-child{border-bottom:0;border-radius:0 0 17px 17px}
+.reorder-item:only-child{border-radius:17px}
+.reorder-name{font-size:16px;font-weight:600;overflow-wrap:anywhere}
+.reorder-handle{
+ flex:none;min-width:48px;min-height:48px;display:grid;place-items:center;
+ border:0;background:transparent;color:#b6b7be;font-size:28px;
+ cursor:grab;touch-action:none;
+}
+.reorder-handle:active{cursor:grabbing}
+.reorder-placeholder{opacity:.24;background:#ff5a1222!important;outline:2px dashed #f4773b}
+.reorder-chosen{border-radius:13px;box-shadow:0 0 0 1px #ff803c}
+.reorder-floating{opacity:.99!important;background:#323236!important;box-shadow:0 18px 40px #0009!important;transform:scale(1.03);z-index:9999}
+.reorder-actions{display:flex;justify-content:flex-end;gap:10px;margin:21px 0 8px}
+.reorder-actions button{min-width:100px;padding:12px 16px;border-radius:12px}
+html[data-theme="light"] .reorder-list{background:#fff;border-color:#ddd}
+html[data-theme="light"] .reorder-item{background:#fff;color:#282c34;border-color:#e3e3e6}
+html[data-theme="light"] .reorder-handle{color:#80848c}
+html[data-theme="light"] .reorder-floating{background:#fff!important}
+/* Standalone iOS status bar background follows the sheet correctly. */
+body.detail-open{overflow:hidden}
