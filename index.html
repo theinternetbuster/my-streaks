@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#1c1c1f" />
+  <meta name="description" content="A private streak tracker with weekly freezes and cloud sync." />
+  <title>My Streaks</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <svg class="svg-defs" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs>
+    <symbol id="flame-outline" viewBox="0 0 24 24"><path d="M12 22c4.4 0 7.4-3.2 7.4-7.4 0-3.6-1.9-5.8-3.4-7.3-.2 2.1-1.2 3.2-2 3.7C13.6 6.2 11.2 3.3 8.3 2 8.4 5.2 7.2 7.2 5.4 9.6 4.4 11 4 12.8 4 14.7 4 19 7 22 12 22Z" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="1.8"/><path d="M12 20.9c-2.3 0-3.8-1.6-3.8-3.8 0-1.4.9-2.7 2-3.7 0 1.4.7 2 1.3 2.3 1.2-1.3 1.7-2.8 1.6-4.4 2.6 1.9 3.1 3.9 3.1 5.8 0 2.2-1.6 3.8-4.2 3.8Z" fill="none" stroke="currentColor" stroke-width="1.4"/></symbol>
+    <symbol id="flame-solid" viewBox="0 0 24 24"><path d="M12 22c4.4 0 7.5-3.2 7.5-7.3 0-3.5-2.1-6.1-3.8-7.7.1 2.5-1.1 3.3-2 3.7C13 6.1 10.7 3.3 8.1 2 8.4 5.4 7 7.9 5.3 10c-.9 1.3-1.4 2.9-1.4 4.7C3.9 18.9 7 22 12 22Z"/><path d="M12 20.7c-2.4 0-3.8-1.6-3.8-3.7 0-1.4.8-2.5 2-3.7-.1 1.5.6 2.2 1.2 2.5 1.3-1.3 1.7-2.7 1.6-4.2 2.3 1.8 3.1 3.8 3.1 5.5 0 2.2-1.6 3.9-4.1 3.9Z" fill="#ff781b"/></symbol>
+  </defs></svg>
+  <div id="app">
+    <header class="topbar">
+      <div class="brand"><div class="brand-icon">🔥</div><div><strong>My Streaks</strong><small>Stay consistent, your way.</small></div></div>
+      <div class="top-actions"><span id="syncState" class="sync-pill">Connecting…</span><button id="userBtn" class="avatar-button" aria-label="Account" hidden>⋯</button></div>
+    </header>
+    <main class="shell">
+      <section id="loginPanel" class="login-panel" hidden>
+        <div class="login-flame">🔥</div><h1>Your progress, everywhere.</h1>
+        <p>Keep your habits, streaks and freeze history synced on every device.</p>
+        <button id="googleLogin" class="primary-btn large">Continue with Google</button>
+        <p class="muted small">Only your signed-in account can access its saved habits.</p>
+      </section>
+      <section id="loadingPanel" class="loading-panel"><div class="spinner"></div><p>Getting your streaks ready…</p></section>
+      <section id="dashboard" hidden>
+        <div class="page-heading"><div><div class="eyebrow">YOUR HABITS</div><h1>Keep the fire going<span class="dot">.</span></h1><p class="subheading">One day at a time. You've got this.</p></div><button class="primary-btn" id="addHabitBtn"><span>＋</span> New habit</button></div>
+        <div id="habitGrid" class="habit-grid"></div>
+        <div id="emptyState" class="empty-state" hidden><div>🌱</div><h2>Your first streak starts here.</h2><p>Add a habit, then check in when you've completed it.</p><button id="emptyAdd" class="primary-btn">＋ Add a habit</button></div>
+        <div class="bottom-note">Two freezes each Monday, per habit. Only completed days increase your streak. 🔥</div>
+      </section>
+      <section id="detail" hidden>
+        <div class="babbel-panel">
+          <div class="babbel-top-actions">
+            <span id="detailHabitName" class="detail-habit-label"></span>
+            <button id="backBtn" class="babbel-close" aria-label="Close streak calendar">×</button>
+          </div>
+          <div class="babbel-heading">
+            <h1 id="detailStreak" class="babbel-streak-title"></h1>
+            <p id="detailSubtitle" class="babbel-description"></p>
+          </div>
+          <div class="babbel-month">
+            <h2 id="monthTitle"></h2>
+            <div class="month-nav"><button id="prevMonth" aria-label="Previous month">‹</button><button id="nextMonth" aria-label="Next month">›</button></div>
+          </div>
+          <div class="weekdays" aria-hidden="true"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div>
+          <div id="calendarDays" class="calendar-grid" aria-label="Habit completion and streak freeze calendar"></div>
+          <div class="freeze-box"><div class="freeze-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#flame-outline"></use></svg></div><div><h3 id="freezeTitle"></h3><p>Every Monday you get 2 Streak Freezes. They protect your streak if you miss a day.</p></div></div>
+          <div class="detail-actions"><button id="checkInBtn" class="primary-btn checkin">✓ Done today</button><button id="editHabitBtn" class="secondary-btn" aria-label="Edit habit">Edit habit</button></div>
+          <div class="detail-footer"><button id="historyBtn" class="text-btn">Edit check-in history</button><button id="exportBtn" class="text-btn">↓ Export backup</button></div>
+          <div id="historyPanel" class="history-panel" hidden><h3>Adjust a check-in</h3><p class="muted small">Pick a date to mark complete or incomplete. This updates your synced history.</p><input id="historyDate" type="date" /><button id="toggleHistoryBtn" class="secondary-btn">Toggle completion</button><p id="historyHint" class="small muted"></p></div>
+        </div>
+      </section>
+    </main>
+    <div id="toast" role="status" aria-live="polite"></div>
+    <div id="modalBackdrop" class="modal-backdrop" hidden><div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><div class="modal-header"><h2 id="modalTitle">New habit</h2><button id="closeModal" class="ghost-icon" aria-label="Close">×</button></div><form id="habitForm"><label for="habitName">Habit name</label><input id="habitName" maxlength="60" autocomplete="off" placeholder="e.g. German" required /><div class="modal-buttons"><button type="button" id="cancelModal" class="secondary-btn">Cancel</button><button type="submit" id="saveHabit" class="primary-btn">Create habit</button></div></form><div id="editOnly" hidden><button id="deleteHabit" class="danger-btn">Delete this habit</button></div></div></div>
+    <div id="accountMenu" class="account-menu" hidden><span id="accountEmail"></span><button id="accountExport">↓ Export backup</button><label class="import-label">↑ Import backup <input id="importFile" type="file" accept=".json,application/json" hidden /></label><button id="signOutBtn">Sign out</button></div>
+  </div>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
