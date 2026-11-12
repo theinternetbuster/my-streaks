@@ -20,9 +20,9 @@
         slashFor=null,slashMatches=types,slashSelected=0,sortable=null,saveSerial=0,listenerEpoch=0;
     let pendingWrite=Promise.resolve(),editRevision=0;
     // Snapshot-based editing history covers both typing and structural changes.
-    let historyUndo=[],historyRedo=[],historyPresent='[]',lastHistoryAt=0,lastHistoryField='',restoringHistory=false,allBlocksSelected=false;
+    let historyUndo=[],historyRedo=[],historyPresent='[]',lastHistoryAt=0,lastHistoryField='',restoringHistory=false,allBlocksSelected=false,pendingUndoFocus=null;
     const serializeBlocks=()=>JSON.stringify(blocks.map((b,i)=>({...b,order:i})));
-    const resetHistory=()=>{historyUndo=[];historyRedo=[];historyPresent=serializeBlocks();lastHistoryAt=0;lastHistoryField='';allBlocksSelected=false;};
+    const resetHistory=()=>{historyUndo=[];historyRedo=[];historyPresent=serializeBlocks();lastHistoryAt=0;lastHistoryField='';allBlocksSelected=false;pendingUndoFocus=null;};
     function trackHistory(){
       if(restoringHistory)return;
       const next=serializeBlocks();
@@ -33,7 +33,8 @@
       // Coalesce fast typing into one undo step but never merge different fields or structural edits.
       const typed=active?.matches?.('.checklist-editor,.checklist-note-editor,[data-subtask-text]');
       const coalesce=typed&&field===lastHistoryField&&now-lastHistoryAt<650&&historyUndo.length>0;
-      if(!coalesce){historyUndo.push(historyPresent);if(historyUndo.length>100)historyUndo.shift();}
+      if(!coalesce||pendingUndoFocus){historyUndo.push({content:historyPresent,focus:pendingUndoFocus||{id:field,offset:typed?editorCaretOffset(active):0}});if(historyUndo.length>100)historyUndo.shift();}
+      pendingUndoFocus=null;
       historyRedo=[];
       historyPresent=next;lastHistoryAt=now;lastHistoryField=typed?field:'';
     }
@@ -45,14 +46,18 @@
       const focusId=active?.dataset?.blockId||null;
       const position=active?.matches?.('.checklist-editor')?editorCaretOffset(active):null;
       const previous=from.pop();
-      to.push(serializeBlocks());
+      const restored=typeof previous==='string'?{content:previous,focus:null}:previous;
+      to.push({content:serializeBlocks(),focus:focusId?{id:focusId,offset:position??0}:null});
       restoringHistory=true;
-      blocks=JSON.parse(previous).map(normalizeBlock);
+      blocks=JSON.parse(restored.content).map(normalizeBlock);
       closeSlash();renderChecklist(true);
       historyPresent=serializeBlocks();lastHistoryAt=0;lastHistoryField='';
       restoringHistory=false;scheduleSave(true);
-      const target=focusId&&blocks.some(b=>b.id===focusId)?focusId:blocks.at(-1)?.id;
-      if(target)requestAnimationFrame(()=>focusBlockAt(target,position??blocks.find(b=>b.id===target)?.text.length??0));
+      const saved=restored.focus;
+      const savedId=saved?.id;
+      const target=savedId&&blocks.some(b=>b.id===savedId)?savedId:
+        focusId&&blocks.some(b=>b.id===focusId)?focusId:blocks.at(-1)?.id;
+      if(target)requestAnimationFrame(()=>focusBlockAt(target,savedId===target?(saved.offset??0):(position??blocks.find(b=>b.id===target)?.text.length??0)));
     }
     const key=d=>[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');
     const parse=s=>{const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d,12)};
@@ -426,6 +431,7 @@
       if(e.key==='Backspace'&&!e.isComposing&&editorCaretOffset(field)===0&&window.getSelection()?.isCollapsed&&blocks.length>1){
         e.preventDefault();
         const index=blocks.findIndex(x=>x.id===id);
+        pendingUndoFocus={id,offset:0};
         if(index>0){
           const previous=blocks[index-1],position=previous.text.length;
           previous.text+=b.text;
