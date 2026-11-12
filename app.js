@@ -154,6 +154,7 @@ function smallCalendar(h,info){
 let holdCheckinTimer=null, activeHold=null, suppressCardClicksUntil=0;
 let reorderSortable=null, stagedOrder=[];
 let editorHabitId=null, editorMonth=null, editorBusy=false, editorCloseTimer=null;
+const editorPreview=new Map(), editorSaveTimers=new Map();
 function renderDashboard(){
  const grid=el('habitGrid');
  grid.classList.toggle('calendar-layout',layoutMode==='calendar');
@@ -171,6 +172,10 @@ function renderDashboard(){
      '</div>';
  }).join('');
  el('emptyState').hidden=habits.length!==0;
+ const total=habits.length,complete=habits.filter(h=>evaluateHabit(h).doneToday).length;
+ el('footerProgressCount').textContent=complete+' of '+total+' habit'+(total===1?'':'s');
+ el('footerProgressFill').style.width=(total?100*complete/total:0)+'%';
+ el('footerProgressTrack').setAttribute('aria-valuenow',String(total?Math.round(100*complete/total):0));
 }
 
 function openCalendarEditor(id){
@@ -201,29 +206,52 @@ function renderCalendarEditor(){
  for(let i=0;i<Math.ceil((first+n)/7)*7;i++){
   const d=new Date(m.getFullYear(),m.getMonth(),i-first+1,12);
   const inMonth=d.getMonth()===m.getMonth(),key=dateKey(d),state=info.states.get(key);
-  const done=state==='done',freeze=state==='freeze',locked=!inMonth||key>todayKey()||freeze||editorBusy;
+  const freeze=state==='freeze';
+  const previewKey=editorHabitId+':'+key;
+  const done=freeze?false:(editorPreview.has(previewKey)?editorPreview.get(previewKey):state==='done');
+  const locked=!inMonth||key>todayKey()||freeze;
   const cls=[done?'done':'',freeze?'freeze':'',!inMonth?'outside':''].filter(Boolean).join(' ');
   const flame=(done||freeze)?'<svg viewBox="0 0 24 24" aria-hidden="true"><use href="#flame-'+(done?'solid':'outline')+'"></use></svg>':'';
   html+='<button type="button" class="editor-day '+cls+'" data-date="'+key+'" aria-label="'+key+': '+(freeze?'freeze locked':done?'completed':'not completed')+'" aria-pressed="'+done+'" '+(locked?'disabled':'')+'><span>'+d.getDate()+'</span>'+flame+'</button>';
  }
  el('editorCalendarDays').innerHTML=html;
 }
-async function toggleEditorDate(key){
- if(editorBusy || !/^\d{4}-\d{2}-\d{2}$/.test(key) || key>todayKey())return;
- const id=editorHabitId,h=habits.find(h=>h.id===id);
- if(!h||evaluateHabit(h).states.get(key)==='freeze')return;
- editorBusy=true;
+function toggleEditorDate(key){
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(key)||key>todayKey())return;
+ const id=editorHabitId,habit=habits.find(h=>h.id===id);
+ if(!habit||evaluateHabit(habit).states.get(key)==='freeze')return;
+ const previewKey=id+':'+key;
+ const current=editorPreview.has(previewKey)?editorPreview.get(previewKey):habit.completions.includes(key);
+ editorPreview.set(previewKey,!current);
+ renderCalendarEditor();
+ clearTimeout(editorSaveTimers.get(previewKey));
+ editorSaveTimers.set(previewKey,setTimeout(()=>saveEditorDate(id,key),210));
+}
+async function saveEditorDate(id,key){
+ const previewKey=id+':'+key;
+ if(!editorPreview.has(previewKey))return;
+ const desired=editorPreview.get(previewKey);
+ editorSaveTimers.delete(previewKey);
  try{
   await runTransaction(db,async tx=>{
-   const ref=habitDoc(id),snap=await tx.get(ref);if(!snap.exists())throw Error('Habit no longer exists');
+   const ref=habitDoc(id),snap=await tx.get(ref);
+   if(!snap.exists())throw Error('Habit no longer exists');
    const record=normalise({id,...snap.data()});
-   if(evaluateHabit(record).states.get(key)==='freeze')throw Error('Blue freeze dates are locked');
+   if(record.freezeDates.includes(key))throw Error('Blue freeze dates are locked');
    const dates=new Set(record.completions);
-   if(dates.has(key))dates.delete(key);else dates.add(key);
+   if(desired)dates.add(key);else dates.delete(key);
    tx.update(ref,{completions:[...dates].sort()});
   });
  }catch(error){showToast(errorMessage(error));}
- finally{editorBusy=false;if(editorHabitId===id)renderCalendarEditor();}
+ finally{
+  if(editorPreview.get(previewKey)===desired){
+   editorPreview.delete(previewKey);
+  }else{
+   clearTimeout(editorSaveTimers.get(previewKey));
+   editorSaveTimers.set(previewKey,setTimeout(()=>saveEditorDate(id,key),100));
+  }
+  if(editorHabitId===id)renderCalendarEditor();
+ }
 }
 function renderReorderList(){
  const list=el('reorderList');
@@ -569,7 +597,7 @@ el('layoutToggleBtn').addEventListener('click',()=>{layoutMode=layoutMode==='car
 const grid=el('habitGrid');
 grid.addEventListener('click',event=>{
  const card=event.target.closest('.habit-card');
- if(!card||Date.now()<suppressCardClicksUntil)return;
+ if(!card||!el('calendarEditor').hidden||Date.now()<suppressCardClicksUntil)return;
  openHabit(card.dataset.id);
 });
 grid.addEventListener('keydown',event=>{
