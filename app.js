@@ -673,8 +673,8 @@ const grid=el('habitGrid');
 grid.addEventListener('click',event=>{
  const card=event.target.closest('.habit-card');
  if(!card||!el('calendarEditor').hidden||Date.now()<suppressCardClicksUntil)return;
- if(layoutMode==='calendar')openCalendarEditor(card.dataset.id);
- else openHabit(card.dataset.id);
+ if(layoutMode==='calendar')return;
+ openHabit(card.dataset.id);
 });
 grid.addEventListener('keydown',event=>{
  if((event.key==='Enter'||event.key===' ')&&event.target.classList.contains('habit-card')){
@@ -685,10 +685,10 @@ grid.addEventListener('keydown',event=>{
 });
 grid.addEventListener('pointerdown',event=>{
  const card=event.target.closest('.habit-card');
- if(!card||event.button>0||busy||layoutMode==='calendar')return;
- // A completed card is held to open the edit-calendar; an unfinished card
- // retains the existing delayed orange hold-to-complete interaction.
- const done=card.dataset.done==='true',id=card.dataset.id;
+ if(!card||event.button>0||busy)return;
+ // Mini-calendar layout is hold-only; compact completed cards also hold to edit.
+ const miniCalendar=layoutMode==='calendar';
+ const done=miniCalendar||card.dataset.done==='true',id=card.dataset.id;
  stopHold();
  activeHold={element:card,id,x:event.clientX,y:event.clientY,
    pointerId:event.pointerId,startedAt:performance.now(),progressStarted:false,
@@ -723,6 +723,8 @@ grid.addEventListener('pointermove',event=>{
 grid.addEventListener('pointerup',()=>stopHold(false));
 for(const type of ['pointercancel','pointerleave'])grid.addEventListener(type,()=>stopHold(true));
 grid.addEventListener('contextmenu',event=>{if(event.target.closest('.habit-card'))event.preventDefault();});
+grid.addEventListener('selectstart',event=>{if(event.target.closest('.habit-card'))event.preventDefault();});
+grid.addEventListener('dragstart',event=>{if(event.target.closest('.habit-card'))event.preventDefault();});
 el('saveReorderBtn').addEventListener('click',saveReorderedHabits);
 el('cancelReorderBtn').addEventListener('click',()=>{if(!desktopSettings.matches)backToAccountHome();else showAccountSection('accountSettingsBtn');});
 el('signOutBtn').addEventListener('click',()=>{setAccountMenu(false);signOut(auth).catch(err=>showToast(errorMessage(err)));});
