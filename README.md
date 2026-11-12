@@ -1,39 +1,18 @@
-# My Streaks — GitHub Pages + Firebase
+# My Streaks — GitHub Pages website
 
-A personal habit tracker with Google sign-in, synced history, and a Babbel-style dark streak detail screen with orange completed days, blue freeze days, and **two freezes per Monday–Sunday week per habit**. The design is a close recreation, not an official Babbel screen.
+This version includes a matching dark dashboard and iPhone Home Screen web app settings. All Firebase settings and habit calculations are unchanged from the previous version.
 
-## Publish
+## Update an existing GitHub Pages site
 
-1. Create a **public** GitHub repository (for example, `my-streaks`).
-2. Upload `index.html`, `styles.css`, and `app.js` **to the repository root**, not inside a folder.
-3. Open **Settings → Pages** on GitHub. Choose **Deploy from a branch**, branch **main**, folder **/(root)**. Save.
-4. After deployment, your address will resemble `https://YOUR-USERNAME.github.io/my-streaks/`.
-5. In Firebase Console open **Authentication → Settings → Authorized domains**. Add **YOUR-USERNAME.github.io** (domain only, without `https://` or `/my-streaks/`).
-6. Open your GitHub Pages address and sign in with Google.
+Upload the contents of this ZIP into the root of the existing `my-streaks` repository and **replace the files with the same names**. Do not create a new repository. Make sure `index.html`, `styles.css`, `app.js`, `manifest.webmanifest`, and the PNG icons are in the repository root. Commit the changes. Keep your current Firebase Authentication and Firestore rules; do not reset the database.
 
-Your data is stored in Cloud Firestore under `/users/{your-account-uid}/habits/{habit-id}`; your Firestore rules must restrict access to the authenticated user matching that uid.
+## Add to iPhone Home Screen
 
-**Never paste service-account credentials, secret keys, or authentication tokens into the GitHub repository.** The Firebase web configuration included in `app.js` is a public client identifier, not a service-account secret.
+1. Open https://theinternetbuster.github.io/my-streaks/ in Safari.
+2. Tap the Share icon and choose **Add to Home Screen** (sometimes under **More**).
+3. If you see **Open as Web App**, turn it on. Tap **Add**.
+4. Launch **My Streaks** from the new Home Screen icon.
 
-## How streaks work
+The app should open as a standalone Home Screen web app without the normal Safari address bar. Sign in using the same Google account. Firebase authentication must be authorized for `theinternetbuster.github.io`.
 
-- Only completed calendar dates increase the streak number (multiple check-ins on one day count once).
-- The first completion activates the habit; missed days before it don't consume freezes.
-- When the streak is active, each uncompleted past day consumes one of the week's two freezes; frozen days appear blue.
-- The third missed day *in the same week* breaks the streak. Inactive missed days do not use additional freezes.
-- On Monday, the budget of two replenishes whether the streak is active or not. Unused freezes never carry forward.
-- A new streak can begin after a break, but restarting doesn't replenish freezes already spent that week.
-- An unchecked **current** day is not marked missed before midnight.
-- The count and freeze history are recomputed from saved completed dates, not stored as mutable counters.
-
-## Notes
-
-- This is a static website; Firebase provides sign-in and live syncing, so no hosting server is needed.
-- In the account menu you can **export a JSON backup**. Backup import adds records as new habits; it does not overwrite existing habits.
-- The calendar lets you browse months. Use **Edit check-in history** to correct a missed/incorrect check-in date.
-- Your old Notion history is not automatically imported; only records created or imported into this new website appear here.
-- Firebase requires an internet connection to authenticate and sync. Hosting and database usage are subject to their respective service limits.
-
-## Visual design
-
-Open any habit card to see the dark full-screen streak detail. The typography, calendar, orange completed tiles, outlined blue flame freeze tiles, and blue information panel closely follow the supplied Babbel reference. The extra **Done today** control remains below the calendar for the custom tracker.
+Note: iOS may treat Safari and a standalone Home Screen app as separate browser sessions, so a fresh sign-in can be needed. Your habits still sync through the same Firestore account. This is an installable website, not an App Store application. It needs internet access to sign in and sync. Clearing browsing data or removing the app does not delete data saved in Firestore.

@@ -47,3 +47,32 @@ body.detail-mode .history-panel input{background:#3b3b3f;color:#fff;border-color
 body.detail-mode .muted{color:#a7a7ac}
 @media(min-width:800px){.babbel-panel{padding-top:50px}.babbel-streak-title{font-size:82px}}
 @media(max-width:520px){.babbel-panel{padding:22px 20px 55px}.babbel-top-actions{min-height:55px;margin-bottom:19px}.babbel-close{width:45px;height:45px;font-size:35px}.babbel-heading{margin:14px 0 66px}.babbel-streak-title{font-size:clamp(39px,10.2vw,64px)}.babbel-description{font-size:15px;margin-top:18px}.babbel-month{margin-bottom:30px}body.detail-mode .weekdays,body.detail-mode .calendar-grid{column-gap:7px;row-gap:10px}body.detail-mode .calendar-day{padding-top:5px;border-radius:9px}body.detail-mode .calendar-day .day-flame{margin-top:0}body.detail-mode .freeze-box{margin-top:55px;padding:21px 17px;gap:13px;border-radius:15px}body.detail-mode .freeze-icon{width:29px;height:29px}body.detail-mode .freeze-box h3{margin-top:0;margin-bottom:11px}body.detail-mode .freeze-box p{font-size:14px}body.detail-mode .detail-actions{flex-direction:column;align-items:stretch}body.detail-mode .checkin{width:100%}}
+
+/* Unified dark dashboard, authentication and dialogs */
+:root{color-scheme:dark;color:#f5f5f7;background:#1c1c1f}
+html{background:#1c1c1f}
+body{background:#1c1c1f;color:#f5f5f7;min-height:100svh}
+.topbar{background:#1c1c1f;border-color:#333337}
+.brand-icon{background:#36302c}
+.brand small,.subheading,.bottom-note{color:#a8a8ae}
+.sync-pill{background:#303035;color:#d1d1d7}
+.sync-pill.online{background:#193b30;color:#9be3b9}
+.avatar-button,.ghost-icon{background:#303035;border-color:#4a4a50;color:#eee}
+.habit-card{background:#29292d;border-color:#424248;color:#fff;box-shadow:none}
+.habit-card:hover{background:#303035;box-shadow:0 14px 28px #0003}
+.card-arrow{color:#aaaab3}
+.empty-state{background:#27272b;border-color:#45454b}
+.empty-state p,.login-panel p,.modal .muted{color:#b3b3bd}
+.login-panel{background:#29292d;border-color:#414147;box-shadow:none}
+.loading-panel{color:#b3b3bd}
+.secondary-btn{background:#333338;border-color:#53535c;color:#f4f4f6}
+.modal{background:#29292d;border:1px solid #4a4a50;color:#fff}
+.modal input,.history-panel input{background:#1e1e21;color:#fff;border-color:#57575e}
+.modal input::placeholder{color:#888894}
+.danger-btn{background:#482a2c;border-color:#754044;color:#ffb7b7}
+.account-menu{background:#29292d;border-color:#49494f;box-shadow:0 12px 32px #0006}
+.account-menu span{color:#babac3}
+.account-menu button,.import-label{color:#eeeef1}
+.account-menu button:hover,.import-label:hover{background:#39393e}
+#toast{background:#3d3d43;color:#fff}
+@media(display-mode:standalone){body{padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}.topbar{padding-top:0}}
