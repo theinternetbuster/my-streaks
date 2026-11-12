@@ -80,7 +80,7 @@
     }
     function normalizedType(t){return types.some(x=>x.id===t)?t:'text';}
     function normalizeBlock(b,i){
-      return {id:String(b.id||uniqueId()),type:normalizedType(b.type),text:String(b.text||'').slice(0,5000),checked:!!b.checked,collapsed:!!b.collapsed,note:String(b.note||'').slice(0,10000),order:Number.isFinite(b.order)?b.order:i,createdAt:Number(b.createdAt)||Date.now()};
+      return {id:String(b.id||uniqueId()),type:normalizedType(b.type),text:String(b.text||'').slice(0,5000),checked:!!b.checked,collapsed:!!b.collapsed,note:String(b.note||'').slice(0,10000),dueDate:/^\d{4}-\d{2}-\d{2}$/.test(b.dueDate||'')?b.dueDate:'',order:Number.isFinite(b.order)?b.order:i,createdAt:Number(b.createdAt)||Date.now()};
     }
     function scheduleSave(soon=false){
       if(!user)return;
@@ -113,7 +113,7 @@
       await pendingWrite;
     }
     function addBlock(afterId=null,type='todo',text=''){
-      const b={id:uniqueId(),type,text,checked:false,collapsed:false,note:'',order:blocks.length,createdAt:Date.now()};
+      const b={id:uniqueId(),type,text,checked:false,collapsed:false,note:'',dueDate:'',order:blocks.length,createdAt:Date.now()};
       const index=afterId?blocks.findIndex(x=>x.id===afterId):-1;
       if(index>=0)blocks.splice(index+1,0,b);else blocks.push(b);
       renderChecklist(true);scheduleSave(true);
@@ -162,7 +162,7 @@
     function renderChecklist(force=false){
       if(!root)return;
       const focus=document.activeElement?.dataset?.blockId;
-      if(!force&&focus&&root.contains(document.activeElement)&&dirty)return;
+      if(!force&&focus&&root.contains(document.activeElement))return;
       root.innerHTML=blocks.map((b,i)=>{
         const isTask=b.type==='todo',isToggle=b.type==='toggle',isBullet=b.type==='bullet';
         const icon=isTask?'<input class="checklist-check" type="checkbox" data-toggle-check="'+safe(b.id)+'" '+(b.checked?'checked':'')+' aria-label="Complete task"/>':
@@ -171,6 +171,7 @@
         return '<div class="checklist-line checklist-type-'+b.type+(b.checked?' is-done':'')+(b.collapsed?' is-collapsed':'')+'" data-id="'+safe(b.id)+'">'+
           '<button type="button" class="checklist-handle" aria-label="Drag to rearrange">⠿</button>'+
           '<div class="checklist-line-inner">'+icon+'<div class="checklist-field-group"><textarea data-block-id="'+safe(b.id)+'" rows="1" maxlength="5000" spellcheck="true" placeholder="'+(b.type==='h1'?'Heading':b.type==='h2'?'Subheading':b.type==='todo'?'To-do':b.type==='toggle'?'Toggle title':b.type==='bullet'?'List item':"Type '/' for commands")+'" '+(b.collapsed&&b.type==='toggle'?'aria-expanded="false"':'')+'>'+safe(b.text)+'</textarea>'+(isToggle&&!b.collapsed?'<textarea class="checklist-note" data-note-id="'+safe(b.id)+'" maxlength="10000" rows="2" placeholder="Add extra information…">'+safe(b.note)+'</textarea>':'')+'</div></div>'+
+          (isTask?'<label class="checklist-date-pill '+(b.dueDate?'has-date':'')+'" title="Optional due date"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4m8-4v4"/></svg><span>'+safe(b.dueDate?new Date(b.dueDate+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}):'Date')+'</span><input type="date" data-due-date="'+safe(b.id)+'" value="'+safe(b.dueDate)+'" aria-label="Due date"/></label>':'')+
           '<button type="button" class="checklist-delete" data-delete="'+safe(b.id)+'" aria-label="Delete block">×</button></div>';
       }).join('');
       $('checklistEmpty').hidden=blocks.length>0;
@@ -226,6 +227,12 @@
       }
     });
     root.addEventListener('change',e=>{
+      const dateInput=e.target.closest('[data-due-date]');
+      if(dateInput){
+        const block=blocks.find(x=>x.id===dateInput.dataset.dueDate);
+        if(block){block.dueDate=dateInput.value;renderChecklist(true);scheduleSave(true);}
+        return;
+      }
       const input=e.target.closest('[data-toggle-check]');if(!input)return;
       const b=blocks.find(x=>x.id===input.dataset.toggleCheck);if(!b)return;
       b.checked=input.checked;input.closest('.checklist-line').classList.toggle('is-done',b.checked);scheduleSave(true);
