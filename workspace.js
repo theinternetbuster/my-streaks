@@ -355,33 +355,141 @@
       }
       return html;
     }
-    function renderInsights(){
-      const habits=getHabits();
-      const empty=$('insightEmpty'),content=$('insightsContent'),picker=$('insightHabitSelect');
-      empty.hidden=habits.length>0;content.hidden=habits.length===0;
-      if(!habits.length){selectedHabit=null;picker.innerHTML='';return;}
-      if(!selectedHabit||!habits.some(x=>x.id===selectedHabit))selectedHabit=habits[0].id;
-      picker.innerHTML=habits.map(x=>'<option value="'+safe(x.id)+'" '+(x.id===selectedHabit?'selected':'')+'>'+safe(x.name)+'</option>').join('');
-      const h=habits.find(x=>x.id===selectedHabit)||habits[0],info=evaluateHabit(h);
-      const total=h.completions.length,longest=longestFor(h);
-      const used=(h.freezeDates||[]).length;
-      const cards=[
-        {label:'Current streak',number:info.streak,icon:'🔥',hint:'Your ongoing run'},
-        {label:'Longest streak',number:longest,icon:'✦',hint:'Your personal best'},
-        {label:'Days completed',number:total,icon:'✓',hint:'Every check-in counts'},
-        {label:'Freeze days',number:used,icon:'❄',hint:'Days your streak was protected'}
+    const flame='<svg viewBox="0 0 24 24" aria-hidden="true" class="insight-shared-flame"><use href="#flame-solid"></use></svg>';
+    const badgeArt={
+      flame:flame,
+      star:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65"><path d="m12 2 3.1 6.3 7 .9-5.1 5 1.3 7L12 18l-6.3 3.2 1.3-7-5.1-5 7-.9z"/></svg>',
+      crown:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m2 7 5.5 5L12 5l4.5 7L22 7l-2.2 12H4.2z"/><path d="M5 22h14"/></svg>',
+      sunrise:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 18h18M12 4v3M5 8l2.5 2.5M19 8l-2.5 2.5M7 18a5 5 0 0 1 10 0"/><path d="M3 22h18"/></svg>',
+      shield:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2 21 6v6c0 5-3.5 8.5-9 10-5.5-1.5-9-5-9-10V6z"/><path d="m8 12 3 3 5-6"/></svg>',
+      layers:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m12 2 10 5-10 5L2 7zM2 12l10 5 10-5M2 17l10 5 10-5"/></svg>',
+      gem:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M7 3h10l5 7-10 12L2 10zM2 10h20M7 3l5 19L17 3"/></svg>',
+      calendar:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4m8-4v4m-7 8 2 2 4-5"/></svg>'
+    };
+    function achievementItems(habits){
+      const chosen=selectedHabit==='all'?habits:habits.filter(h=>h.id===selectedHabit);
+      const longest=Math.max(0,...chosen.map(longestFor));
+      const total=chosen.reduce((n,h)=>n+(h.completions||[]).length,0);
+      const freezes=chosen.reduce((n,h)=>n+(h.freezeDates||[]).length,0);
+      const breadth=habits.filter(h=>(h.completions||[]).length>0).length;
+      const awards=[
+        {title:'First Spark',detail:'Your first completed day',icon:'flame',goal:1,progress:total,tier:'THE BEGINNING'},
+        {title:'One Week Strong',detail:'A 7-day streak',icon:'sunrise',goal:7,progress:longest,tier:'BUILDING MOMENTUM'},
+        {title:'Two-Week Rhythm',detail:'A 14-day streak',icon:'star',goal:14,progress:longest,tier:'FINDING YOUR FLOW'},
+        {title:'Thirty-Day Flame',detail:'A 30-day streak',icon:'crown',goal:30,progress:longest,tier:'A REAL MILESTONE'},
+        {title:'Century Club',detail:'A 100-day streak',icon:'gem',goal:100,progress:longest,tier:'RARE MILESTONE'},
+        {title:'Every Day Counts',detail:'50 completed days',icon:'calendar',goal:50,progress:total,tier:'SHOWING UP'},
+        {title:'Room for Life',detail:'A protected freeze day',icon:'shield',goal:1,progress:freezes,tier:'BUILT-IN GRACE'},
+        {title:'Many Paths',detail:'Check-ins in 3 different habits',icon:'layers',goal:3,progress:breadth,tier:'EXPLORING HABITS',allOnly:true}
       ];
-      $('insightStatGrid').innerHTML=cards.map((x,i)=>'<div class="insight-stat-card"><span class="insight-stat-kicker">'+safe(x.label)+'</span><div class="insight-stat-main"><strong>'+x.number+'</strong><span class="insight-stat-icon '+(i===3?'icy':'')+'">'+x.icon+'</span></div><small>'+safe(x.hint)+'</small></div>').join('');
-      $('insightActivityChart').innerHTML=weeklyChart(h);
-      $('insightHeatmap').innerHTML=calendarMonths(h);
-      const thresholds=[1,7,14,30,60,100,365];
-      $('insightMilestones').innerHTML=thresholds.map(target=>{
-        const unlocked=longest>=target;
-        const names={1:'First flame',7:'One week',14:'Two weeks',30:'A whole month',60:'Two months',100:'Triple digits',365:'A full year'};
-        return '<div class="insight-milestone '+(unlocked?'unlocked':'')+'"><span class="milestone-symbol">'+(unlocked?'✦':'◇')+'</span><strong>'+safe(names[target])+'</strong><small>'+target+'-day streak</small></div>';
+      return awards.filter(a=>!a.allOnly||selectedHabit==='all');
+    }
+    function renderAchievements(habits){
+      const items=achievementItems(habits);
+      $('insightAchievementGrid').innerHTML=items.map((a,i)=>{
+        const unlocked=a.progress>=a.goal;
+        return '<article class="achievement-card '+(unlocked?'unlocked':'locked')+'" style="--badge-delay:'+Math.min(i*55,400)+'ms">'+
+          '<div class="achievement-card-top"><span class="achievement-tier">'+safe(a.tier)+'</span><span class="achievement-state">'+(unlocked?'UNLOCKED':'TO DISCOVER')+'</span></div>'+
+          '<div class="achievement-emblem achievement-emblem-'+safe(a.icon)+'">'+badgeArt[a.icon]+'</div>'+
+          '<h3>'+safe(a.title)+'</h3><p>'+safe(a.detail)+'</p>'+
+          '<div class="achievement-foot"><span>'+ (unlocked?'✦ Earned':Math.min(a.progress,a.goal)+' / '+a.goal) +'</span><div class="achievement-progress"><i style="width:'+Math.round(Math.min(1,a.progress/a.goal)*100)+'%"></i></div></div>'+
+          '</article>';
       }).join('');
     }
-    $('insightHabitSelect').addEventListener('change',e=>{selectedHabit=e.target.value;renderInsights();});
+    function renderInsightTabs(){
+      const achievements=insightSection==='achievements';
+      $('insightOverview').hidden=achievements;
+      $('insightAchievements').hidden=!achievements;
+      for(const [id,active] of [['insightOverviewTab',!achievements],['insightAchievementsTab',achievements]]){
+        $(id).classList.toggle('active',active);
+        $(id).setAttribute('aria-selected',String(active));
+        $(id).tabIndex=active?0:-1;
+      }
+    }
+    function chooseInsightSection(which){
+      insightSection=which==='achievements'?'achievements':'overview';
+      renderInsightTabs();renderInsights();
+    }
+    function renderPicker(habits){
+      if(selectedHabit!=='all'&&!habits.some(h=>h.id===selectedHabit))selectedHabit='all';
+      const chosen=habits.find(h=>h.id===selectedHabit);
+      $('insightHabitLabel').textContent=chosen?.name||'All Habits';
+      $('insightHabitTrigger').querySelector('.insight-picker-avatar').innerHTML=chosen?flame:'✦';
+      const entries=[{id:'all',name:'All Habits',subtitle:'Your complete journey'},...habits.map(h=>({id:h.id,name:h.name,subtitle:'Individual habit'}))];
+      $('insightHabitMenu').innerHTML=entries.map(entry=>
+        '<button type="button" role="option" class="insight-option '+(entry.id===selectedHabit?'selected':'')+'" data-habit-id="'+safe(entry.id)+'" aria-selected="'+(entry.id===selectedHabit)+'">'+
+        '<span class="insight-option-symbol">'+(entry.id==='all'?'✦':flame)+'</span><span class="insight-option-text"><strong>'+safe(entry.name)+'</strong><small>'+safe(entry.subtitle)+'</small></span><span class="insight-option-check">'+(entry.id===selectedHabit?'✓':'')+'</span></button>'
+      ).join('');
+    }
+    function closePicker(){
+      $('insightHabitMenu').hidden=true;$('insightHabitTrigger').setAttribute('aria-expanded','false');
+      $('insightHabitPicker').classList.remove('open');
+    }
+    $('insightHabitTrigger').addEventListener('click',()=>{
+      const open=$('insightHabitMenu').hidden;
+      $('insightHabitMenu').hidden=!open;
+      $('insightHabitTrigger').setAttribute('aria-expanded',String(open));
+      $('insightHabitPicker').classList.toggle('open',open);
+    });
+    $('insightHabitMenu').addEventListener('click',event=>{
+      const item=event.target.closest('[data-habit-id]');if(!item)return;
+      selectedHabit=item.dataset.habitId;closePicker();renderInsights();
+      if(user){
+        const uid=user.uid;insightSelectionPending=true;
+        setDoc(doc(db,'users',uid,'settings','insights'),{habitId:selectedHabit},{merge:true})
+          .catch(e=>console.warn('Unable to save Insights selection',e))
+          .finally(()=>{insightSelectionPending=false;});
+      }
+    });
+    document.addEventListener('pointerdown',e=>{if(!e.target.closest('#insightHabitPicker'))closePicker();});
+    document.addEventListener('keydown',e=>{if(e.key==='Escape')closePicker();});
+    $('insightOverviewTab').addEventListener('click',()=>chooseInsightSection('overview'));
+    $('insightAchievementsTab').addEventListener('click',()=>chooseInsightSection('achievements'));
+    $('insightViewAchievements').addEventListener('click',()=>chooseInsightSection('achievements'));
+    function renderInsights(){
+      const habits=getHabits();
+      const empty=$('insightEmpty'),content=$('insightsContent');
+      empty.hidden=habits.length>0;content.hidden=habits.length===0;
+      if(!habits.length){renderInsightTabs();return;}
+      renderPicker(habits);renderInsightTabs();
+      const all=selectedHabit==='all';
+      const chosen=all?habits:habits.filter(h=>h.id===selectedHabit);
+      const h=chosen[0]||habits[0];
+      const completed=chosen.reduce((n,r)=>n+(r.completions||[]).length,0);
+      const freezeCount=chosen.reduce((n,r)=>n+(r.freezeDates||[]).length,0);
+      const longest=Math.max(0,...chosen.map(longestFor));
+      const current=all?chosen.filter(x=>evaluateHabit(x).streak>0).length:evaluateHabit(h).streak;
+      const cards=[
+        {label:all?'Active streaks':'Current streak',number:current,icon:flame,hint:all?'Habits with an active streak':'Your ongoing run'},
+        {label:all?'Best streak':'Longest streak',number:longest,icon:badgeArt.crown,hint:'Your personal best'},
+        {label:'Days completed',number:completed,icon:badgeArt.calendar,hint:all?'Across all habits':'Every check-in counts'},
+        {label:'Freeze days',number:freezeCount,icon:badgeArt.shield,hint:'Days your streak was protected'}
+      ];
+      $('insightContextNote').textContent=all?'A calm overview of all your habits. Every check-in counts; there is no daily completion quota.':'A closer look at '+h.name+'.';
+      $('insightStatGrid').innerHTML=cards.map((x,i)=>
+        '<div class="insight-stat-card"><span class="insight-stat-kicker">'+safe(x.label)+'</span><div class="insight-stat-main"><strong>'+x.number+'</strong><span class="insight-stat-icon '+(i===3?'icy':'')+'">'+x.icon+'</span></div><small>'+safe(x.hint)+'</small></div>'
+      ).join('');
+      // All Habits is an aggregate of check-ins, not a synthetic streak.
+      const combined={completions:[...new Set(chosen.flatMap(x=>x.completions||[]))],
+        freezeDates:[...new Set(chosen.flatMap(x=>x.freezeDates||[]))]};
+      const chart=all?weeklyChartAll(chosen):weeklyChart(h);
+      $('insightActivityChart').innerHTML=chart;
+      $('insightHeatmap').innerHTML=calendarMonths(all?combined:h);
+      $('insightMilestones').innerHTML=achievementItems(habits).slice(0,7).map(a=>
+        '<div class="insight-milestone '+(a.progress>=a.goal?'unlocked':'')+'"><span class="milestone-symbol">'+badgeArt[a.icon]+'</span><strong>'+safe(a.title)+'</strong><small>'+safe(a.detail)+'</small></div>'
+      ).join('');
+      renderAchievements(habits);
+    }
+    function weeklyChartAll(habits){
+      const start=weekStart(new Date()),completed=habits.map(h=>new Set(h.completions||[]));
+      return Array.from({length:8},(_,i)=>{
+        const monday=shift(start,(i-7)*7);
+        let count=0;
+        for(let day=0;day<7;day++){const k=key(shift(monday,day));for(const set of completed)if(set.has(k))count++;}
+        const max=7*habits.length,height=count?Math.max(8,count/max*100):0;
+        return '<div class="insight-week"><div class="insight-week-vertical"><span class="insight-week-bar" style="height:'+height+'%" title="'+count+' check-ins across all habits"></span></div><span class="insight-week-label">'+monday.toLocaleDateString('en-US',{month:'short',day:'numeric'})+'</span></div>';
+      }).join('');
+    }
     function onHabitsChange(){if(tab==='insights')renderInsights();}
     function dispose(){if(unsub)unsub();clearTimeout(saveTimer);if(sortable)sortable.destroy();}
     // Deep links should initialize consistently once the account loads.
