@@ -17,6 +17,10 @@ const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
 provider.setCustomParameters({ prompt: 'select_account' });
 const el = id => document.getElementById(id);
+/* Keep overlays at the document root; iOS otherwise clips them to the dashboard. */
+document.body.appendChild(el('detail'));
+document.body.appendChild(el('accountMenu'));
+
 let user = null, unsubscribe = null, habits = [], selectedId = null, shownMonth = null, modalEditingId = null;
 let editMode = false, layoutMode = 'cards', themeMode = 'system', profileName = '', unsubscribePrefs = null;
 let sortableInstance = null, holdTimer = null, touchStart = null, suppressClickUntil = 0;
