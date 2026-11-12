@@ -90,7 +90,7 @@
     }
     function normalizedType(t){return types.some(x=>x.id===t)?t:'text';}
     function normalizeBlock(b,i){
-      return {id:String(b.id||uniqueId()),type:normalizedType(b.type),text:String(b.text||'').slice(0,5000),checked:!!b.checked,collapsed:!!b.collapsed,detailsOpen:typeof b.detailsOpen==='boolean'?b.detailsOpen:(b.type==='todoNote'||b.type==='todoList')&&!b.collapsed,note:String(b.note||'').slice(0,10000),detailsMode:b.detailsMode==='tasks'||b.type==='todoList'?'tasks':'notes',subtasks:Array.isArray(b.subtasks)?b.subtasks.slice(0,40).filter(t=>t&&typeof t.text==='string').map(t=>({id:String(t.id||uniqueId()),text:String(t.text).slice(0,500),checked:!!t.checked})):[],dueDate:/^\d{4}-\d{2}-\d{2}$/.test(b.dueDate||'')?b.dueDate:'',order:Number.isFinite(b.order)?b.order:i,createdAt:Number(b.createdAt)||Date.now()};
+      return {id:String(b.id||uniqueId()),type:normalizedType(b.type),text:String(b.text||'').slice(0,5000),checked:!!b.checked,collapsed:!!b.collapsed,detailsOpen:typeof b.detailsOpen==='boolean'?b.detailsOpen:(b.type==='todoNote'||b.type==='todoList')&&!b.collapsed,note:String(b.note||'').slice(0,10000),detailsMode:b.detailsMode==='tasks'||b.type==='todoList'?'tasks':'notes',subtasks:Array.isArray(b.subtasks)?b.subtasks.slice(0,40).filter(t=>t&&typeof t.text==='string').map(t=>({id:String(t.id||uniqueId()),text:String(t.text).slice(0,500),checked:!!t.checked,type:t.type==='bullet'?'bullet':'todo'})):[],dueDate:/^\d{4}-\d{2}-\d{2}$/.test(b.dueDate||'')?b.dueDate:'',order:Number.isFinite(b.order)?b.order:i,createdAt:Number(b.createdAt)||Date.now()};
     }
     function scheduleSave(soon=false){
       if(!user)return;
@@ -123,7 +123,7 @@
       await pendingWrite;
     }
     function addBlock(afterId=null,type='todo',text=''){
-      const b={id:uniqueId(),type,text,checked:false,collapsed:false,detailsOpen:type==='todoNote'||type==='todoList',note:'',detailsMode:type==='todoList'?'tasks':'notes',subtasks:[],dueDate:'',order:blocks.length,createdAt:Date.now()};
+      const b={id:uniqueId(),type,text,checked:false,collapsed:false,detailsOpen:type==='todoNote'||type==='todoList',note:'',detailsMode:type==='todoList'?'tasks':'notes',subtasks:type==='todoList'?[{id:uniqueId(),text:'',checked:false,type:'todo'}]:[],dueDate:'',order:blocks.length,createdAt:Date.now()};
       const index=afterId?blocks.findIndex(x=>x.id===afterId):-1;
       if(index>=0)blocks.splice(index+1,0,b);else blocks.push(b);
       renderChecklist(true);scheduleSave(true);
@@ -166,6 +166,8 @@
       b.text=b.text.replace(/^\/[a-z0-9 -]*/i,'');
       b.checked=false;
       b.detailsOpen=type==='todoNote'||type==='todoList';
+      b.detailsMode=type==='todoList'?'tasks':'notes';
+      if(type==='todoList'&&!b.subtasks.length)b.subtasks.push({id:uniqueId(),text:'',checked:false,type:'todo'});
       closeSlash();renderChecklist(true);scheduleSave(true);
       requestAnimationFrame(()=>focusBlock(id));
     }
@@ -199,7 +201,7 @@
         if(noteExpanded)details='<textarea class="checklist-note" data-note-id="'+safe(b.id)+'" maxlength="10000" rows="2" placeholder="Additional information…">'+safe(b.note)+'</textarea>';
         if(expanded){
           const mode=b.detailsMode==='tasks'?'tasks':'notes';
-          const modeSelector='<div class="checklist-detail-modes" aria-label="Task detail type"><button type="button" data-details-mode="notes" data-id="'+safe(b.id)+'" class="'+(mode==='notes'?'selected':'')+'">Notes</button><button type="button" data-details-mode="tasks" data-id="'+safe(b.id)+'" class="'+(mode==='tasks'?'selected':'')+'">Subtasks</button></div>';
+          const modeSelector=b.type==='todo'?'<div class="checklist-detail-modes" aria-label="Task detail type"><button type="button" data-details-mode="notes" data-id="'+safe(b.id)+'" class="'+(mode==='notes'?'selected':'')+'">Notes</button><button type="button" data-details-mode="tasks" data-id="'+safe(b.id)+'" class="'+(mode==='tasks'?'selected':'')+'">Subtasks</button></div>':'';
           const notes='<textarea class="checklist-note" data-note-id="'+safe(b.id)+'" maxlength="10000" rows="2" placeholder="Add extra information…">'+safe(b.note)+'</textarea>';
           const nested='<div class="checklist-subtasks">'+b.subtasks.map(t=>
             '<div class="checklist-subtask"><input type="checkbox" data-subtask-check="'+safe(b.id)+'" data-subtask-id="'+safe(t.id)+'" '+(t.checked?'checked':'')+' aria-label="Complete subtask"/><input type="text" maxlength="500" data-subtask-text="'+safe(b.id)+'" data-subtask-id="'+safe(t.id)+'" value="'+safe(t.text)+'" placeholder="Subtask" class="'+(t.checked?'completed':'')+'"/><button type="button" data-subtask-remove="'+safe(b.id)+'" data-subtask-id="'+safe(t.id)+'" aria-label="Remove subtask">×</button></div>'
@@ -252,7 +254,8 @@
       if(nested&&e.key==='Enter'&&!e.isComposing){
         e.preventDefault();const b=blocks.find(x=>x.id===nested.dataset.subtaskText);
         if(b&&b.subtasks.length<40){
-          const sub={id:uniqueId(),text:'',checked:false};
+          const prior=b.subtasks.find(t=>t.id===nested.dataset.subtaskId);
+          const sub={id:uniqueId(),text:'',checked:false,type:prior?.type==='bullet'?'bullet':'todo'};
           const ix=b.subtasks.findIndex(t=>t.id===nested.dataset.subtaskId);
           b.subtasks.splice(ix+1,0,sub);renderChecklist(true);scheduleSave(true);
           requestAnimationFrame(()=>root.querySelector('[data-subtask-id="'+sub.id+'"][data-subtask-text]')?.focus());
@@ -380,7 +383,7 @@
       }else if(add){
         const block=blocks.find(x=>x.id===add.dataset.subtaskAdd);
         if(block&&block.subtasks.length<40){
-          const sub={id:uniqueId(),text:'',checked:false};block.subtasks.push(sub);
+          const sub={id:uniqueId(),text:'',checked:false,type:'todo'};block.subtasks.push(sub);
           renderChecklist(true);scheduleSave(true);
           requestAnimationFrame(()=>root.querySelector('[data-subtask-id="'+sub.id+'"][data-subtask-text]')?.focus());
         }
