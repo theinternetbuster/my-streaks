@@ -123,16 +123,20 @@ function renderDashboard(){
  el('emptyState').hidden=habits.length!==0;
  if(!sortableInstance && window.Sortable){
    sortableInstance=window.Sortable.create(grid,{
-      animation:220, easing:'cubic-bezier(.2,.8,.2,1)',
-      delay:330, delayOnTouchOnly:true, touchStartThreshold:5,
-      fallbackTolerance:6, forceFallback:true, fallbackOnBody:true,
-      chosenClass:'sortable-selected',ghostClass:'sortable-ghost',
+      animation:250, easing:'cubic-bezier(.2,.8,.2,1)',
+      delay:280, delayOnTouchOnly:true, touchStartThreshold:4,
+      fallbackTolerance:1, forceFallback:true, fallbackOnBody:true,
+      fallbackClass:'drag-following',
+      chosenClass:'sortable-selected', ghostClass:'sortable-ghost',
       dragClass:'sortable-dragging',
+      swapThreshold:0.66, invertSwap:false,
+      scroll:true, scrollSensitivity:60, scrollSpeed:12,
+      onChoose:()=>{clearTimeout(holdTimer);},
       onStart:()=>{clearTimeout(holdTimer);setEditMode(true);},
       onEnd:async()=>{
-        suppressClickUntil=Date.now()+550;
+        suppressClickUntil=Date.now()+650;
         const ids=[...grid.querySelectorAll('.habit-card')].map(c=>c.dataset.id);
-        if(ids.length!==habits.length || ids.every((id,i)=>id===habits[i].id))return;
+        if(ids.length!==habits.length||ids.every((id,i)=>id===habits[i].id))return;
         if(busy)return;
         await withBusy(async()=>{
            const batch=writeBatch(db);
@@ -235,42 +239,71 @@ onAuthStateChanged(auth,u=>{
  },err=>{console.error(err);setSync('Sync issue');display('dashboard');showToast(errorMessage(err));});
 });
 el('googleLogin').addEventListener('click',signIn);
+const accountSections=[
+ ['accountSettingsBtn','accountSettingsDetail','Account & settings'],
+ ['accountAppearanceBtn','accountAppearanceDetail','Appearance'],
+ ['accountBackupBtn','accountBackupDetail','Backup & restore']
+];
+const desktopSettings=window.matchMedia('(min-width:800px)');
+function showAccountSection(which){
+ const selected=accountSections.find(x=>x[0]===which)||accountSections[0];
+ for(const [buttonId,detailId] of accountSections){
+   const active=buttonId===selected[0];
+   el(detailId).hidden=!active;
+   el(buttonId).setAttribute('aria-expanded',String(active));
+   el(buttonId).classList.toggle('selected',active);
+ }
+ el('accountSubTitle').textContent=selected[2];
+ el('accountMenu').querySelector('.account-sheet').classList.add('section-open');
+ el('accountSubpage').setAttribute('aria-hidden','false');
+ el('accountSubpage').scrollTop=0;
+ if(!desktopSettings.matches)el('accountSubBack').focus({preventScroll:true});
+}
+function backToAccountHome(){
+ if(desktopSettings.matches)return;
+ el('accountMenu').querySelector('.account-sheet').classList.remove('section-open');
+ el('accountSubpage').setAttribute('aria-hidden','true');
+ for(const [btn,detail] of accountSections){el(btn).setAttribute('aria-expanded','false');el(detail).hidden=true;}
+ el('accountSettingsBtn').focus({preventScroll:true});
+}
 function setAccountMenu(open){
-  el('accountMenu').hidden=!open;
-  document.body.classList.toggle('account-open',open);
-  el('userBtn').setAttribute('aria-expanded',String(open));
-  if(open){
-    for(const [buttonId,detailId] of [['accountSettingsBtn','accountSettingsDetail'],['accountAppearanceBtn','accountAppearanceDetail'],['accountBackupBtn','accountBackupDetail']]){
-      el(detailId).hidden=true;el(buttonId).setAttribute('aria-expanded','false');
-    }
-    el('closeAccountMenu').focus({preventScroll:true});
-  }else if(user && !el('userBtn').hidden){
-    el('userBtn').focus({preventScroll:true});
-  }
+ el('accountMenu').hidden=!open;
+ document.body.classList.toggle('account-open',open);
+ el('userBtn').setAttribute('aria-expanded',String(open));
+ if(open){
+   if(desktopSettings.matches)showAccountSection('accountSettingsBtn');
+   else{
+     el('accountMenu').querySelector('.account-sheet').classList.remove('section-open');
+     el('accountSubpage').setAttribute('aria-hidden','true');
+     for(const [btn,detail] of accountSections){el(btn).setAttribute('aria-expanded','false');el(detail).hidden=true;}
+   }
+   el('closeAccountMenu').focus({preventScroll:true});
+ }else if(user&&!el('userBtn').hidden){el('userBtn').focus({preventScroll:true});}
 }
 el('userBtn').addEventListener('click',()=>setAccountMenu(el('accountMenu').hidden));
 el('closeAccountMenu').addEventListener('click',()=>setAccountMenu(false));
 el('accountScrim').addEventListener('click',()=>setAccountMenu(false));
+el('accountSubBack').addEventListener('click',backToAccountHome);
+desktopSettings.addEventListener?.('change',()=>{if(!el('accountMenu').hidden){if(desktopSettings.matches)showAccountSection('accountSettingsBtn');else backToAccountHome();}});
 el('profileForm').addEventListener('submit',event=>{event.preventDefault();const value=el('profileName').value.trim();if(!value)return;profileName=value;showProfile();savePreference({displayName:value});});
 document.querySelectorAll('input[name="appearanceMode"]').forEach(input=>input.addEventListener('change',()=>{if(!input.checked)return;themeMode=input.value;applyTheme();savePreference({appearance:themeMode});}));
-for(const [buttonId,detailId] of [['accountSettingsBtn','accountSettingsDetail'],['accountAppearanceBtn','accountAppearanceDetail'],['accountBackupBtn','accountBackupDetail']]){
-  el(buttonId).addEventListener('click',()=>{
-    const opened=el(detailId).hidden;
-    el(detailId).hidden=!opened;el(buttonId).setAttribute('aria-expanded',String(opened));
-  });
-}
+for(const [buttonId] of accountSections)el(buttonId).addEventListener('click',()=>showAccountSection(buttonId));
 document.addEventListener('keydown',event=>{
-  if(event.key==='Escape'){
-    if(!el('accountMenu').hidden)setAccountMenu(false);
-    else if(!el('modalBackdrop').hidden)hideModal();
-  }
-  if(event.key==='Tab'&&!el('accountMenu').hidden){
-    const controls=[...el('accountMenu').querySelectorAll('button:not([disabled]),input:not([disabled]),label[for]')].filter(e=>e.offsetParent!==null);
-    if(!controls.length)return;
-    const first=controls[0],last=controls[controls.length-1];
-    if(event.shiftKey && document.activeElement===first){event.preventDefault();last.focus();}
-    if(!event.shiftKey && document.activeElement===last){event.preventDefault();first.focus();}
-  }
+ if(event.key==='Escape'){
+   if(!el('accountMenu').hidden){
+     if(!desktopSettings.matches&&el('accountMenu').querySelector('.account-sheet').classList.contains('section-open'))backToAccountHome();
+     else setAccountMenu(false);
+   }else if(!el('modalBackdrop').hidden)hideModal();
+   else if(!el('detail').hidden)closeHabit();
+ }
+ if(event.key==='Tab'&&!el('accountMenu').hidden){
+   const region=desktopSettings.matches?el('accountMenu'):(el('accountMenu').querySelector('.account-sheet').classList.contains('section-open')?el('accountSubpage'):el('accountMenu').querySelector('.account-navigation'));
+   const controls=[...region.querySelectorAll('button:not([disabled]),input:not([disabled]),label[for]')].filter(e=>e.getClientRects().length&&e.closest('[hidden]')===null);
+   if(!controls.length)return;
+   const first=controls[0],last=controls[controls.length-1];
+   if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}
+   else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}
+ }
 });
 el('layoutToggleBtn').addEventListener('click',()=>{layoutMode=layoutMode==='cards'?'calendar':'cards';renderDashboard();savePreference({layout:layoutMode});});
 el('finishEditingBtn').addEventListener('click',()=>setEditMode(false));
