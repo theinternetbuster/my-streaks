@@ -28,7 +28,13 @@ let editMode = false, layoutMode = 'cards', themeMode = 'system', profileName = 
 let sortableInstance = null, holdTimer = null, touchStart = null, suppressClickUntil = 0;
 let busy = false;
 const deviceScheme=window.matchMedia('(prefers-color-scheme: dark)');
-function applyTheme(){const resolved=themeMode==='system'?(deviceScheme.matches?'dark':'light'):themeMode;document.documentElement.dataset.theme=resolved;document.documentElement.style.colorScheme=resolved;}
+function applyTheme(){
+ const resolved=themeMode==='system'?(deviceScheme.matches?'dark':'light'):themeMode;
+ document.documentElement.dataset.theme=resolved;
+ document.documentElement.style.colorScheme=resolved;
+ const description=el('appearanceDescription');
+ if(description)description.textContent=themeMode==='light'?'Always use the light appearance.':themeMode==='dark'?'Always use the dark appearance.':'Automatically match your device appearance.';
+}
 applyTheme();
 deviceScheme.addEventListener?.('change',()=>{if(themeMode==='system')applyTheme();});
 function preferencesDoc(){return doc(db,'users',user.uid,'settings','preferences');}
@@ -181,6 +187,7 @@ function renderDashboard(){
 function openCalendarEditor(id){
  const h=habits.find(h=>h.id===id);
  if(!h || layoutMode!=='calendar')return;
+ if(!h.freezeProcessedThrough){showToast('Synchronizing your frozen days. Try again shortly.');return;}
  clearTimeout(editorCloseTimer);
  editorHabitId=id;editorMonth=new Date(new Date().getFullYear(),new Date().getMonth(),1);
  el('calendarEditor').classList.remove('closing');
@@ -238,6 +245,7 @@ async function saveEditorDate(id,key){
   await runTransaction(db,async tx=>{
    const ref=habitDoc(id),snap=await tx.get(ref);
    if(!snap.exists())throw Error('Habit no longer exists');
+   if(!Array.isArray(snap.data().freezeDates))throw Error('Freeze history is still synchronizing');
    const record=normalise({id,...snap.data()});
    if(record.freezeDates.includes(key))throw Error('Blue freeze dates are locked');
    const dates=new Set(record.completions);
@@ -412,7 +420,7 @@ function showModal(edit=false){
 function hideModal(){el('modalBackdrop').hidden=true;modalEditingId=null;}
 async function saveHabit(event){event.preventDefault();const name=el('habitName').value.trim();if(!name)return;const editing=modalEditingId;hideModal();await withBusy(async()=>{
  if(editing){await runTransaction(db,async tx=>{const ref=habitDoc(editing);if(!(await tx.get(ref)).exists())throw Error('Habit not found');tx.update(ref,{name});});showToast('Habit renamed');}
- else{await addDoc(habitCollection(),{name,createdDate:todayKey(),completions:[],createdAt:Date.now(),order:habits.length?Math.max(...habits.map((h,i)=>h.order??i))+1:0});showToast('Habit created!');}
+ else{await addDoc(habitCollection(),{name,createdDate:todayKey(),completions:[],freezeDates:[],freezeProcessedThrough:yesterdayKey(),createdAt:Date.now(),order:habits.length?Math.max(...habits.map((h,i)=>h.order??i))+1:0});showToast('Habit created!');}
 });}
 async function removeHabit(){const h=selectedHabit();if(!h)return;if(!confirm(`Delete “${h.name}” and all its check-in history? This cannot be undone.`))return;hideModal();await withBusy(async()=>{await deleteDoc(habitDoc(h.id));selectedId=null;display('dashboard');showToast('Habit deleted');});}
 function exportBackup(){if(!user)return;const data={app:'my-streaks',version:1,exportedAt:new Date().toISOString(),habits:habits.map(({name,createdDate,completions})=>({name,createdDate,completions}))};const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`my-streaks-backup-${todayKey()}.json`;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);showToast('Backup downloaded');}
@@ -683,5 +691,5 @@ el('historyBtn').addEventListener('click',()=>{el('historyPanel').hidden=!el('hi
 el('historyDate').addEventListener('change',()=>{const h=selectedHabit();const k=el('historyDate').value;el('historyHint').textContent=h?.completions.includes(k)?'Currently completed':'Currently not completed';});
 el('toggleHistoryBtn').addEventListener('click',()=>withBusy(async()=>{
  const h=selectedHabit(),key=el('historyDate').value;if(!h||!key||key>todayKey())throw Error('Choose today or a past date');
- await runTransaction(db,async tx=>{const ref=habitDoc(h.id);const snap=await tx.get(ref);if(!snap.exists())throw Error('Habit no longer exists');const current=snap.data();let dates=Array.isArray(current.completions)?current.completions:[];dates=dates.includes(key)?dates.filter(x=>x!==key):[...dates,key];tx.update(ref,{completions:[...new Set(dates)].sort()});});showToast('History updated');
+ await runTransaction(db,async tx=>{const ref=habitDoc(h.id);const snap=await tx.get(ref);if(!snap.exists())throw Error('Habit no longer exists');const current=snap.data();if(Array.isArray(current.freezeDates)&&current.freezeDates.includes(key))throw Error('Blue freeze dates cannot be changed');let dates=Array.isArray(current.completions)?current.completions:[];dates=dates.includes(key)?dates.filter(x=>x!==key):[...dates,key];tx.update(ref,{completions:[...new Set(dates)].sort()});});showToast('History updated');
 }));
