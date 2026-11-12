@@ -1307,7 +1307,8 @@ html[data-theme="light"] .editor-day:not(.done):not(:disabled):hover{background:
  border-top:1px solid #45454a!important;
 }
 #habitGrid{margin-bottom:0}
-#dashboard .site-footer{margin-top:max(90px,auto)!important}
+#dashboard .site-footer{margin-top:auto!important}
+#dashboard #habitGrid{margin-bottom:88px!important}
 .site-footer-inner{
  display:grid!important;
  grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)!important;
@@ -1326,9 +1327,9 @@ html[data-theme="light"] .footer-message{color:#687281!important}
 html[data-theme="light"] .footer-version,html[data-theme="light"] .footer-copyright{color:#7b8391}
 html[data-theme="light"] .site-footer:before{border-color:#dde1e7!important}
 @media(max-width:700px){
- #habitGrid{margin-bottom:0}
- .site-footer{margin-top:85px!important;padding:24px 0 max(30px,env(safe-area-inset-bottom,0px) + 14px)!important}
- #dashboard .site-footer{margin-top:85px!important}
+ #dashboard #habitGrid{margin-bottom:85px!important}
+ .site-footer{margin-top:auto!important;padding:24px 0 max(30px,env(safe-area-inset-bottom,0px) + 14px)!important}
+ #dashboard .site-footer{margin-top:auto!important}
  .site-footer-inner{
    display:grid!important;grid-template-columns:1fr auto!important;
    gap:11px!important;
