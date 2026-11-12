@@ -49,6 +49,7 @@
       const restored=typeof previous==='string'?{content:previous,focus:null}:previous;
       to.push({content:serializeBlocks(),focus:focusId?{id:focusId,offset:position??0}:null});
       restoringHistory=true;
+      clearDocumentSelection();
       blocks=JSON.parse(restored.content).map(normalizeBlock);
       closeSlash();renderChecklist(true);
       historyPresent=serializeBlocks();lastHistoryAt=0;lastHistoryField='';
@@ -98,7 +99,7 @@
       if(unsub){unsub();unsub=null;}
       if(insightUnsub){insightUnsub();insightUnsub=null;}
       clearTimeout(saveTimer);editRevision++;
-      user=next;blocks=[];dirty=false;saveSerial++;resetHistory();selectedHabit='all';insightSection='overview';insightSelectionPending=false;
+      user=next;blocks=[];dirty=false;saveSerial++;clearDocumentSelection();resetHistory();selectedHabit='all';insightSection='overview';insightSelectionPending=false;
       tab=['insights','checklist'].includes(new URLSearchParams(location.search).get('view'))?
         new URLSearchParams(location.search).get('view'):'home';
       updateNav();
@@ -682,7 +683,13 @@
       }
       if(documentRange&&!mod&&!event.altKey&&(key==='backspace'||key==='delete'||key.length===1)){
         event.preventDefault();
-        removeDocumentSelection(key.length===1?event.key:'');
+        if(allBlocksSelected){
+          const id=blocks[0]?.id||uniqueId();
+          pendingUndoFocus={id,offset:0};
+          blocks=[normalizeBlock({id,type:'text',text:key.length===1?event.key:''},0)];
+          clearDocumentSelection();renderChecklist(true);scheduleSave(true);
+          requestAnimationFrame(()=>focusBlockAt(id,blocks[0].text.length));
+        }else removeDocumentSelection(key.length===1?event.key:'');
         return;
       }
       if(!allBlocksSelected&&(key==='backspace'||key==='delete')&&!mod){
