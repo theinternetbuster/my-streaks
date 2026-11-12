@@ -20,6 +20,8 @@ const el = id => document.getElementById(id);
 /* Keep overlays at the document root; iOS otherwise clips them to the dashboard. */
 document.body.appendChild(el('detail'));
 document.body.appendChild(el('accountMenu'));
+document.body.appendChild(el('modalBackdrop'));
+document.body.appendChild(el('calendarEditor'));
 
 let user = null, unsubscribe = null, habits = [], selectedId = null, shownMonth = null, modalEditingId = null;
 let editMode = false, layoutMode = 'cards', themeMode = 'system', profileName = '', unsubscribePrefs = null;
@@ -103,6 +105,7 @@ function smallCalendar(h,info){
 }
 let holdCheckinTimer=null, activeHold=null, suppressCardClicksUntil=0;
 let reorderSortable=null, stagedOrder=[];
+let editorHabitId=null, editorMonth=null, editorBusy=false, editorCloseTimer=null;
 function renderDashboard(){
  const grid=el('habitGrid');
  grid.classList.toggle('calendar-layout',layoutMode==='calendar');
@@ -120,6 +123,59 @@ function renderDashboard(){
      '</div>';
  }).join('');
  el('emptyState').hidden=habits.length!==0;
+}
+
+function openCalendarEditor(id){
+ const h=habits.find(h=>h.id===id);
+ if(!h || layoutMode!=='calendar')return;
+ clearTimeout(editorCloseTimer);
+ editorHabitId=id;editorMonth=new Date(new Date().getFullYear(),new Date().getMonth(),1);
+ el('calendarEditor').classList.remove('closing');
+ el('calendarEditor').hidden=false;
+ document.body.classList.add('calendar-editor-open');
+ renderCalendarEditor();
+}
+function closeCalendarEditor(){
+ const overlay=el('calendarEditor');if(overlay.hidden)return;
+ const finish=()=>{overlay.hidden=true;overlay.classList.remove('closing');document.body.classList.remove('calendar-editor-open');editorHabitId=null;};
+ if(window.matchMedia('(max-width:799px) and (prefers-reduced-motion: no-preference)').matches){
+  overlay.classList.add('closing');clearTimeout(editorCloseTimer);editorCloseTimer=setTimeout(finish,280);
+ }else finish();
+}
+function renderCalendarEditor(){
+ const h=habits.find(h=>h.id===editorHabitId);if(!h){closeCalendarEditor();return;}
+ const info=evaluateHabit(h),m=editorMonth||new Date(new Date().getFullYear(),new Date().getMonth(),1);
+ el('calendarEditorTitle').textContent=h.name;
+ el('editorMonthTitle').textContent=m.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+ el('editorNextMonth').disabled=new Date(m.getFullYear(),m.getMonth()+1,1)>new Date(new Date().getFullYear(),new Date().getMonth(),1);
+ const first=(m.getDay()+6)%7,n=new Date(m.getFullYear(),m.getMonth()+1,0).getDate();
+ let html='';
+ for(let i=0;i<Math.ceil((first+n)/7)*7;i++){
+  const d=new Date(m.getFullYear(),m.getMonth(),i-first+1,12);
+  const inMonth=d.getMonth()===m.getMonth(),key=dateKey(d),state=info.states.get(key);
+  const done=state==='done',freeze=state==='freeze',locked=!inMonth||key>todayKey()||freeze||editorBusy;
+  const cls=[done?'done':'',freeze?'freeze':'',key===todayKey()?'today':'',!inMonth?'outside':''].filter(Boolean).join(' ');
+  const flame=(done||freeze)?'<svg viewBox="0 0 24 24" aria-hidden="true"><use href="#flame-'+(done?'solid':'outline')+'"></use></svg>':'';
+  html+='<button type="button" class="editor-day '+cls+'" data-date="'+key+'" aria-label="'+key+': '+(freeze?'freeze locked':done?'completed':'not completed')+'" aria-pressed="'+done+'" '+(locked?'disabled':'')+'><span>'+d.getDate()+'</span>'+flame+'</button>';
+ }
+ el('editorCalendarDays').innerHTML=html;
+}
+async function toggleEditorDate(key){
+ if(editorBusy || !/^\\d{4}-\\d{2}-\\d{2}$/.test(key) || key>todayKey())return;
+ const id=editorHabitId,h=habits.find(h=>h.id===id);
+ if(!h||evaluateHabit(h).states.get(key)==='freeze')return;
+ editorBusy=true;
+ try{
+  await runTransaction(db,async tx=>{
+   const ref=habitDoc(id),snap=await tx.get(ref);if(!snap.exists())throw Error('Habit no longer exists');
+   const record=normalise({id,...snap.data()});
+   if(evaluateHabit(record).states.get(key)==='freeze')throw Error('Blue freeze dates are locked');
+   const dates=new Set(record.completions);
+   if(dates.has(key))dates.delete(key);else dates.add(key);
+   tx.update(ref,{completions:[...dates].sort()});
+  });
+ }catch(error){showToast(errorMessage(error));}
+ finally{editorBusy=false;if(editorHabitId===id)renderCalendarEditor();}
 }
 function renderReorderList(){
  const list=el('reorderList');
@@ -311,6 +367,7 @@ onAuthStateChanged(auth,u=>{
  unsubscribe=onSnapshot(habitCollection(),snapshot=>{
    habits=snapshot.docs.map(s=>normalise({id:s.id,...s.data()})).sort((a,b)=>(a.order??(1000000+a.createdAt))-(b.order??(1000000+b.createdAt))||a.name.localeCompare(b.name));
    setSync(snapshot.metadata.hasPendingWrites?'Saving…':'Synced',!snapshot.metadata.hasPendingWrites);
+   if(editorHabitId)renderCalendarEditor();
    if(selectedId&&habits.some(h=>h.id===selectedId)){renderDetail();display('detail');}
    else{selectedId=null;renderDashboard();display('dashboard');}
  },err=>{console.error(err);setSync('Sync issue');display('dashboard');showToast(errorMessage(err));});
@@ -440,6 +497,7 @@ document.querySelectorAll('input[name="appearanceMode"]').forEach(input=>input.a
 for(const [buttonId] of accountSections)el(buttonId).addEventListener('click',()=>showAccountSection(buttonId));
 document.addEventListener('keydown',event=>{
  if(event.key==='Escape'){
+   if(!el('calendarEditor').hidden){closeCalendarEditor();return;}
    if(!el('accountMenu').hidden){
      if(!desktopSettings.matches&&el('accountMenu').querySelector('.account-sheet').classList.contains('section-open'))backToAccountHome();
      else setAccountMenu(false);
@@ -464,12 +522,23 @@ grid.addEventListener('click',event=>{
 });
 grid.addEventListener('keydown',event=>{
  if((event.key==='Enter'||event.key===' ')&&event.target.classList.contains('habit-card')){
-   event.preventDefault();openHabit(event.target.dataset.id);
+   event.preventDefault();if(layoutMode==='calendar'&&event.shiftKey)openCalendarEditor(event.target.dataset.id);else openHabit(event.target.dataset.id);
  }
 });
 grid.addEventListener('pointerdown',event=>{
  const card=event.target.closest('.habit-card');
- if(!card||event.button>0||busy||card.dataset.done==='true')return;
+ if(!card||event.button>0||busy)return;
+ if(layoutMode==='calendar'){
+  stopHold();const id=card.dataset.id;
+  activeHold={element:card,id,x:event.clientX,y:event.clientY,pointerId:event.pointerId,startedAt:performance.now(),progressStarted:false,editorHold:true};
+  holdDelayTimer=setTimeout(()=>{
+   if(activeHold?.editorHold&&activeHold.id===id){
+    stopHold(true);suppressCardClicksUntil=Date.now()+900;openCalendarEditor(id);
+   }
+  },480);
+  return;
+ }
+ if(card.dataset.done==='true')return;
  stopHold();
  activeHold={
    element:card,id:card.dataset.id,x:event.clientX,y:event.clientY,
@@ -500,6 +569,11 @@ el('saveReorderBtn').addEventListener('click',saveReorderedHabits);
 el('cancelReorderBtn').addEventListener('click',()=>{if(!desktopSettings.matches)backToAccountHome();else showAccountSection('accountSettingsBtn');});
 el('signOutBtn').addEventListener('click',()=>{setAccountMenu(false);signOut(auth).catch(err=>showToast(errorMessage(err)));});
 el('addHabitBtn').addEventListener('click',()=>showModal());el('emptyAdd').addEventListener('click',()=>showModal());
+el('closeCalendarEditor').addEventListener('click',closeCalendarEditor);
+el('calendarEditorScrim').addEventListener('click',closeCalendarEditor);
+el('editorPrevMonth').addEventListener('click',()=>{editorMonth=new Date(editorMonth.getFullYear(),editorMonth.getMonth()-1,1);renderCalendarEditor();});
+el('editorNextMonth').addEventListener('click',()=>{editorMonth=new Date(editorMonth.getFullYear(),editorMonth.getMonth()+1,1);renderCalendarEditor();});
+el('editorCalendarDays').addEventListener('click',e=>{const b=e.target.closest('.editor-day:not(:disabled)');if(b)toggleEditorDate(b.dataset.date);});
 el('backBtn').addEventListener('click',closeHabit);
 el('detailScrim').addEventListener('click',closeHabit);
 el('checkInBtn').addEventListener('click',checkIn);
@@ -510,7 +584,7 @@ el('modalBackdrop').addEventListener('click',e=>{if(e.target===el('modalBackdrop
 el('deleteHabit').addEventListener('click',removeHabit);
 el('prevMonth').addEventListener('click',()=>{shownMonth=new Date(shownMonth.getFullYear(),shownMonth.getMonth()-1,1);renderDetail();});
 el('nextMonth').addEventListener('click',()=>{shownMonth=new Date(shownMonth.getFullYear(),shownMonth.getMonth()+1,1);renderDetail();});
-el('exportBtn').addEventListener('click',exportBackup);el('accountExport').addEventListener('click',exportBackup);
+el('accountExport').addEventListener('click',exportBackup);
 el('importFile').addEventListener('change',e=>{importBackup(e.target.files[0]);e.target.value='';});
 el('historyBtn').addEventListener('click',()=>{el('historyPanel').hidden=!el('historyPanel').hidden;el('historyDate').value=todayKey();});
 el('historyDate').addEventListener('change',()=>{const h=selectedHabit();const k=el('historyDate').value;el('historyHint').textContent=h?.completions.includes(k)?'Currently completed':'Currently not completed';});
