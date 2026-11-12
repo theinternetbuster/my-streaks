@@ -204,7 +204,7 @@
           (isTask?'<label class="checklist-date-pill '+(b.dueDate?'has-date':'')+'" title="Optional due date"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4m8-4v4"/></svg><span>'+safe(b.dueDate?new Date(b.dueDate+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}):'Date')+'</span><input type="date" data-due-date="'+safe(b.id)+'" value="'+safe(b.dueDate)+'" aria-label="Due date"/></label>':'')+
           '<button type="button" class="checklist-delete" data-delete="'+safe(b.id)+'" aria-label="Delete block">×</button></div>';
       }).join('');
-      $('checklistEmpty').hidden=true;
+      $('checklistEmpty').hidden=false;
       root.querySelectorAll('textarea').forEach(resizeField);
       setupSortable();
     }
@@ -319,6 +319,7 @@
     });
     $('checklistAdd').addEventListener('click',()=>addBlock(blocks.at(-1)?.id||null,'todo'));
     $('checklistAddBottom').addEventListener('click',()=>addBlock(blocks.at(-1)?.id||null,'text'));
+    $('checklistEmpty').addEventListener('click',()=>addBlock(blocks.at(-1)?.id||null,'text'));
     function longestFor(h){
       const done=new Set(h.completions||[]),freeze=new Set(h.freezeDates||[]);
       const all=[...done,...freeze].sort();if(!all.length)return 0;
