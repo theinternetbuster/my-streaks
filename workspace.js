@@ -35,10 +35,10 @@
       });
       document.querySelector('.workspace-bottom-pill')?.setAttribute('data-current',tab);
     }
-    function selectTab(next,{history:true,silent:false}={}){
+    function selectTab(next,{history:pushHistory=true,silent=false}={}){
       if(!['home','insights','checklist'].includes(next)||!user)return;
       tab=next;updateNav();closeSlash();
-      if(history){
+      if(pushHistory){
         const url='/my-streaks/'+(tab==='home'?'':'?view='+tab);
         if(location.pathname+location.search!==url)window.history.pushState({workspace:tab},'',url);
       }
