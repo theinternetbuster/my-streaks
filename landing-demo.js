@@ -155,6 +155,7 @@
     }
     grid.innerHTML=cells;
   }
+  story.classList.add('js-story-ready');
   const reveals=[...story.querySelectorAll('.story-reveal')];
   const motion=window.matchMedia('(prefers-reduced-motion: reduce)');
   let observer=null;
