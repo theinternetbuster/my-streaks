@@ -16,7 +16,7 @@
   <link rel="icon" type="image/svg+xml" href="app-icon.svg" />
   <meta name="description" content="A private streak tracker with weekly freezes and cloud sync." />
   <title>My Streaks</title>
-  <link rel="stylesheet" href="styles.css?v=20261111-v10" />
+  <link rel="stylesheet" href="styles.css?v=20261111-v11" />
 </head>
 <body>
   <svg class="svg-defs" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs>
@@ -41,7 +41,7 @@
         <div id="habitEditToolbar" class="habit-edit-toolbar" hidden></div>
         <div id="habitGrid" class="habit-grid"></div>
         <div id="emptyState" class="empty-state" hidden><div>🌱</div><h2>Your first streak starts here.</h2><p>Add a habit, then check in when you've completed it.</p><button id="emptyAdd" class="primary-btn">＋ Add a habit</button></div>
-        <div class="bottom-note">Two freezes each Monday, per habit. Only completed days increase your streak. 🔥</div>
+        <footer class="site-footer"><div class="site-footer-inner"><span class="footer-brand"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#flame-solid"></use></svg> My Streaks</span><span class="footer-caption">Small steps. Lasting progress.</span><span class="footer-info">Made for consistency, one day at a time.</span></div></footer>
       </section>
       <section id="detail" role="dialog" aria-modal="true" aria-label="Habit streak calendar" hidden><div class="detail-scrim" id="detailScrim"></div>
         <div class="babbel-panel">
@@ -60,7 +60,7 @@
           <div class="weekdays" aria-hidden="true"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div>
           <div id="calendarDays" class="calendar-grid" aria-label="Habit completion and streak freeze calendar"></div>
           <div class="freeze-box"><div class="freeze-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#flame-outline"></use></svg></div><div><h3 id="freezeTitle"></h3><p>Every Monday you get 2 Streak Freezes. They protect your streak if you miss a day.</p></div></div>
-          <div class="detail-actions"><button id="checkInBtn" class="primary-btn checkin">✓ Done today</button><button id="editHabitBtn" class="secondary-btn" aria-label="Edit habit">Edit habit</button></div>
+          <div class="detail-actions"><button id="editHabitBtn" class="secondary-btn" aria-label="Edit habit">Edit habit</button></div>
           <div class="detail-footer"><button id="historyBtn" class="text-btn">Edit check-in history</button></div>
           <div id="historyPanel" class="history-panel" hidden><h3>Adjust a check-in</h3><p class="muted small">Pick a date to mark complete or incomplete. This updates your synced history.</p><input id="historyDate" type="date" /><button id="toggleHistoryBtn" class="secondary-btn">Toggle completion</button><p id="historyHint" class="small muted"></p></div>
         </div>
@@ -159,6 +159,6 @@
   })();
   </script>
   <style>.loading-recovery{max-width:330px;text-align:center;line-height:1.5;margin-top:15px}.loading-recovery button{background:#ff5a12;color:#fff;border:0;border-radius:12px;padding:13px 20px;font:700 15px system-ui;cursor:pointer}</style>
-  <script type="module" src="app.js?v=20261111-v10"></script>
+  <script type="module" src="app.js?v=20261111-v11"></script>
 </body>
 </html>
