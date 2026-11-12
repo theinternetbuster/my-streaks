@@ -802,3 +802,19 @@ html[data-theme="light"] .checklist-page .checklist-note-editor::selection{
   background:rgba(255,125,70,.25);color:inherit;
 }
 .checklist-page .checklist-note-editor{tab-size:2;line-height:1.75}
+
+/* Stable Notion-style multi-block selection: text-only overlays, not whole row fills. */
+.checklist-selection-layer{
+  position:fixed;inset:0;z-index:115;pointer-events:none;
+  contain:layout style;
+}
+.checklist-selection-rect{
+  position:absolute;pointer-events:none;
+  background:rgba(75,140,225,.35);
+  border-radius:2px;
+}
+html[data-theme="light"] .checklist-selection-rect{background:rgba(54,122,216,.28)}
+.checklist-slash-menu{
+  position:fixed!important;
+  z-index:650!important;
+}
