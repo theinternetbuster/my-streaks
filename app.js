@@ -92,7 +92,7 @@ function evaluateHabit(habit,asOf=todayKey()){
      spent++;states.set(key,'freeze');
    }else if(completed.has(key)){
      streak=active?streak+1:1;active=true;lastCompleted=key;states.set(key,'done');
-   }else if(key===asOf){
+   }else if(key===asOf && asOf===todayKey()){
      states.set(key,'today');
    }else{
      active=false;streak=0;states.set(key,'missed');
@@ -154,7 +154,7 @@ function smallCalendar(h,info){
 let holdCheckinTimer=null, activeHold=null, suppressCardClicksUntil=0;
 let reorderSortable=null, stagedOrder=[];
 let editorHabitId=null, editorMonth=null, editorBusy=false, editorCloseTimer=null;
-const editorPreview=new Map(), editorSaveTimers=new Map();
+const editorPreview=new Map(), editorSaveTimers=new Map(),editorInflight=new Set();
 function renderDashboard(){
  const grid=el('habitGrid');
  grid.classList.toggle('calendar-layout',layoutMode==='calendar');
@@ -229,9 +229,11 @@ function toggleEditorDate(key){
 }
 async function saveEditorDate(id,key){
  const previewKey=id+':'+key;
- if(!editorPreview.has(previewKey))return;
+ if(!editorPreview.has(previewKey) || editorInflight.has(previewKey))return;
  const desired=editorPreview.get(previewKey);
  editorSaveTimers.delete(previewKey);
+ editorInflight.add(previewKey);
+ let saved=false;
  try{
   await runTransaction(db,async tx=>{
    const ref=habitDoc(id),snap=await tx.get(ref);
@@ -242,13 +244,17 @@ async function saveEditorDate(id,key){
    if(desired)dates.add(key);else dates.delete(key);
    tx.update(ref,{completions:[...dates].sort()});
   });
+  saved=true;
  }catch(error){showToast(errorMessage(error));}
  finally{
-  if(editorPreview.get(previewKey)===desired){
-   editorPreview.delete(previewKey);
-  }else{
+  editorInflight.delete(previewKey);
+  if(!saved)editorPreview.delete(previewKey);
+  else if(editorPreview.get(previewKey)!==desired){
    clearTimeout(editorSaveTimers.get(previewKey));
    editorSaveTimers.set(previewKey,setTimeout(()=>saveEditorDate(id,key),100));
+  }else{
+   const current=habits.find(h=>h.id===id);
+   if(current && current.completions.includes(key)===desired)editorPreview.delete(previewKey);
   }
   if(editorHabitId===id)renderCalendarEditor();
  }
@@ -440,6 +446,13 @@ onAuthStateChanged(auth,u=>{
  },err=>console.error('Settings sync issue',err));
  unsubscribe=onSnapshot(habitCollection(),snapshot=>{
    habits=snapshot.docs.map(s=>normalise({id:s.id,...s.data()})).sort((a,b)=>(a.order??(1000000+a.createdAt))-(b.order??(1000000+b.createdAt))||a.name.localeCompare(b.name));
+   for(const [previewKey,desired] of editorPreview){
+     const divider=previewKey.lastIndexOf(':'),id=previewKey.slice(0,divider),date=previewKey.slice(divider+1);
+     const matched=habits.find(h=>h.id===id);
+     if(matched && matched.completions.includes(date)===desired && !editorInflight.has(previewKey) && !editorSaveTimers.has(previewKey)){
+       editorPreview.delete(previewKey);
+     }
+   }
    for(const record of snapshot.docs){
      const raw=record.data();
      if(!Array.isArray(raw.freezeDates) || (raw.freezeProcessedThrough && raw.freezeProcessedThrough<yesterdayKey())){
