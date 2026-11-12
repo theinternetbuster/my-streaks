@@ -156,9 +156,16 @@ async function saveReorderedHabits(){
    if(!desktopSettings.matches)backToAccountHome();
  });
 }
-function stopHold(){
- clearTimeout(holdCheckinTimer);holdCheckinTimer=null;
- if(activeHold?.element)activeHold.element.classList.remove('holding');
+let holdDelayTimer=null;
+function stopHold(cancelClick=false){
+ clearTimeout(holdDelayTimer);
+ clearTimeout(holdCheckinTimer);
+ holdDelayTimer=null;holdCheckinTimer=null;
+ const held=activeHold;
+ if(held?.element)held.element.classList.remove('holding');
+ if(held && (cancelClick || held.progressStarted || performance.now()-held.startedAt>190)){
+   suppressCardClicksUntil=Date.now()+750;
+ }
  activeHold=null;
 }
 async function checkInHabit(id){
@@ -441,20 +448,30 @@ grid.addEventListener('pointerdown',event=>{
  const card=event.target.closest('.habit-card');
  if(!card||event.button>0||busy||card.dataset.done==='true')return;
  stopHold();
- activeHold={element:card,id:card.dataset.id,x:event.clientX,y:event.clientY,pointerId:event.pointerId};
- card.classList.add('holding');
- holdCheckinTimer=setTimeout(async()=>{
-   if(!activeHold||activeHold.id!==card.dataset.id)return;
-   const id=activeHold.id;stopHold();
-   suppressCardClicksUntil=Date.now()+850;
-   await checkInHabit(id);
- },850);
+ activeHold={
+   element:card,id:card.dataset.id,x:event.clientX,y:event.clientY,
+   pointerId:event.pointerId,startedAt:performance.now(),progressStarted:false
+ };
+ holdDelayTimer=setTimeout(()=>{
+   const held=activeHold;
+   if(!held||held.element!==card)return;
+   held.progressStarted=true;
+   card.classList.add('holding');
+   holdCheckinTimer=setTimeout(async()=>{
+     if(!activeHold||activeHold.element!==card)return;
+     const id=activeHold.id;
+     stopHold(true);
+     if(navigator.vibrate)navigator.vibrate(12);
+     await checkInHabit(id);
+   },720);
+ },190);
 });
 grid.addEventListener('pointermove',event=>{
  if(!activeHold||activeHold.pointerId!==event.pointerId)return;
- if(Math.hypot(event.clientX-activeHold.x,event.clientY-activeHold.y)>13)stopHold();
+ if(Math.hypot(event.clientX-activeHold.x,event.clientY-activeHold.y)>13)stopHold(true);
 });
-for(const type of ['pointerup','pointercancel','pointerleave'])grid.addEventListener(type,stopHold);
+grid.addEventListener('pointerup',()=>stopHold(false));
+for(const type of ['pointercancel','pointerleave'])grid.addEventListener(type,()=>stopHold(true));
 grid.addEventListener('contextmenu',event=>{if(event.target.closest('.habit-card'))event.preventDefault();});
 el('saveReorderBtn').addEventListener('click',saveReorderedHabits);
 el('cancelReorderBtn').addEventListener('click',()=>{if(!desktopSettings.matches)backToAccountHome();else showAccountSection('accountSettingsBtn');});
