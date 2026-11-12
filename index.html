@@ -16,7 +16,7 @@
   <link rel="icon" type="image/svg+xml" href="app-icon.svg" />
   <meta name="description" content="A private streak tracker with weekly freezes and cloud sync." />
   <title>My Streaks</title>
-  <link rel="stylesheet" href="styles.css?v=20261111-fix18" />
+  <link rel="stylesheet" href="styles.css?v=20261111-story19" />
   <style id="critical-landing-styles">
 /* Critical inline fallback is scoped to logged-out view so signed-in themes are unchanged. */
 [hidden]{display:none!important}
@@ -292,7 +292,7 @@ body:has(#loginPanel:not([hidden])) .shell{padding-top:48px}
   <div id="app">
     <header class="topbar">
       <a class="brand brand-home" href="/my-streaks/" aria-label="My Streaks — Home"><div class="brand-icon"><svg class="brand-flame" viewBox="0 0 24 24" aria-hidden="true"><use href="#flame-solid"></use></svg></div><div><strong>My Streaks</strong><small>Stay consistent, your way.</small></div></a>
-      <div class="top-actions"><span id="syncState" class="sr-only" aria-live="polite">Connecting…</span><button type="button" id="headerLoginBtn" class="header-login-btn" hidden>Log in <span aria-hidden="true">↗</span></button><button id="userBtn" class="avatar-button account-trigger" aria-label="Open account and settings" aria-expanded="false" hidden><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.1 3.2-7 8-7s8 2.9 8 7"/></svg><span id="userGreeting">Hi!</span></button></div>
+      <div class="top-actions"><span id="syncState" class="sr-only" aria-live="polite">Connecting…</span><a id="headerExploreLink" class="header-explore-link" href="#features" hidden>Explore features <span aria-hidden="true">↗</span></a><button id="userBtn" class="avatar-button account-trigger" aria-label="Open account and settings" aria-expanded="false" hidden><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.1 3.2-7 8-7s8 2.9 8 7"/></svg><span id="userGreeting">Hi!</span></button></div>
     </header>
     <main class="shell">
       <section id="loginPanel" class="landing-panel" hidden>
@@ -310,6 +310,77 @@ body:has(#loginPanel:not([hidden])) .shell{padding-top:48px}
           <div class="landing-film-bottom"><span class="landing-film-index" id="demoSceneIndex">01 / 05</span><div class="landing-film-meta"><strong id="demoSceneLabel">Your streaks, all in one place</strong><div class="landing-film-progress"><span id="demoTimeline"></span></div></div><button type="button" id="demoMotionToggle" class="demo-motion-toggle" aria-label="Pause demonstration">Ⅱ</button></div>
         </div>
         <div class="landing-bottom-line"><span>BUILT FOR REAL LIFE</span><span>Small wins. Strong habits. No pressure to be perfect.</span></div>
+        <div class="landing-scroll-story" id="features">
+          <div class="story-opening story-reveal">
+            <span class="story-eyebrow">THE LITTLE THINGS ADD UP</span>
+            <h2>A better way to <em>show up.</em></h2>
+            <p>A thoughtful space for the habits that matter to you. Simple to use. Satisfying to come back to.</p>
+            <div class="story-scroll-cue" aria-hidden="true"><span></span> SCROLL TO EXPLORE</div>
+          </div>
+          <section class="story-feature story-feature-checkin" aria-labelledby="storyCheckinTitle">
+            <div class="story-feature-copy story-reveal">
+              <span class="story-index">01 <span></span> THE CHECK-IN</span>
+              <h3 id="storyCheckinTitle">Small action.<br/><em>Big momentum.</em></h3>
+              <p>A simple hold is all it takes. Watch the flame fill and your streak grow—one day at a time.</p>
+              <span class="story-feature-tag"><span class="story-tag-icon">✦</span> Made to feel rewarding</span>
+            </div>
+            <div class="story-feature-visual story-reveal story-visual-checkin">
+              <div class="story-ambient story-ambient-orange"></div>
+              <div class="story-tilt-card story-checkin-display" aria-label="Illustration of a completed habit">
+                <div class="story-checkin-heading"><span><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#flame-solid"/></svg> MY HABITS</span><span class="story-mock-dots">···</span></div>
+                <div class="story-mock-habit story-mock-habit-muted"><span>Morning Walk</span><strong><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#flame-solid"/></svg> 12</strong></div>
+                <div class="story-mock-habit story-mock-habit-lit"><span>German</span><strong><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#flame-solid"/></svg> <span class="story-tally">29</span></strong><i class="story-habit-flare"></i></div>
+                <div class="story-checkin-badge"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#flame-solid"/></svg> Checked in today <span>✓</span></div>
+              </div>
+              <span class="story-floating-note story-floating-note-one">STREAK +1</span>
+            </div>
+          </section>
+          <section class="story-feature story-feature-calendar" aria-labelledby="storyCalendarTitle">
+            <div class="story-feature-visual story-reveal story-visual-calendar">
+              <div class="story-ambient story-ambient-blue"></div>
+              <div class="story-tilt-card story-calendar-display">
+                <div class="story-calendar-heading"><div><span>YOUR HISTORY</span><h4>Every day, a little progress.</h4></div><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#flame-solid"/></svg></div>
+                <div class="story-calendar-month">November 2026 <span>‹ &nbsp;&nbsp; ›</span></div>
+                <div class="story-calendar-weekdays"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div>
+                <div class="story-calendar-grid" id="storyCalendarGrid" aria-hidden="true"></div>
+                <div class="story-calendar-key"><span><i class="orange"></i> Completed</span><span><i class="blue"></i> Protected</span><span><i class="empty"></i> Your own pace</span></div>
+              </div>
+              <span class="story-floating-note story-floating-note-two">YOUR HISTORY, AT A GLANCE</span>
+            </div>
+            <div class="story-feature-copy story-reveal">
+              <span class="story-index">02 <span></span> THE BIG PICTURE</span>
+              <h3 id="storyCalendarTitle">See how far<br/><em>you’ve come.</em></h3>
+              <p>Orange flames for completed days, blue for protection, and open space for everything in between. Your story, all in one view.</p>
+              <span class="story-feature-tag"><span class="story-tag-icon">✦</span> A calendar that tells your story</span>
+            </div>
+          </section>
+          <section class="story-feature story-feature-freeze" aria-labelledby="storyFreezeTitle">
+            <div class="story-feature-copy story-reveal">
+              <span class="story-index">03 <span></span> ROOM FOR REAL LIFE</span>
+              <h3 id="storyFreezeTitle">Consistency,<br/><em>without perfection.</em></h3>
+              <p>Life gets busy. Two weekly streak freezes help protect your progress on missed days, so one imperfect day doesn’t have to end your momentum.</p>
+              <span class="story-feature-tag"><span class="story-tag-icon story-blue-spark">✦</span> Built for the days you miss, too</span>
+            </div>
+            <div class="story-feature-visual story-reveal story-visual-freeze">
+              <div class="story-ambient story-ambient-blue"></div>
+              <div class="story-tilt-card story-freeze-display">
+                <div class="story-freeze-top"><div class="story-freeze-symbol"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#flame-outline"/></svg></div><span>STREAK PROTECTION</span></div>
+                <h4>Keep your<br/>momentum alive.</h4>
+                <div class="story-freeze-track"><span class="story-freeze-day"><small>MON</small><svg viewBox="0 0 24 24"><use href="#flame-solid"/></svg></span><span class="story-freeze-day"><small>TUE</small><svg viewBox="0 0 24 24"><use href="#flame-solid"/></svg></span><span class="story-freeze-day frozen"><small>WED</small><svg viewBox="0 0 24 24"><use href="#flame-outline"/></svg></span><span class="story-freeze-day"><small>THU</small><svg viewBox="0 0 24 24"><use href="#flame-solid"/></svg></span><span class="story-freeze-day"><small>FRI</small><svg viewBox="0 0 24 24"><use href="#flame-solid"/></svg></span></div>
+                <div class="story-freeze-footer"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#flame-outline"/></svg><span>A freeze kept your streak going.</span></div>
+              </div>
+              <span class="story-floating-note story-floating-note-three">A LITTLE GRACE GOES A LONG WAY</span>
+            </div>
+          </section>
+          <div class="story-finale story-reveal">
+            <div class="story-finale-flame"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#flame-solid"/></svg></div>
+            <span class="story-eyebrow">YOUR PACE. YOUR PROGRESS.</span>
+            <h2>One day at a time.<br/><em>That’s enough.</em></h2>
+            <p>No pressure to be perfect. Just a better place to keep going.</p>
+            <a href="#app" class="story-back-top">Back to top <span aria-hidden="true">↑</span></a>
+          </div>
+        </div>
+
       </section>
       <section id="loadingPanel" class="loading-panel"><div class="spinner"></div><p>Getting your streaks ready…</p></section>
       <section id="dashboard" hidden>
@@ -433,7 +504,7 @@ body:has(#loginPanel:not([hidden])) .shell{padding-top:48px}
   })();
   </script>
   <style>.loading-recovery{max-width:330px;text-align:center;line-height:1.5;margin-top:15px}.loading-recovery button{background:#ff5a12;color:#fff;border:0;border-radius:12px;padding:13px 20px;font:700 15px system-ui;cursor:pointer}</style>
-  <script defer src="landing-demo.js?v=20261111-fix18"></script>
-  <script type="module" src="app.js?v=20261111-fix18"></script>
+  <script defer src="landing-demo.js?v=20261111-story19"></script>
+  <script type="module" src="app.js?v=20261111-story19"></script>
 </body>
 </html>
