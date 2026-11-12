@@ -874,3 +874,22 @@ html[data-theme="light"] .checklist-date-quick button:hover,
 html[data-theme="light"] .checklist-date-quick button.selected{background:#fff0e7;color:#a64a22}
 html[data-theme="light"] .checklist-date-custom{border-color:#e6e8ed}
 html[data-theme="light"] .checklist-date-custom input{background:#f7f8fa;border-color:#d9dee8;color-scheme:light}
+
+/* Integrated compact calendar for @Today and @Tomorrow task mentions. */
+.checklist-date-menu{width:298px;max-height:min(520px,calc(100dvh - 24px));overflow:auto}
+.checklist-date-cal-header{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:1px 0 9px}
+.checklist-date-cal-header strong{font-size:12px}
+.checklist-date-cal-header>div{display:flex;gap:3px}
+.checklist-date-cal-header button{display:grid;place-items:center;height:29px;width:29px;border-radius:7px;font-size:22px!important}
+.checklist-date-cal-header button:hover{background:#414148}
+.checklist-date-weekdays,.checklist-date-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px}
+.checklist-date-weekdays{margin-bottom:4px}
+.checklist-date-weekdays span{color:#9999a5;text-align:center;font-size:10px}
+.checklist-date-grid .checklist-date-day{height:32px;width:100%;border-radius:7px;font-size:11px!important;padding:0}
+.checklist-date-grid .checklist-date-day:hover{background:#424047}
+.checklist-date-grid .checklist-date-day.outside{opacity:.36}
+.checklist-date-grid .checklist-date-day.today{outline:1px solid #f58b55;outline-offset:-1px}
+.checklist-date-grid .checklist-date-day.selected{background:#ff6828!important;color:white!important}
+html[data-theme="light"] .checklist-date-cal-header button:hover,
+html[data-theme="light"] .checklist-date-grid .checklist-date-day:hover{background:#f3e9e3}
+html[data-theme="light"] .checklist-date-weekdays span{color:#929bad}
