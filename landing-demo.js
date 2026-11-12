@@ -2,12 +2,14 @@
    No Firebase access, account data, or actual check-in actions occur here. */
 (() => {
   const root=document.getElementById('loginPanel');
-  const screen=document.getElementById('demoScreen');
+  const rail=document.getElementById('demoRail');
+  const stage=document.getElementById('demoStage');
+  const film=root?.querySelector('.landing-film');
   const label=document.getElementById('demoSceneLabel');
   const indexText=document.getElementById('demoSceneIndex');
-  const progress=document.getElementById('demoTimeline');
+  const nav=document.getElementById('demoTimelineNav');
   const toggle=document.getElementById('demoMotionToggle');
-  if(!root||!screen||!label||!indexText||!progress||!toggle)return;
+  if(!root||!rail||!stage||!film||!label||!indexText||!nav||!toggle)return;
 
   const reduce=window.matchMedia('(prefers-reduced-motion: reduce)');
   const steps=[
@@ -86,53 +88,108 @@
       default:return demoTop()+settings();
     }
   }
-  let current=0,timer=null,runId=0,manualPause=false,onscreen=true,shown=false;
-  function shouldRun(){return !root.hidden&&!manualPause&&!reduce.matches&&onscreen&&!document.hidden;}
-  function stop(){clearTimeout(timer);timer=null;runId++;progress.style.animation='none';}
-  function show(index,animate=true){
-    current=index;
-    screen.classList.remove('demo-scene-visible');
-    screen.innerHTML=render(index);
-    label.textContent=steps[index].name;
-    indexText.textContent=String(index+1).padStart(2,'0')+' / 05';
-    screen.dataset.scene=String(index);
-    // Force the transition into the new scene.
-    void screen.offsetWidth;
-    if(animate)screen.classList.add('demo-scene-visible');
-    else screen.classList.add('demo-scene-visible');
-    progress.style.animation='none';
-    if(shouldRun()){
-      void progress.offsetWidth;
-      progress.style.animation='demo-timeline '+steps[index].duration+'ms linear forwards';
+  // Pre-render all five exact UI scenes, then move the slides like Apple's
+  // highlights filmstrip. Inactive slides stay visible in the side gutters.
+  const buttons=[...nav.querySelectorAll('.demo-timeline-dot')];
+  rail.innerHTML=steps.map((step,i)=>
+    '<article class="demo-carousel-card" data-slide="'+i+'" aria-hidden="true">'+
+    '<div class="demo-screen">'+render(i)+'</div></article>'
+  ).join('');
+  const slides=[...rail.querySelectorAll('.demo-carousel-card')];
+  buttons.forEach(button=>{
+    button.innerHTML='<span class="demo-dot-fill"></span>';
+    button.addEventListener('click',()=>{
+      const index=Number(button.dataset.slide);
+      if(!Number.isInteger(index)||index<0||index>=steps.length)return;
+      current=index;elapsed=0;ended=false;pausedByUser=false;
+      updateSlides();
+      syncPlayback();
+    });
+  });
+
+  let current=0,elapsed=0,timer=null,startTime=0,playing=false,
+      ended=false,pausedByUser=false,onscreen=true,forcedPlay=false;
+  const now=()=>performance.now();
+  const canPlay=()=>!ended&&!pausedByUser&&(!reduce.matches||forcedPlay)&&
+    !root.hidden&&!document.hidden&&onscreen;
+  function stopClock(){
+    if(playing)elapsed+=Math.max(0,now()-startTime);
+    playing=false;
+    if(timer!==null){clearTimeout(timer);timer=null;}
+  }
+  function updateSlides(){
+    const len=slides.length;
+    slides.forEach((slide,i)=>{
+      const delta=i-current;
+      const slot=delta===0?'active':delta===-1?'prev':
+        delta===1?'next':delta<0?'far-prev':'far-next';
+      slide.dataset.slot=slot;
+      slide.classList.toggle('is-active',delta===0);
+      slide.setAttribute('aria-hidden',String(delta!==0));
+      slide.inert=delta!==0;
+    });
+    buttons.forEach((button,i)=>{
+      button.classList.toggle('is-active',i===current);
+      button.classList.toggle('is-complete',i<current);
+      if(i===current)button.setAttribute('aria-current','step');
+      else button.removeAttribute('aria-current');
+      button.style.setProperty('--scene-length',steps[i].duration+'ms');
+    });
+    label.textContent=steps[current].name;
+    indexText.textContent=String(current+1).padStart(2,'0')+' / 05';
+    film.dataset.activeSlide=String(current);
+  }
+  function syncPlayback(){
+    stopClock();
+    if(elapsed>=steps[current].duration&&!ended){
+      elapsed=0;
+      if(current===steps.length-1){ended=true;}
+      else{current++;updateSlides();}
+    }
+    playing=canPlay();
+    film.classList.toggle('demo-is-paused',!playing);
+    film.classList.toggle('demo-is-finished',ended);
+    toggle.textContent=ended?'↻':playing?'Ⅱ':'▶';
+    toggle.setAttribute('aria-label',ended?'Replay demonstration':playing?'Pause demonstration':'Play demonstration');
+    toggle.title=ended?'Replay':playing?'Pause':'Play';
+    if(playing){
+      startTime=now();
+      timer=setTimeout(advance,Math.max(20,steps[current].duration-elapsed));
     }
   }
-  function tick(){
-    if(!shouldRun())return;
-    show((current+1)%steps.length);
-    const token=++runId;
-    timer=setTimeout(()=>{if(token===runId)tick();},steps[current].duration);
-  }
-  function reconcile(){
-    const running=shouldRun();
-    toggle.setAttribute('aria-label',running?'Pause demonstration':'Play demonstration');
-    toggle.textContent=running?'Ⅱ':'▶';
-    if(!shown){shown=true;show(0,false);}
-    stop();
-    if(running){
-      show(current,false);
-      const token=++runId;
-      timer=setTimeout(()=>{if(token===runId)tick();},steps[current].duration);
+  function advance(){
+    stopClock();
+    if(current===steps.length-1){
+      ended=true;elapsed=steps[current].duration;
+    }else{
+      current++;elapsed=0;updateSlides();
     }
+    syncPlayback();
   }
-  toggle.addEventListener('click',()=>{manualPause=!manualPause;reconcile();});
-  reduce.addEventListener?.('change',reconcile);
-  document.addEventListener('visibilitychange',reconcile);
-  const io='IntersectionObserver' in window ? new IntersectionObserver(entries=>{
-    onscreen=entries.some(e=>e.isIntersecting);reconcile();
-  },{threshold:.05}):null;
-  if(io)io.observe(root);
-  new MutationObserver(reconcile).observe(root,{attributes:true,attributeFilter:['hidden']});
-  reconcile();
+  toggle.addEventListener('click',()=>{
+    if(ended){
+      current=0;elapsed=0;ended=false;pausedByUser=false;
+      if(reduce.matches)forcedPlay=true;
+      updateSlides();
+    }else{
+      pausedByUser=!pausedByUser;
+      if(!pausedByUser&&reduce.matches)forcedPlay=true;
+    }
+    syncPlayback();
+  });
+  reduce.addEventListener?.('change',syncPlayback);
+  document.addEventListener('visibilitychange',syncPlayback);
+  if('IntersectionObserver' in window){
+    const observer=new IntersectionObserver(entries=>{
+      const visible=entries.some(entry=>entry.isIntersecting);
+      if(visible!==onscreen){onscreen=visible;syncPlayback();}
+    },{threshold:.05});
+    observer.observe(stage);
+  }
+  new MutationObserver(syncPlayback).observe(root,{attributes:true,attributeFilter:['hidden']});
+  updateSlides();
+  syncPlayback();
+
 })();
 
 
