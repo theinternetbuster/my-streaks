@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <base href="/my-streaks/" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)" />
   <meta name="theme-color" content="#f7f8fc" media="(prefers-color-scheme: light)" />
@@ -15,7 +16,7 @@
   <link rel="icon" type="image/svg+xml" href="app-icon.svg" />
   <meta name="description" content="A private streak tracker with weekly freezes and cloud sync." />
   <title>My Streaks</title>
-  <link rel="stylesheet" href="styles.css?v=20261111-v6-final" />
+  <link rel="stylesheet" href="styles.css?v=20261111-v7" />
 </head>
 <body>
   <svg class="svg-defs" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs>
@@ -71,26 +72,29 @@
       <div id="accountScrim" class="account-scrim" aria-hidden="true"></div>
       <section class="account-sheet">
         <div class="account-navigation">
+          <h1 class="desktop-settings-heading">Profile and Settings</h1>
           <header class="account-topbar"><span class="account-handle" aria-hidden="true"></span><button type="button" id="closeAccountMenu" class="babbel-close account-dismiss" aria-label="Close profile and settings">×</button></header>
           <div class="account-profile"><h1 id="accountGreeting">My account</h1><p id="accountEmail"></p></div>
           <nav class="account-links" aria-label="Profile and settings">
-            <button type="button" id="accountSettingsBtn" class="account-link" aria-expanded="false"><span class="account-link-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M20 12a8 8 0 0 0-.2-1.8l2-1.5-2-3.5-2.4 1A9 9 0 0 0 14 4.3L13.7 2h-3.4L10 4.3A9 9 0 0 0 6.6 6.2l-2.4-1-2 3.5 2 1.5a8 8 0 0 0 0 3.6l-2 1.5 2 3.5 2.4-1A9 9 0 0 0 10 19.7l.3 2.3h3.4l.3-2.3a9 9 0 0 0 3.4-1.9l2.4 1 2-3.5-2-1.5A8 8 0 0 0 20 12z"/></svg></span><span>Account &amp; settings</span><span class="account-chevron">›</span></button>
+            <button type="button" id="accountSettingsBtn" class="account-link" aria-expanded="false"><span class="account-link-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M20 12a8 8 0 0 0-.2-1.8l2-1.5-2-3.5-2.4 1A9 9 0 0 0 14 4.3L13.7 2h-3.4L10 4.3A9 9 0 0 0 6.6 6.2l-2.4-1-2 3.5 2 1.5a8 8 0 0 0 0 3.6l-2 1.5 2 3.5 2.4-1A9 9 0 0 0 10 19.7l.3 2.3h3.4l.3-2.3a9 9 0 0 0 3.4-1.9l2.4 1 2-3.5-2-1.5A8 8 0 0 0 20 12z"/></svg></span><span>Settings</span><span class="account-chevron">›</span></button>
             <button type="button" id="accountAppearanceBtn" class="account-link" aria-expanded="false"><span class="account-link-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3v18"/><path d="M12 3a9 9 0 0 1 0 18" fill="currentColor" stroke="none"/></svg></span><span>Appearance</span><span class="account-chevron">›</span></button>
             <button type="button" id="accountReorderBtn" class="account-link" aria-expanded="false"><span class="account-link-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h13M4 12h13M4 17h13M20 6v12m-3-3 3 3 3-3" /></svg></span><span>Rearrange habits</span><span class="account-chevron">›</span></button>
             <button type="button" id="accountBackupBtn" class="account-link" aria-expanded="false"><span class="account-link-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 17v3h16v-3"/></svg></span><span>Backup &amp; restore</span><span class="account-chevron">›</span></button>
           </nav>
         </div>
         <div id="accountSubpage" class="account-subpage" aria-hidden="true">
-          <div class="account-subheader"><button type="button" id="accountSubBack" class="account-back-button" aria-label="Back to profile"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg></button><h2 id="accountSubTitle">Account &amp; settings</h2><span></span></div>
+          <div class="account-subheader"><button type="button" id="accountSubBack" class="account-back-button" aria-label="Back to profile"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg></button><h2 id="accountSubTitle">Settings</h2><span></span></div>
           <div class="account-subcontent">
             <div id="accountSettingsDetail" class="account-detail" hidden>
-              <h3>My profile</h3>
-              <form id="profileForm" class="profile-form"><label for="profileName">Display name</label><div class="profile-input-row"><input id="profileName" type="text" maxlength="50" autocomplete="nickname" placeholder="Your name" required/><button type="submit">Save</button></div><small>This changes your name in My Streaks, not in your Google account.</small></form>
-              <h3>Account information</h3>
-              <div class="account-info-row"><strong>Signed-in email</strong><span id="settingsEmail"></span></div>
-              <div class="account-info-row"><strong>Account type</strong><span>Personal · Free</span></div>
-              <div class="account-info-row"><strong>Streak protection</strong><span>2 freezes each Monday</span></div>
-              <button type="button" id="signOutBtn" class="account-sign-out">Sign out</button>
+              <h3>Account</h3>
+              <div class="account-info-row"><span id="settingsEmail"></span></div>
+              <div class="account-info-row"><span>You have <strong>full access</strong></span></div>
+              <button type="button" id="signOutBtn" class="account-sign-out">Log out</button>
+              <h3 class="settings-section-heading">General</h3>
+              <div class="account-info-row"><span>Streak protection</span><span>2 freezes every Monday</span></div>
+              <div class="account-info-row"><span>Appearance</span><span>Adjust in Appearance settings</span></div>
+              <h3 class="settings-section-heading">About</h3>
+              <div class="account-info-row"><span>My Streaks</span><span>Personal habit tracker</span></div>
             </div>
             <div id="accountAppearanceDetail" class="account-detail" hidden>
               <h3>Appearance</h3><p class="account-explanation">Choose how My Streaks looks on this device and your other signed-in devices.</p>
@@ -137,6 +141,6 @@
   })();
   </script>
   <style>.loading-recovery{max-width:330px;text-align:center;line-height:1.5;margin-top:15px}.loading-recovery button{background:#ff5a12;color:#fff;border:0;border-radius:12px;padding:13px 20px;font:700 15px system-ui;cursor:pointer}</style>
-  <script type="module" src="app.js?v=20261111-v6-final"></script>
+  <script type="module" src="app.js?v=20261111-v7"></script>
 </body>
 </html>
