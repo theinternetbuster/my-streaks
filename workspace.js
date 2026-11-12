@@ -379,7 +379,7 @@
           '<div class="checklist-line-inner">'+icon+
           '<div class="checklist-field-group"><div class="checklist-editor" contenteditable="true" role="textbox" aria-multiline="true" data-block-id="'+safe(b.id)+'" data-placeholder="'+safe(placeholder)+'" spellcheck="true">'+safe(b.text)+'</div>'+
           (details?'<div class="checklist-details">'+details+'</div>':'')+'</div></div>'+
-          (isTask?'<label class="checklist-date-pill '+(b.dueDate?'has-date':'')+'" title="Optional due date"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4m8-4v4"/></svg><span>'+safe(b.dueDate?new Date(b.dueDate+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}):'Date')+'</span><input type="date" data-due-date="'+safe(b.id)+'" value="'+safe(b.dueDate)+'" aria-label="Due date"/></label>':'')+
+          (isTask&&b.dueDate?'<button type="button" class="checklist-date-pill has-date" data-date-badge="'+safe(b.id)+'" aria-label="Edit due date"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4m8-4v4"/></svg><span>'+safe(dateLabel(b.dueDate))+'</span></button>':'')+
           '<button type="button" class="checklist-delete" data-delete="'+safe(b.id)+'" aria-label="Delete block">×</button></div>';
       }).join('');
       $('checklistEmpty').hidden=true;
@@ -433,6 +433,7 @@
       scheduleSave();
       const match=b.text.match(/^\/([a-z0-9 -]*)$/i);
       if(match)openSlash(b.id,match[1].trim());else if(slashFor===b.id)closeSlash();
+      suggestDate(field,b);
     });
     root.addEventListener('keydown',e=>{
       const note=e.target.closest('.checklist-note-editor[data-note-id]');
@@ -670,12 +671,7 @@
         if(t){t.checked=subcheck.checked;subcheck.closest('.checklist-subtask')?.classList.toggle('is-done',t.checked);scheduleSave(true);}
         return;
       }
-      const dateInput=e.target.closest('[data-due-date]');
-      if(dateInput){
-        const block=blocks.find(x=>x.id===dateInput.dataset.dueDate);
-        if(block){block.dueDate=dateInput.value;renderChecklist(true);scheduleSave(true);}
-        return;
-      }
+
       const input=e.target.closest('[data-toggle-check]');if(!input)return;
       const b=blocks.find(x=>x.id===input.dataset.toggleCheck);if(!b)return;
       b.checked=input.checked;input.closest('.checklist-line').classList.toggle('is-done',b.checked);scheduleSave(true);
@@ -690,7 +686,10 @@
       const deletion=target.closest('[data-delete]');
       const collapse=target.closest('[data-collapse]');
       const insert=target.closest('[data-insert]');
-      if(insert){
+      const dateBadge=target.closest('[data-date-badge]');
+      if(dateBadge){
+        openDateMenu(dateBadge.dataset.dateBadge,dateBadge);
+      }else if(insert){
         const before=blocks.find(b=>b.id===insert.dataset.insert);
         if(before){
           addBlock(before.id,'text','');
