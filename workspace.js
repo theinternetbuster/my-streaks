@@ -166,7 +166,9 @@
       return b;
     }
     function focusBlock(id,atEnd=true){
-      const field=[...root.querySelectorAll('[contenteditable="true"][data-block-id]')].find(x=>x.dataset.blockId===id);
+      const field=id.startsWith('note:')?
+        root.querySelector('.checklist-note-editor[data-note-id="'+id.slice(5)+'"]'):
+        [...root.querySelectorAll('[contenteditable="true"][data-block-id]')].find(x=>x.dataset.blockId===id);
       if(field){
         field.focus();
         if(atEnd){
@@ -195,8 +197,22 @@
     function applyCommand(type){
       const id=slashFor;
       if(!id)return;
-      const b=blocks.find(x=>x.id===id);
+      const isNote=id.startsWith('note:');
+      const b=blocks.find(x=>x.id===(isNote?id.slice(5):id));
       if(!b){closeSlash();return;}
+      if(isNote){
+        const editor=root.querySelector('.checklist-note-editor[data-note-id="'+b.id+'"]');
+        const offset=editor?editorCaretOffset(editor):b.note.length;
+        const before=b.note.slice(0,offset);
+        const lineStart=before.lastIndexOf('\n')+1;
+        const prefixes={bullet:'• ',todo:'☐ ',todoNote:'☐ ',todoList:'☐ ',toggle:'▸ ',h1:'# ',h2:'## ',text:''};
+        const prefix=prefixes[type]??'';
+        const slash=before.slice(lineStart).startsWith('/');
+        b.note=b.note.slice(0,slash?lineStart:offset)+prefix+b.note.slice(offset);
+        closeSlash();renderChecklist(true);scheduleSave(true);
+        requestAnimationFrame(()=>focusEditableAt(root.querySelector('.checklist-note-editor[data-note-id="'+b.id+'"]'),(slash?lineStart:offset)+prefix.length));
+        return;
+      }
       b.type=normalizedType(type);
       b.text=b.text.replace(/^\/[a-z0-9 -]*/i,'');
       b.checked=false;
@@ -281,13 +297,10 @@
         if(b){
           b.note=(note.innerText||note.textContent||'').replace(/\n$/,'').slice(0,10000);
           const pos=editorCaretOffset(note),before=b.note.slice(0,pos);
-          const command=before.match(/(^|\n)\/(bullet|bulleted|b)$/i);
-          if(command){
-            const beginning=pos-command[0].length+(command[1]?1:0);
-            b.note=b.note.slice(0,beginning)+'• '+b.note.slice(pos);
-            note.textContent=b.note;
-            focusEditableAt(note,beginning+2);
-          }
+          const line=before.slice(before.lastIndexOf('\n')+1);
+          const command=line.match(/^\/([a-z0-9 -]*)$/i);
+          if(command)openSlash('note:'+b.id,command[1].trim());
+          else if(slashFor==='note:'+b.id)closeSlash();
           scheduleSave();
         }
         return;
@@ -302,6 +315,16 @@
     root.addEventListener('keydown',e=>{
       const note=e.target.closest('.checklist-note-editor[data-note-id]');
       if(note&&!e.isComposing){
+        if(slashFor==='note:'+note.dataset.noteId&&!$('checklistSlashMenu').hidden){
+          if(e.key==='ArrowDown'||e.key==='ArrowUp'){
+            e.preventDefault();slashSelected=(slashSelected+(e.key==='ArrowDown'?1:-1)+slashMatches.length)%slashMatches.length;
+            $('checklistSlashMenu').querySelectorAll('[data-command]').forEach((el,i)=>el.classList.toggle('selected',i===slashSelected));return;
+          }
+          if(e.key==='Enter'){
+            e.preventDefault();if(slashMatches[slashSelected])applyCommand(slashMatches[slashSelected].id);return;
+          }
+          if(e.key==='Escape'){e.preventDefault();closeSlash();return;}
+        }
         if(handleChecklistArrow(e,note))return;
         if(e.key==='Enter'&&!e.shiftKey){
           const block=blocks.find(b=>b.id===note.dataset.noteId);
