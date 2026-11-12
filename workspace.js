@@ -242,9 +242,9 @@
       if(note){const b=blocks.find(x=>x.id===note.dataset.noteId);if(b){b.note=note.value;resizeField(note);scheduleSave();}return;}
       const field=e.target.closest('[contenteditable="true"][data-block-id]');if(!field)return;
       const b=blocks.find(b=>b.id===field.dataset.blockId);if(!b)return;
-      b.text=(field.innerText||field.textContent||'').replace(/\\n$/,'').slice(0,5000);
+      b.text=(field.innerText||field.textContent||'').replace(/\n$/,'').slice(0,5000);
       scheduleSave();
-      const match=b.text.match(/^\\/([a-z0-9 -]*)$/i);
+      const match=b.text.match(/^\/([a-z0-9 -]*)$/i);
       if(match)openSlash(b.id,match[1].trim());else if(slashFor===b.id)closeSlash();
     });
     root.addEventListener('keydown',e=>{
@@ -324,8 +324,8 @@
       const field=event.target.closest('.checklist-editor');
       if(!field)return;
       event.preventDefault();
-      const plain=(event.clipboardData?.getData('text/plain')||'').replace(/\\r/g,'');
-      const parts=plain.split('\\n');
+      const plain=(event.clipboardData?.getData('text/plain')||'').replace(/\r/g,'');
+      const parts=plain.split('\n');
       if(parts.length===1){
         document.execCommand('insertText',false,parts[0]);return;
       }
