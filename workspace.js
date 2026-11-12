@@ -804,6 +804,21 @@
           Object.assign(mark.style,{left:rect.left+'px',top:rect.top+'px',width:rect.width+'px',height:rect.height+'px'});
           selectionLayer.appendChild(mark);
         }
+        // Nested notes and subtasks belong to the document selection too.
+        if(allBlocksSelected||(i>range.start&&i<range.end)){
+          const line=root.querySelector('.checklist-line[data-id="'+blocks[i].id+'"]');
+          for(const nested of line?.querySelectorAll('.checklist-note-editor,[data-subtask-text]')||[]){
+            const nestedRange=document.createRange();
+            nestedRange.selectNodeContents(nested);
+            for(const box of nestedRange.getClientRects()){
+              if(!box.width||!box.height)continue;
+              const mark=document.createElement('div');
+              mark.className='checklist-selection-rect';
+              Object.assign(mark.style,{left:box.left+'px',top:box.top+'px',width:box.width+'px',height:box.height+'px'});
+              selectionLayer.appendChild(mark);
+            }
+          }
+        }
       }
     }
     function clearDocumentSelection(){
