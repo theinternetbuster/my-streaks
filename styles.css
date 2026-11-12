@@ -383,3 +383,33 @@ html[data-theme="light"] body.detail-mode .secondary-btn{background:#fff;color:#
 html[data-theme="light"] .mini-day.done{background:#fff0df;color:#9b511c}
 html[data-theme="light"] .mini-day.freeze{background:#e4f0ff;color:#3464a2}
 html[data-theme="light"] .mini-month,html[data-theme="light"] .toolbar-hint{color:#707986}
+
+
+/* Touch polish and consistent calendar colors in both manual appearance modes */
+.habit-card{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+.habit-card h3{overflow-wrap:anywhere}
+.habit-grid.editing .habit-card{touch-action:none}
+.habit-edit-toolbar[hidden]{display:none!important}
+html[data-theme="light"] .mini-day.done svg{color:#ff5a12;fill:#ff5a12}
+html[data-theme="light"] .mini-day.freeze svg{color:#327dde;fill:none}
+html[data-theme="light"] body.detail-mode .calendar-day.done{background:#fff0df}
+html[data-theme="light"] body.detail-mode .calendar-day.done .day-flame{color:#ef6419;fill:#ef6419}
+html[data-theme="light"] body.detail-mode .calendar-day.freeze{background:#e4f0ff}
+html[data-theme="light"] body.detail-mode .calendar-day.freeze .day-flame{color:#327dde;fill:none}
+html[data-theme="light"] body.detail-mode .freeze-box{background:#e5f0ff;color:#234b80}
+html[data-theme="light"] body.detail-mode .freeze-box h3{color:#214e8b}
+html[data-theme="light"] body.detail-mode .freeze-box p{color:#41699b}
+html[data-theme="light"] body.detail-mode .freeze-icon{color:#327dde}
+html[data-theme="dark"] body.detail-mode .calendar-day.done{background:#572006}
+html[data-theme="dark"] body.detail-mode .calendar-day.done .day-flame{color:#ff5005;fill:#ff5005}
+html[data-theme="dark"] body.detail-mode .calendar-day.freeze{background:#183e80}
+html[data-theme="dark"] body.detail-mode .calendar-day.freeze .day-flame{color:#428de9;fill:none}
+html[data-theme="dark"] body.detail-mode .freeze-box{background:#193d80}
+html[data-theme="dark"] body.detail-mode .freeze-box h3{color:#e1ecff}
+html[data-theme="dark"] body.detail-mode .freeze-box p{color:#dce6fb}
+html[data-theme="dark"] body.detail-mode .freeze-icon{color:#458fee}
+html[data-theme="light"] .account-backup-detail button,html[data-theme="light"] .account-backup-detail .import-label{background:#f3f3f3;color:#252525;border-color:#ddd}
+html[data-theme="dark"] .account-backup-detail button,html[data-theme="dark"] .account-backup-detail .import-label{background:#262626;color:#fafafa;border-color:#444}
+html[data-theme="dark"] .account-info-row{border-color:#444}
+html[data-theme="light"] .account-info-row{border-color:#ddd}
+html[data-theme="light"] .account-info-row span{color:#626a75}
