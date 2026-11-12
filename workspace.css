@@ -468,3 +468,78 @@ html[data-theme="light"] .checklist-page .checklist-line:first-child textarea[da
  .checklist-page .checklist-delete{opacity:0}
  .checklist-page .checklist-new{padding:8px 11px}
 }
+
+/* Notion-inspired true writing canvas — the editor, not a row of form inputs. */
+.insight-tab-symbol{display:inline-flex;align-items:center;justify-content:center;vertical-align:middle}
+.insight-tab-symbol svg{width:20px;height:20px;display:block}
+.insight-freeze-flame{width:31px;height:31px;stroke:#79b8ff!important;fill:none!important;stroke-width:1.45}
+.insight-stat-icon.icy .insight-freeze-flame{stroke:#79b8ff!important;fill:none!important}
+.insight-milestone .insight-freeze-flame{stroke:#79b8ff!important;fill:none!important}
+.checklist-page .workspace-eyebrow,.checklist-page>.workspace-heading{display:none}
+.checklist-page .checklist-document{padding-top:20px!important}
+.checklist-page .checklist-document-top{
+  border:0;margin-bottom:30px;padding-bottom:0;
+}
+.checklist-page .checklist-document-top>span:first-child{
+  font-family:'Outfit','DM Sans',sans-serif;font-size:30px;font-weight:800;
+  letter-spacing:-.04em;color:#f8f8fb;
+}
+.checklist-page .checklist-document-top>span:first-child svg{height:26px;width:26px}
+.checklist-page #checklistSyncStatus{font-size:12px}
+.checklist-page .checklist-blocks{padding-top:6px;min-height:55vh}
+.checklist-page .checklist-line{overflow:visible;align-items:flex-start;position:relative;padding:2px 4px;margin:0 -4px}
+.checklist-page .checklist-line-inner{min-width:0;flex:1}
+.checklist-page .checklist-line-tools{
+  display:flex;flex:none;align-items:center;gap:1px;min-width:47px;
+  margin-left:-55px;padding-top:2px;
+}
+.checklist-page .checklist-insert,
+.checklist-page .checklist-handle{
+  border:0;background:transparent;color:#8f8f98;cursor:pointer;
+  border-radius:5px;flex:none;height:27px;width:24px;
+  display:grid;place-items:center;padding:0;font-size:22px;line-height:1;opacity:0;
+}
+.checklist-page .checklist-handle{font-size:20px}
+.checklist-page .checklist-line:hover .checklist-insert,
+.checklist-page .checklist-line:focus-within .checklist-insert,
+.checklist-page .checklist-line:hover .checklist-handle,
+.checklist-page .checklist-line:focus-within .checklist-handle{opacity:.8}
+.checklist-page .checklist-insert:hover,.checklist-page .checklist-handle:hover{background:#34343b;color:#fff}
+.checklist-page .checklist-editor{
+  display:block;width:100%;min-height:31px;padding:3px 0 4px;
+  font:450 16px/1.65 'DM Sans',sans-serif;letter-spacing:-.005em;
+  color:#e8e8ec;background:transparent;border:0;box-shadow:none;outline:0;
+  overflow-wrap:anywhere;white-space:pre-wrap;word-break:break-word;cursor:text;
+  -webkit-user-select:text;user-select:text;
+}
+.checklist-page .checklist-editor:empty:before{
+  content:attr(data-placeholder);pointer-events:none;color:transparent;
+}
+.checklist-page .checklist-line:first-child .checklist-editor:empty:before,
+.checklist-page .checklist-editor:focus:empty:before{color:#7d7d86}
+.checklist-page .checklist-type-h1 .checklist-editor{font:800 29px/1.33 'Outfit',sans-serif}
+.checklist-page .checklist-type-h2 .checklist-editor{font:750 23px/1.4 'Outfit',sans-serif}
+.checklist-page .checklist-type-bullet .checklist-editor{min-height:30px}
+.checklist-page .checklist-line.is-done .checklist-editor{text-decoration:line-through;color:#8c8c97}
+.checklist-page .checklist-field-group{min-width:0}
+.checklist-page .checklist-new,.checklist-page .checklist-help{display:none}
+.checklist-page .checklist-document-top{padding-left:0}
+html[data-theme="light"] .checklist-page .checklist-document-top>span:first-child{color:#202536}
+html[data-theme="light"] .checklist-page .checklist-editor{color:#293041}
+html[data-theme="light"] .checklist-page .checklist-editor:empty:before{color:transparent}
+html[data-theme="light"] .checklist-page .checklist-line:first-child .checklist-editor:empty:before,
+html[data-theme="light"] .checklist-page .checklist-editor:focus:empty:before{color:#9da2ac}
+html[data-theme="light"] .checklist-page .checklist-insert:hover,
+html[data-theme="light"] .checklist-page .checklist-handle:hover{background:#eceef1;color:#242938}
+@media(max-width:799px){
+  .checklist-page .checklist-document{padding:30px 18px 100px!important}
+  .checklist-page .checklist-document-top{margin-bottom:34px}
+  .checklist-page .checklist-document-top>span:first-child{font-size:26px}
+  .checklist-page .checklist-line-tools{margin-left:-24px;min-width:23px;width:23px}
+  .checklist-page .checklist-insert{opacity:.55;width:22px;height:29px;font-size:23px}
+  .checklist-page .checklist-handle{display:none}
+  .checklist-page .checklist-editor{font-size:16px;line-height:1.65;min-height:34px}
+  .checklist-page .checklist-blocks{padding-left:20px;padding-right:4px}
+  .checklist-page .checklist-line{margin-bottom:2px}
+  body.workspace-signed-in:has(.checklist-editor:focus) .workspace-bottom-nav{display:none!important}
+}
