@@ -180,7 +180,29 @@ async function quickDeleteHabit(id){
   if(!confirm(`Delete “${h.name}” and its streak history? This cannot be undone.`))return;
   await withBusy(async()=>{await deleteDoc(habitDoc(id));showToast('Habit deleted');});
 }
-function openHabit(id){selectedId=id;shownMonth=new Date(new Date().getFullYear(),new Date().getMonth(),1);renderDetail();display('detail');el('detail').scrollTop=0;}
+let detailCloseTimer=null;
+function openHabit(id){
+ clearTimeout(detailCloseTimer);
+ el('detail').classList.remove('closing');
+ selectedId=id;
+ shownMonth=new Date(new Date().getFullYear(),new Date().getMonth(),1);
+ renderDetail();
+ display('detail');
+ el('detail').querySelector('.babbel-panel').scrollTop=0;
+}
+function closeHabit(){
+ if(el('detail').hidden)return;
+ if(window.matchMedia('(min-width:800px), (prefers-reduced-motion: reduce)').matches){
+   selectedId=null;renderDashboard();display('dashboard');return;
+ }
+ el('detail').classList.add('closing');
+ detailCloseTimer=setTimeout(()=>{
+   selectedId=null;
+   renderDashboard();
+   display('dashboard');
+   el('detail').classList.remove('closing');
+ },300);
+}
 function renderDetail(){
   const h=selectedHabit();if(!h){selectedId=null;display('dashboard');return;}
   const data=evaluateHabit(h);
@@ -284,26 +306,44 @@ function showAccountSection(which){
  el('accountSubpage').scrollTop=0;
  if(!desktopSettings.matches)el('accountSubBack').focus({preventScroll:true});
 }
+let accountCloseTimer=null, subpageBackTimer=null;
 function backToAccountHome(){
  if(desktopSettings.matches)return;
- el('accountMenu').querySelector('.account-sheet').classList.remove('section-open');
+ clearTimeout(subpageBackTimer);
+ const sheet=el('accountMenu').querySelector('.account-sheet');
+ sheet.classList.remove('section-open');
  el('accountSubpage').setAttribute('aria-hidden','true');
- for(const [btn,detail] of accountSections){el(btn).setAttribute('aria-expanded','false');el(detail).hidden=true;}
+ subpageBackTimer=setTimeout(()=>{
+   for(const [btn,detail] of accountSections){el(btn).setAttribute('aria-expanded','false');el(detail).hidden=true;}
+ },325);
  el('accountSettingsBtn').focus({preventScroll:true});
 }
 function setAccountMenu(open){
- el('accountMenu').hidden=!open;
- document.body.classList.toggle('account-open',open);
- el('userBtn').setAttribute('aria-expanded',String(open));
+ clearTimeout(accountCloseTimer);
+ const account=el('accountMenu'),sheet=account.querySelector('.account-sheet');
  if(open){
+   account.hidden=false;
+   sheet.classList.remove('closing');
+   document.body.classList.add('account-open');
+   el('userBtn').setAttribute('aria-expanded','true');
    if(desktopSettings.matches)showAccountSection('accountSettingsBtn');
    else{
-     el('accountMenu').querySelector('.account-sheet').classList.remove('section-open');
+     sheet.classList.remove('section-open');
      el('accountSubpage').setAttribute('aria-hidden','true');
      for(const [btn,detail] of accountSections){el(btn).setAttribute('aria-expanded','false');el(detail).hidden=true;}
    }
    el('closeAccountMenu').focus({preventScroll:true});
- }else if(user&&!el('userBtn').hidden){el('userBtn').focus({preventScroll:true});}
+ }else{
+   el('userBtn').setAttribute('aria-expanded','false');
+   const finish=()=>{
+     account.hidden=true;sheet.classList.remove('closing');
+     document.body.classList.remove('account-open');
+   };
+   if(!desktopSettings.matches&&!window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+     sheet.classList.add('closing');accountCloseTimer=setTimeout(finish,290);
+   }else finish();
+   if(user&&!el('userBtn').hidden)el('userBtn').focus({preventScroll:true});
+ }
 }
 el('userBtn').addEventListener('click',()=>setAccountMenu(el('accountMenu').hidden));
 el('closeAccountMenu').addEventListener('click',()=>setAccountMenu(false));
@@ -365,7 +405,6 @@ el('saveReorderBtn').addEventListener('click',saveReorderedHabits);
 el('cancelReorderBtn').addEventListener('click',()=>{if(!desktopSettings.matches)backToAccountHome();else showAccountSection('accountSettingsBtn');});
 el('signOutBtn').addEventListener('click',()=>{setAccountMenu(false);signOut(auth).catch(err=>showToast(errorMessage(err)));});
 el('addHabitBtn').addEventListener('click',()=>showModal());el('emptyAdd').addEventListener('click',()=>showModal());
-function closeHabit(){selectedId=null;renderDashboard();display('dashboard');}
 el('backBtn').addEventListener('click',closeHabit);
 el('detailScrim').addEventListener('click',closeHabit);
 el('checkInBtn').addEventListener('click',checkIn);
