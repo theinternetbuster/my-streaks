@@ -131,8 +131,15 @@
       return b;
     }
     function focusBlock(id,atEnd=true){
-      const field=[...root.querySelectorAll('textarea[data-block-id]')].find(x=>x.dataset.blockId===id);
-      if(field){field.focus();if(atEnd)field.setSelectionRange(field.value.length,field.value.length);}
+      const field=[...root.querySelectorAll('[contenteditable="true"][data-block-id]')].find(x=>x.dataset.blockId===id);
+      if(field){
+        field.focus();
+        if(atEnd){
+          const range=document.createRange(),sel=window.getSelection();
+          range.selectNodeContents(field);range.collapse(false);
+          sel.removeAllRanges();sel.addRange(range);
+        }
+      }
     }
     function closeSlash(){
       slashFor=null;$('checklistSlashMenu').hidden=true;
@@ -146,7 +153,7 @@
       menu.innerHTML='<div class="checklist-slash-label">TURN INTO</div>'+slashMatches.map((t,i)=>
         '<button type="button" role="menuitem" data-command="'+t.id+'" class="'+(!i?'selected':'')+'"><span class="checklist-cmd-icon">'+safe(t.symbol)+'</span><span><strong>'+safe(t.title)+'</strong><small>'+safe(t.subtitle)+'</small></span><kbd>/'+t.id+'</kbd></button>'
       ).join('');
-      const field=[...root.querySelectorAll('textarea')].find(x=>x.dataset.blockId===id);
+      const field=[...root.querySelectorAll('[contenteditable="true"][data-block-id]')].find(x=>x.dataset.blockId===id);
       if(field){const rect=field.getBoundingClientRect();menu.style.left=Math.min(Math.max(12,rect.left),Math.max(12,window.innerWidth-325))+'px';menu.style.top=Math.min(window.innerHeight-280,Math.max(12,rect.bottom+8))+'px';}
       menu.hidden=false;
     }
@@ -200,9 +207,9 @@
           details=modeSelector+(mode==='notes'?notes:nested);
         }
         return '<div class="checklist-line checklist-type-'+b.type+(b.checked?' is-done':'')+(b.collapsed?' is-collapsed':'')+'" data-id="'+safe(b.id)+'">'+
-          '<button type="button" class="checklist-handle" aria-label="Drag to rearrange">⠿</button>'+
+          '<div class="checklist-line-tools"><button type="button" class="checklist-insert" data-insert="'+safe(b.id)+'" aria-label="Insert block">+</button><button type="button" class="checklist-handle" aria-label="Drag to rearrange">⠿</button></div>'+
           '<div class="checklist-line-inner">'+icon+
-          '<div class="checklist-field-group"><textarea data-block-id="'+safe(b.id)+'" rows="1" maxlength="5000" spellcheck="true" placeholder="'+placeholder+'">'+safe(b.text)+'</textarea>'+
+          '<div class="checklist-field-group"><div class="checklist-editor" contenteditable="true" role="textbox" aria-multiline="true" data-block-id="'+safe(b.id)+'" data-placeholder="'+safe(placeholder)+'" spellcheck="true">'+safe(b.text)+'</div>'+
           (details?'<div class="checklist-details">'+details+'</div>':'')+'</div></div>'+
           (isTask?'<label class="checklist-date-pill '+(b.dueDate?'has-date':'')+'" title="Optional due date"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4m8-4v4"/></svg><span>'+safe(b.dueDate?new Date(b.dueDate+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}):'Date')+'</span><input type="date" data-due-date="'+safe(b.id)+'" value="'+safe(b.dueDate)+'" aria-label="Due date"/></label>':'')+
           '<button type="button" class="checklist-delete" data-delete="'+safe(b.id)+'" aria-label="Delete block">×</button></div>';
@@ -233,10 +240,11 @@
       if(subtask){const block=blocks.find(b=>b.id===subtask.dataset.subtaskText);const sub=block?.subtasks.find(t=>t.id===subtask.dataset.subtaskId);if(sub){sub.text=subtask.value;scheduleSave();}return;}
       const note=e.target.closest('textarea[data-note-id]');
       if(note){const b=blocks.find(x=>x.id===note.dataset.noteId);if(b){b.note=note.value;resizeField(note);scheduleSave();}return;}
-      const field=e.target.closest('textarea[data-block-id]');if(!field)return;
+      const field=e.target.closest('[contenteditable="true"][data-block-id]');if(!field)return;
       const b=blocks.find(b=>b.id===field.dataset.blockId);if(!b)return;
-      b.text=field.value;resizeField(field);scheduleSave();
-      const match=field.value.match(/^\/([a-z0-9 -]*)$/i);
+      b.text=(field.innerText||field.textContent||'').replace(/\\n$/,'').slice(0,5000);
+      scheduleSave();
+      const match=b.text.match(/^\\/([a-z0-9 -]*)$/i);
       if(match)openSlash(b.id,match[1].trim());else if(slashFor===b.id)closeSlash();
     });
     root.addEventListener('keydown',e=>{
@@ -250,7 +258,7 @@
           requestAnimationFrame(()=>root.querySelector('[data-subtask-id="'+sub.id+'"][data-subtask-text]')?.focus());
         }return;
       }
-      const field=e.target.closest('textarea[data-block-id]');if(!field)return;
+      const field=e.target.closest('[contenteditable="true"][data-block-id]');if(!field)return;
       const id=field.dataset.blockId,b=blocks.find(x=>x.id===id);
       if(!b)return;
       if(slashFor===id&&!$('checklistSlashMenu').hidden){
@@ -264,12 +272,75 @@
         if(e.key==='Escape'){e.preventDefault();closeSlash();return;}
       }
       if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){
-        e.preventDefault();closeSlash();addBlock(id,['todo','todoNote','todoList'].includes(b.type)?'todo':b.type==='bullet'?'bullet':'text');return;
+        e.preventDefault();closeSlash();
+        const offset=editorCaretOffset(field);
+        const before=b.text.slice(0,offset),after=b.text.slice(offset);
+        b.text=before;
+        const nextType=['todo','todoNote','todoList'].includes(b.type)?(before.trim()?'todo':'text'):b.type==='bullet'?(before.trim()?'bullet':'text'):'text';
+        if(!before.trim()&&nextType==='text')b.type='text';
+        const newBlock=addBlock(id,nextType,after);
+        requestAnimationFrame(()=>focusBlock(newBlock.id,false));
+        return;
       }
-      if(e.key==='Backspace'&&!field.value&&blocks.length>1){
-        e.preventDefault();const index=blocks.findIndex(x=>x.id===id);blocks.splice(index,1);
-        renderChecklist(true);scheduleSave(true);requestAnimationFrame(()=>focusBlock(blocks[Math.max(0,index-1)].id));return;
+      if(e.key==='Backspace'&&!e.isComposing&&editorCaretOffset(field)===0&&window.getSelection()?.isCollapsed&&blocks.length>1){
+        e.preventDefault();
+        const index=blocks.findIndex(x=>x.id===id);
+        if(index>0){
+          const previous=blocks[index-1],position=previous.text.length;
+          previous.text+=b.text;
+          blocks.splice(index,1);renderChecklist(true);scheduleSave(true);
+          requestAnimationFrame(()=>focusBlockAt(previous.id,position));
+        }else if(!b.text){
+          blocks.splice(index,1);renderChecklist(true);scheduleSave(true);
+          requestAnimationFrame(()=>focusBlock(blocks[0].id,false));
+        }
+        return;
       }
+    });
+    function editorCaretOffset(field){
+      const selection=window.getSelection();
+      if(!selection||!selection.rangeCount||!field.contains(selection.anchorNode))return (field.textContent||'').length;
+      const range=selection.getRangeAt(0).cloneRange();
+      range.selectNodeContents(field);range.setEnd(selection.anchorNode,selection.anchorOffset);
+      return range.toString().length;
+    }
+    function focusBlockAt(id,offset){
+      const field=[...root.querySelectorAll('.checklist-editor')].find(x=>x.dataset.blockId===id);
+      if(!field)return;
+      field.focus();
+      const walker=document.createTreeWalker(field,NodeFilter.SHOW_TEXT);
+      let node,remaining=offset;
+      while((node=walker.nextNode())){
+        if(remaining<=node.textContent.length)break;
+        remaining-=node.textContent.length;
+      }
+      const range=document.createRange(),sel=window.getSelection();
+      if(node)range.setStart(node,Math.max(0,remaining));
+      else range.selectNodeContents(field);
+      range.collapse(true);sel.removeAllRanges();sel.addRange(range);
+    }
+    // Strip pasted HTML, preserving clean text and preventing unexpected formatting.
+    root.addEventListener('paste',event=>{
+      const field=event.target.closest('.checklist-editor');
+      if(!field)return;
+      event.preventDefault();
+      const plain=(event.clipboardData?.getData('text/plain')||'').replace(/\\r/g,'');
+      const parts=plain.split('\\n');
+      if(parts.length===1){
+        document.execCommand('insertText',false,parts[0]);return;
+      }
+      const block=blocks.find(b=>b.id===field.dataset.blockId);if(!block)return;
+      const at=editorCaretOffset(field),original=(field.innerText||field.textContent||'');
+      block.text=original.slice(0,at)+parts.shift();
+      let afterId=block.id;
+      for(const line of parts){
+        const next=normalizeBlock({id:uniqueId(),type:'text',text:line},blocks.length);
+        blocks.splice(blocks.findIndex(b=>b.id===afterId)+1,0,next);
+        afterId=next.id;
+      }
+      blocks.find(b=>b.id===afterId).text+=original.slice(at);
+      renderChecklist(true);scheduleSave(true);
+      requestAnimationFrame(()=>focusBlockAt(afterId,blocks.find(b=>b.id===afterId).text.length-original.slice(at).length));
     });
     root.addEventListener('change',e=>{
       const subcheck=e.target.closest('[data-subtask-check]');
@@ -296,7 +367,14 @@
       const mode=target.closest('[data-details-mode]');
       const deletion=target.closest('[data-delete]');
       const collapse=target.closest('[data-collapse]');
-      if(remove){
+      const insert=target.closest('[data-insert]');
+      if(insert){
+        const before=blocks.find(b=>b.id===insert.dataset.insert);
+        if(before){
+          const made=addBlock(before.id,'text','/');
+          requestAnimationFrame(()=>openSlash(made.id,''));
+        }
+      }else if(remove){
         const block=blocks.find(x=>x.id===remove.dataset.subtaskRemove);
         if(block){block.subtasks=block.subtasks.filter(x=>x.id!==remove.dataset.subtaskId);renderChecklist(true);scheduleSave(true);}
       }else if(add){
