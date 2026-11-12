@@ -16,7 +16,7 @@
   <link rel="icon" type="image/svg+xml" href="app-icon.svg" />
   <meta name="description" content="A private streak tracker with weekly freezes and cloud sync." />
   <title>My Streaks</title>
-  <link rel="stylesheet" href="styles.css?v=20261111-v11" />
+  <link rel="stylesheet" href="styles.css?v=20261111-v12" />
 </head>
 <body>
   <svg class="svg-defs" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs>
@@ -41,13 +41,13 @@
         <div id="habitEditToolbar" class="habit-edit-toolbar" hidden></div>
         <div id="habitGrid" class="habit-grid"></div>
         <div id="emptyState" class="empty-state" hidden><div>🌱</div><h2>Your first streak starts here.</h2><p>Add a habit, then check in when you've completed it.</p><button id="emptyAdd" class="primary-btn">＋ Add a habit</button></div>
-        <footer class="site-footer"><div class="site-footer-inner"><span class="footer-brand"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#flame-solid"></use></svg> My Streaks</span><div class="footer-progress"><div class="footer-progress-label"><span>Today's progress</span><strong id="footerProgressCount">0 of 0 habits</strong></div><div class="footer-progress-track" role="progressbar" aria-label="Habits completed today" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="footerProgressTrack"><span id="footerProgressFill"></span></div></div><span class="footer-message">One day at a time.</span></div></footer>
+        <footer class="site-footer"><div class="site-footer-inner"><span class="footer-identity">My Streaks <span class="footer-copyright">© 2026</span></span><span class="footer-message">Progress at your own pace.</span><span class="footer-version">A little consistency goes a long way.</span></div></footer>
       </section>
       <section id="detail" role="dialog" aria-modal="true" aria-label="Habit streak calendar" hidden><div class="detail-scrim" id="detailScrim"></div>
         <div class="babbel-panel">
           <div class="babbel-top-actions">
             <span id="detailHabitName" class="detail-habit-label"></span>
-            <button id="backBtn" class="babbel-close" aria-label="Close streak calendar">×</button>
+            <div class="detail-top-controls"><button id="editHabitBtn" class="detail-edit-icon" type="button" aria-label="Edit habit" title="Edit habit"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5 4 4M4 20l4.7-1 10.8-10.8a2.1 2.1 0 0 0-3-3L5.7 16Z"/></svg></button><button id="backBtn" class="babbel-close" aria-label="Close streak calendar">×</button></div>
           </div>
           <div class="babbel-heading">
             <h1 id="detailStreak" class="babbel-streak-title"></h1>
@@ -60,9 +60,7 @@
           <div class="weekdays" aria-hidden="true"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div>
           <div id="calendarDays" class="calendar-grid" aria-label="Habit completion and streak freeze calendar"></div>
           <div class="freeze-box"><div class="freeze-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#flame-outline"></use></svg></div><div><h3 id="freezeTitle"></h3><p>Every Monday you get 2 Streak Freezes. They protect your streak if you miss a day.</p></div></div>
-          <div class="detail-actions"><button id="editHabitBtn" class="secondary-btn" aria-label="Edit habit">Edit habit</button></div>
-          <div class="detail-footer"><button id="historyBtn" class="text-btn">Edit check-in history</button></div>
-          <div id="historyPanel" class="history-panel" hidden><h3>Adjust a check-in</h3><p class="muted small">Pick a date to mark complete or incomplete. This updates your synced history.</p><input id="historyDate" type="date" /><button id="toggleHistoryBtn" class="secondary-btn">Toggle completion</button><p id="historyHint" class="small muted"></p></div>
+          
         </div>
       </section>
     </main>
@@ -159,6 +157,6 @@
   })();
   </script>
   <style>.loading-recovery{max-width:330px;text-align:center;line-height:1.5;margin-top:15px}.loading-recovery button{background:#ff5a12;color:#fff;border:0;border-radius:12px;padding:13px 20px;font:700 15px system-ui;cursor:pointer}</style>
-  <script type="module" src="app.js?v=20261111-v11"></script>
+  <script type="module" src="app.js?v=20261111-v12"></script>
 </body>
 </html>
