@@ -1368,3 +1368,40 @@ html[data-theme="light"] .detail-edit-icon{background:#f3f3f5;color:#343941;bord
 }
 .calendar-layout .habit-card{cursor:default!important}
 .calendar-layout .habit-card:focus-visible{outline:2px solid #ff854e;outline-offset:3px}
+
+/* v15: iOS mini-calendar long press without number selection; cleaner mobile footer */
+#habitGrid.calendar-layout .habit-card,
+#habitGrid.calendar-layout .habit-card *,
+#habitGrid.calendar-layout .habit-card::before,
+#habitGrid.calendar-layout .habit-card::after{
+  -webkit-user-select:none!important;
+  user-select:none!important;
+  -webkit-touch-callout:none!important;
+  -webkit-tap-highlight-color:transparent;
+}
+#habitGrid.calendar-layout .habit-card{
+  cursor:default!important;
+  touch-action:pan-y;
+}
+#habitGrid.calendar-layout .mini-calendar,
+#habitGrid.calendar-layout .mini-calendar *{
+  pointer-events:none!important;
+}
+@media(max-width:700px){
+  .site-footer-inner{
+    display:flex!important;
+    flex-direction:row!important;
+    justify-content:space-between!important;
+    align-items:center!important;
+    flex-wrap:nowrap!important;
+    gap:16px!important;
+  }
+  .footer-identity{font-size:12px!important;flex:none}
+  .footer-message{
+    flex:1;
+    margin:0;
+    font-size:11px!important;
+    text-align:right!important;
+  }
+  .footer-version{display:none!important}
+}
