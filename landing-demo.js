@@ -117,16 +117,29 @@
     playing=false;
     if(timer!==null){clearTimeout(timer);timer=null;}
   }
-  function updateSlides(){
-    const len=slides.length;
+  function positionRail(instant=false){
+    if(!slides.length)return;
+    const first=slides[0];
+    const second=slides[1];
+    const step=second ? second.offsetLeft-first.offsetLeft : first.getBoundingClientRect().width;
+    if(!Number.isFinite(step)||step<=0)return;
+    if(instant){
+      rail.classList.add('demo-no-transition');
+      rail.style.transform='translate3d('+(-current*step)+'px,0,0)';
+      // Restore the animated transition after the browser commits the position.
+      requestAnimationFrame(()=>requestAnimationFrame(()=>rail.classList.remove('demo-no-transition')));
+    }else{
+      rail.style.transform='translate3d('+(-current*step)+'px,0,0)';
+    }
+  }
+  function updateSlides(instant=false){
+    // Every card stays in a single horizontal flex track. Moving the parent
+    // slides all five screens together, including the neighbors.
     slides.forEach((slide,i)=>{
-      const delta=i-current;
-      const slot=delta===0?'active':delta===-1?'prev':
-        delta===1?'next':delta<0?'far-prev':'far-next';
-      slide.dataset.slot=slot;
-      slide.classList.toggle('is-active',delta===0);
-      slide.setAttribute('aria-hidden',String(delta!==0));
-      slide.inert=delta!==0;
+      const active=i===current;
+      slide.classList.toggle('is-active',active);
+      slide.setAttribute('aria-hidden',String(!active));
+      slide.inert=!active;
     });
     buttons.forEach((button,i)=>{
       button.classList.toggle('is-active',i===current);
@@ -138,6 +151,7 @@
     label.textContent=steps[current].name;
     indexText.textContent=String(current+1).padStart(2,'0')+' / 05';
     film.dataset.activeSlide=String(current);
+    positionRail(instant);
   }
   function syncPlayback(){
     stopClock();
@@ -187,7 +201,12 @@
     observer.observe(stage);
   }
   new MutationObserver(syncPlayback).observe(root,{attributes:true,attributeFilter:['hidden']});
-  updateSlides();
+  window.addEventListener('resize',()=>positionRail(true),{passive:true});
+  if('ResizeObserver' in window){
+    const ro=new ResizeObserver(()=>positionRail(true));
+    ro.observe(stage);
+  }
+  updateSlides(true);
   syncPlayback();
 
 })();
