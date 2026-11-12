@@ -493,7 +493,7 @@ onAuthStateChanged(auth,u=>{
  user=u;habits=[];selectedId=null;
  stopHold();
  if(unsubscribePrefs){unsubscribePrefs();unsubscribePrefs=null;}
- el('userBtn').hidden=!u;el('accountMenu').hidden=true;document.body.classList.remove('account-open');el('userBtn').setAttribute('aria-expanded','false');
+ el('userBtn').hidden=!u;el('headerLoginBtn').hidden=!!u;el('accountMenu').hidden=true;document.body.classList.remove('account-open');el('userBtn').setAttribute('aria-expanded','false');
  if(!u){setSync('Not signed in');document.body.classList.remove('desktop-settings-route');display('loginPanel');return;}
  profileName=u.displayName||u.email?.split('@')[0]||'there';showProfile();
  el('accountEmail').textContent=u.email||'Signed in';setSync('Syncing…');display('loadingPanel');
@@ -532,6 +532,7 @@ onAuthStateChanged(auth,u=>{
  });
 });
 el('googleLogin').addEventListener('click',signIn);
+el('headerLoginBtn').addEventListener('click',signIn);
 const accountSections=[
  ['accountSettingsBtn','accountSettingsDetail','Settings'],
  ['accountAppearanceBtn','accountAppearanceDetail','Appearance'],
