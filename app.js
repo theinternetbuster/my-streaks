@@ -49,7 +49,7 @@ function display(view){
  if(user && view==='dashboard') syncDesktopRoute();
 }
 function escapeHTML(str){ return String(str).replace(/[&<>"']/g, ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
-function normalise(raw){ return {id:raw.id,name:String(raw.name||'Habit'),createdDate:raw.createdDate||todayKey(),createdAt:Number(raw.createdAt)||0,order:Number.isFinite(raw.order)?raw.order:null,completions:Array.isArray(raw.completions)?[...new Set(raw.completions.filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x)))].sort():[]}; }
+function normalise(raw){ return {id:raw.id,name:String(raw.name||'Habit'),createdDate:raw.createdDate||todayKey(),createdAt:Number(raw.createdAt)||0,order:Number.isFinite(raw.order)?raw.order:null,completions:Array.isArray(raw.completions)?[...new Set(raw.completions.filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x)))].sort():[],freezeDates:Array.isArray(raw.freezeDates)?[...new Set(raw.freezeDates.filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x)))].sort():[],freezeProcessedThrough:raw.freezeProcessedThrough||null}; }
 
 /**
  * Two weekly freezes belong to each habit. Count a missed day only while its
@@ -58,32 +58,80 @@ function normalise(raw){ return {id:raw.id,name:String(raw.name||'Habit'),create
  * The current day is never marked missed until it has ended.
  * Days before the first completion are inactive, not freezes.
  */
-function evaluateHabit(habit, asOf=todayKey()) {
-  const completed = new Set(habit.completions.filter(k=>k<=asOf));
-  const first = [...completed].sort()[0];
-  const states = new Map();
-  let active = false, streak = 0, freezesSpent = 0, prevWeek = null, lastCompleted = null;
-  if(!first){ return {streak:0,freezes:2,active:false,states,lastCompleted:null,doneToday:false}; }
-  const today = asOf;
-  const firstKey = first < habit.createdDate ? first : habit.createdDate;
-  const end = parseKey(today);
-  const start = parseKey(firstKey);
-  const maxDays = 36525;
-  let iterations = 0;
-  for(let d=new Date(start); d<=end && iterations<maxDays; d.setDate(d.getDate()+1),iterations++){
-    const key = dateKey(d); const week=weekStart(key);
-    if(week!==prevWeek){ freezesSpent=0; prevWeek=week; }
-    if(completed.has(key)){
-      streak = active ? streak+1 : 1;
-      active=true; lastCompleted=key; states.set(key,'done');
-    } else if(key===today){
-      states.set(key,'today');
-    } else if(active){
-      if(freezesSpent<2){freezesSpent++;states.set(key,'freeze');}
-      else {active=false;streak=0;states.set(key,'missed');}
-    } else {states.set(key,'missed');}
-  }
-  return {streak,freezes:2-freezesSpent,active,states,lastCompleted,doneToday:completed.has(today)};
+/* Persisted freeze dates never change when earlier completions are edited.
+   Existing habits are migrated once using the legacy freeze calculation. */
+function legacyEvaluateHabit(habit, asOf=todayKey()){
+ const completed=new Set(habit.completions.filter(k=>k<=asOf));
+ const first=[...completed].sort()[0],states=new Map();
+ if(!first)return {states};
+ let active=false,streak=0,used=0,prevWeek=null;
+ const start=first<habit.createdDate?first:habit.createdDate;
+ let iterations=0;
+ for(let d=parseKey(start);dateKey(d)<=asOf&&iterations++<36525;d.setDate(d.getDate()+1)){
+  const key=dateKey(d),wk=weekStart(key);
+  if(wk!==prevWeek){used=0;prevWeek=wk;}
+  if(completed.has(key)){streak=active?streak+1:1;active=true;states.set(key,'done');}
+  else if(key===asOf){states.set(key,'today');}
+  else if(active&&used<2){used++;states.set(key,'freeze');}
+  else {active=false;streak=0;states.set(key,'missed');}
+ }
+ return {states};
+}
+function evaluateHabit(habit,asOf=todayKey()){
+ const completed=new Set(habit.completions.filter(k=>k<=asOf));
+ const frozen=new Set((habit.freezeDates||[]).filter(k=>k<=asOf));
+ const dates=[...completed,...frozen].sort(),first=dates[0];
+ const states=new Map();
+ if(!first)return {streak:0,freezes:2,active:false,states,lastCompleted:null,doneToday:false};
+ let active=false,streak=0,spent=0,prevWeek=null,lastCompleted=null,iterations=0;
+ const start=first<habit.createdDate?first:habit.createdDate;
+ for(let d=parseKey(start);dateKey(d)<=asOf&&iterations++<36525;d.setDate(d.getDate()+1)){
+   const key=dateKey(d),week=weekStart(key);
+   if(week!==prevWeek){spent=0;prevWeek=week;}
+   if(frozen.has(key)){
+     spent++;states.set(key,'freeze');
+   }else if(completed.has(key)){
+     streak=active?streak+1:1;active=true;lastCompleted=key;states.set(key,'done');
+   }else if(key===asOf){
+     states.set(key,'today');
+   }else{
+     active=false;streak=0;states.set(key,'missed');
+   }
+ }
+ return {streak,freezes:Math.max(0,2-spent),active,states,lastCompleted,doneToday:completed.has(asOf)&&!frozen.has(asOf)};
+}
+function yesterdayKey(){return addDays(todayKey(),-1);}
+const freezeReconciling=new Set();
+async function reconcileFreezeLedger(id){
+ if(!user||freezeReconciling.has(id))return;
+ freezeReconciling.add(id);
+ try{
+  await runTransaction(db,async tx=>{
+   const ref=habitDoc(id),snap=await tx.get(ref);if(!snap.exists())return;
+   const raw=snap.data(),habit=normalise({id,...raw}),yesterday=yesterdayKey();
+   if(!Array.isArray(raw.freezeDates)){
+     const oldStates=legacyEvaluateHabit(habit,todayKey()).states;
+     const locked=[...oldStates].filter(([key,state])=>state==='freeze'&&key<=yesterday).map(([key])=>key);
+     tx.update(ref,{freezeDates:locked,freezeProcessedThrough:yesterday});
+     return;
+   }
+   const previous=typeof raw.freezeProcessedThrough==='string'?raw.freezeProcessedThrough:yesterday;
+   if(previous>=yesterday)return;
+   const locks=new Set(habit.freezeDates);
+   const allCompleted=new Set(habit.completions);
+   let day=addDays(previous,1),guard=0;
+   while(day<=yesterday&&guard++<36525){
+     if(!allCompleted.has(day)&&!locks.has(day)){
+       const prevInfo=evaluateHabit({...habit,freezeDates:[...locks]},addDays(day,-1));
+       const weeklyLocked=[...locks].filter(k=>weekStart(k)===weekStart(day)).length;
+       if(prevInfo.active&&weeklyLocked<2)locks.add(day);
+     }
+     day=addDays(day,1);
+   }
+   tx.update(ref,{freezeDates:[...locks].sort(),freezeProcessedThrough:yesterday});
+  });
+ }catch(error){console.error('Freeze synchronization',error);}
+ finally{freezeReconciling.delete(id);}
 }
 function habitCollection(){ return collection(db,'users',user.uid,'habits'); }
 function habitDoc(id){ return doc(db,'users',user.uid,'habits',id); }
