@@ -1742,7 +1742,7 @@ html:has(#loginPanel:not([hidden])){scroll-behavior:smooth;scroll-padding-top:90
 .story-back-top:hover{border-color:#ff753e;color:#fff}
 .story-back-top span{font-size:18px}
 @media(prefers-reduced-motion:no-preference){
- .story-reveal{opacity:0;transform:translateY(48px);filter:blur(5px);transition:opacity .85s cubic-bezier(.18,.75,.2,1),transform .95s cubic-bezier(.18,.75,.2,1),filter .75s ease}
+ .js-story-ready .story-reveal{opacity:0;transform:translateY(48px);filter:blur(5px);transition:opacity .85s cubic-bezier(.18,.75,.2,1),transform .95s cubic-bezier(.18,.75,.2,1),filter .75s ease}
  .story-reveal.is-visible{opacity:1;transform:translateY(0);filter:blur(0)}
  .story-feature-visual.story-reveal{transition-delay:.10s}
 }
