@@ -332,15 +332,14 @@ function sectionFromPath(){
  return Object.keys(settingsRoutes).find(k=>settingsRoutes[k]===route)|| (route.startsWith('settings')?'accountSettingsBtn':null);
 }
 function navigateSettings(section){
- const target='/my-streaks/'+settingsRoutes[section];
- if(location.pathname!==target)history.pushState({page:'settings'},'',target);
- syncDesktopRoute();
- window.scrollTo(0,0);
+ const target='/my-streaks/'+settingsRoutes[section]+'/';
+ if(location.pathname!==target)window.location.assign(target);
+ else syncDesktopRoute();
 }
 function exitDesktopSettings(){
  if(!desktopSettings.matches)return;
- if(location.pathname!=='/my-streaks/')history.pushState({},'','/my-streaks/');
- syncDesktopRoute();
+ if(location.pathname!=='/my-streaks/')window.location.assign('/my-streaks/');
+ else syncDesktopRoute();
 }
 function syncDesktopRoute(){
  const active=desktopSettings.matches && !!user && !!sectionFromPath();
