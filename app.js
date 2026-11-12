@@ -89,7 +89,7 @@ function showToast(message){ const t=el('toast');t.textContent=message;t.classLi
 function setSync(message, online=false){ el('syncState').textContent=message; el('syncState').classList.toggle('online',online); }
 let workspace=null;
 function display(view){
- if(view==='dashboard'&&user&&workspace?.tab()!=='home'){
+ if(view==='dashboard'&&user&&workspace&&workspace.tab()!=='home'){
    view=workspace.tab()==='insights'?'insightsPanel':'checklistPanel';
  }
  ['loginPanel','loadingPanel','dashboard','insightsPanel','checklistPanel'].forEach(id=>
