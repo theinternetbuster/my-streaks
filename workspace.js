@@ -262,6 +262,15 @@
         '</div><div class="checklist-date-custom"><label for="checklistCustomDate">Choose a date</label>'+
         '<input id="checklistCustomDate" type="date" value="'+safe(b.dueDate||localDay())+'" aria-label="Custom due date"/></div>';
       dateMenu.hidden=false;
+      if(query){
+        const q=query.toLowerCase().replace(/\s/g,'');
+        let count=0;
+        dateMenu.querySelectorAll('[data-date-quick]').forEach(button=>{
+          const match=button.dataset.dateQuick.replace(/\s/g,'').startsWith(q)&&button.dataset.dateQuick!=='clear';
+          button.hidden=!match;if(match)count++;
+        });
+        if(!count&&q!=='custom'){closeDateMenu();return;}
+      }
       const el=anchorEl||root.querySelector('.checklist-editor[data-block-id="'+id+'"]');
       let rect=el?.getBoundingClientRect();
       const sel=window.getSelection();
@@ -277,16 +286,18 @@
       if(!['todo','todoNote','todoList'].includes(b.type))return;
       const caret=editorCaretOffset(field);
       const before=b.text.slice(0,caret);
-      const match=before.match(/(?:^|\s)@(today|tomorrow|next week|nextweek|next|to|t)?$/i);
-      if(match&&before.endsWith('@'+(match[1]||''))){
-        closeSlash();dateSuggestionId=b.id;openDateMenu(b.id,field,match[1]||'');
+      const match=before.match(/(?:^|\s)@([a-z ]*)$/i);
+      if(match){
+        closeSlash();dateSuggestionId=b.id;openDateMenu(b.id,field,(match[1]||'').trim());
       }else if(dateSuggestionId===b.id)closeDateMenu();
     }
     function applyDueDate(id,date,fromSuggestion=false){
       const b=blocks.find(x=>x.id===id);if(!b)return;
+      const token=date?('@'+(date===localDay()?'Today':date===localDay(1)?'Tomorrow':dateLabel(date))):'';
       if(fromSuggestion){
-        b.text=b.text.replace(/@(today|tomorrow|next week|nextweek|next|to)?$/i,
-          date?('@'+(date===localDay()?'Today':date===localDay(1)?'Tomorrow':dateLabel(date))):'');
+        b.text=b.text.replace(/@[a-z ]*$/i,token);
+      }else if(/@(Today|Tomorrow|[A-Z][a-z]{2} \d{1,2})/i.test(b.text)){
+        b.text=b.text.replace(/@(Today|Tomorrow|[A-Z][a-z]{2} \d{1,2})/i,token);
       }
       b.dueDate=date||'';
       closeDateMenu();renderChecklist(true);scheduleSave(true);
@@ -499,6 +510,17 @@
       const field=e.target.closest('[contenteditable="true"][data-block-id]');if(!field)return;
       const id=field.dataset.blockId,b=blocks.find(x=>x.id===id);
       if(!b)return;
+      if(dateSuggestionId===id&&!dateMenu.hidden){
+        if(e.key==='Enter'||e.key==='Tab'){
+          e.preventDefault();
+          const q=(b.text.slice(0,editorCaretOffset(field)).match(/@([a-z ]*)$/i)?.[1]||'').trim().toLowerCase().replace(/\s/g,'');
+          const option=[...dateMenu.querySelectorAll('[data-date-quick]:not([hidden])')].find(x=>x.dataset.dateQuick.replace(/\s/g,'').startsWith(q));
+          const value=option?.dataset.dateQuick||'today';
+          applyDueDate(id,value==='tomorrow'?localDay(1):value==='week'?localDay(7):localDay(),true);
+          return;
+        }
+        if(e.key==='Escape'){e.preventDefault();closeDateMenu();return;}
+      }
       if(slashFor===id&&!$('checklistSlashMenu').hidden){
         if(e.key==='ArrowDown'||e.key==='ArrowUp'){
           e.preventDefault();slashSelected=(slashSelected+(e.key==='ArrowDown'?1:-1)+slashMatches.length)%slashMatches.length;
@@ -689,6 +711,14 @@
       const dateBadge=target.closest('[data-date-badge]');
       if(dateBadge){
         openDateMenu(dateBadge.dataset.dateBadge,dateBadge);
+      }else if(target.closest('.checklist-editor[data-block-id]')){
+        const editor=target.closest('.checklist-editor');
+        const block=blocks.find(b=>b.id===editor.dataset.blockId);
+        if(block?.dueDate){
+          const pos=editorCaretOffset(editor);
+          const tokens=[...block.text.matchAll(/@(Today|Tomorrow|[A-Z][a-z]{2} \d{1,2})/gi)];
+          if(tokens.some(t=>pos>=t.index&&pos<=t.index+t[0].length))openDateMenu(block.id,editor);
+        }
       }else if(insert){
         const before=blocks.find(b=>b.id===insert.dataset.insert);
         if(before){
