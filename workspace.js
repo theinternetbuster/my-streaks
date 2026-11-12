@@ -736,26 +736,132 @@
       renderChecklist(true);scheduleSave(true);
       requestAnimationFrame(()=>focusBlockAt(first.id,firstOffset));
     });
-    // Drag-select between two separate text blocks with the mouse.
-    let dragStart=null;
+    // Persistent cross-block text selection. Multiple independent contenteditable
+    // hosts cannot reliably keep a native browser Selection on mouse release.
+    // Draw the selected text rectangles without changing the saved document.
+    let documentRange=null,dragStart=null,suppressSelectionClick=false;
+    const selectionLayer=document.createElement('div');
+    selectionLayer.className='checklist-selection-layer';
+    document.body.appendChild(selectionLayer);
+    function caretFromPoint(x,y){
+      const native=document.caretRangeFromPoint?.(x,y);
+      if(native)return {node:native.startContainer,offset:native.startOffset};
+      const pos=document.caretPositionFromPoint?.(x,y);
+      return pos?{node:pos.offsetNode,offset:pos.offset}:null;
+    }
+    function textOffset(field,node,offset){
+      try{
+        const range=document.createRange();
+        range.selectNodeContents(field);range.setEnd(node,offset);
+        return range.toString().length;
+      }catch(error){return 0;}
+    }
+    function boundaryAt(field,offset){
+      const walker=document.createTreeWalker(field,NodeFilter.SHOW_TEXT);
+      let node,left=Math.max(0,offset);
+      while((node=walker.nextNode())){
+        if(left<=node.textContent.length)return {node,offset:left};
+        left-=node.textContent.length;
+      }
+      return {node:field,offset:field.childNodes.length};
+    }
+    function orderedRange(){
+      if(!documentRange)return null;
+      const a=blocks.findIndex(b=>b.id===documentRange.anchor.id);
+      const b=blocks.findIndex(b=>b.id===documentRange.focus.id);
+      if(a<0||b<0)return null;
+      return a<b||(a===b&&documentRange.anchor.offset<=documentRange.focus.offset)?
+        {start:a,end:b,startOffset:documentRange.anchor.offset,endOffset:documentRange.focus.offset}:
+        {start:b,end:a,startOffset:documentRange.focus.offset,endOffset:documentRange.anchor.offset};
+    }
+    function drawDocumentSelection(){
+      selectionLayer.replaceChildren();
+      const range=orderedRange();
+      if(!range)return;
+      for(let i=range.start;i<=range.end;i++){
+        const field=root.querySelector('.checklist-editor[data-block-id="'+blocks[i].id+'"]');
+        if(!field)continue;
+        const len=(field.textContent||'').length;
+        const start=i===range.start?Math.min(len,range.startOffset):0;
+        const end=i===range.end?Math.min(len,range.endOffset):len;
+        if(end<=start)continue;
+        const selection=document.createRange();
+        const first=boundaryAt(field,start),last=boundaryAt(field,end);
+        try{selection.setStart(first.node,first.offset);selection.setEnd(last.node,last.offset);}
+        catch(error){continue;}
+        for(const rect of selection.getClientRects()){
+          if(!rect.width||!rect.height)continue;
+          const mark=document.createElement('div');
+          mark.className='checklist-selection-rect';
+          Object.assign(mark.style,{left:rect.left+'px',top:rect.top+'px',width:rect.width+'px',height:rect.height+'px'});
+          selectionLayer.appendChild(mark);
+        }
+      }
+    }
+    function clearDocumentSelection(){
+      documentRange=null;allBlocksSelected=false;
+      selectionLayer.replaceChildren();
+    }
+    function selectedDocumentText(){
+      const range=orderedRange();
+      if(!range)return '';
+      return blocks.slice(range.start,range.end+1).map((b,i)=>{
+        const start=i===0?range.startOffset:0;
+        const end=range.start+i===range.end?range.endOffset:b.text.length;
+        return b.text.slice(start,end);
+      }).join('\n');
+    }
+    function removeDocumentSelection(replacement=''){
+      const range=orderedRange();
+      if(!range)return false;
+      const first=blocks[range.start],last=blocks[range.end];
+      const position=range.startOffset;
+      pendingUndoFocus={id:first.id,offset:position};
+      first.text=first.text.slice(0,range.startOffset)+replacement+last.text.slice(range.endOffset);
+      if(range.end>range.start)blocks.splice(range.start+1,range.end-range.start);
+      clearDocumentSelection();
+      renderChecklist(true);scheduleSave(true);
+      requestAnimationFrame(()=>focusBlockAt(first.id,position+replacement.length));
+      return true;
+    }
     root.addEventListener('pointerdown',event=>{
+      if(documentRange)clearDocumentSelection();
       if(event.pointerType!=='mouse'||event.button!==0)return;
       const field=event.target.closest('.checklist-editor');
       if(!field)return;
-      const range=document.caretRangeFromPoint?.(event.clientX,event.clientY);
-      if(range)dragStart={node:range.startContainer,offset:range.startOffset,field};
+      const caret=caretFromPoint(event.clientX,event.clientY);
+      if(!caret||!field.contains(caret.node))return;
+      dragStart={id:field.dataset.blockId,offset:textOffset(field,caret.node,caret.offset),crossed:false};
     });
     document.addEventListener('pointermove',event=>{
-      if(!dragStart||!(event.buttons&1)||event.pointerType!=='mouse')return;
+      if(!dragStart||event.pointerType!=='mouse'||!(event.buttons&1))return;
       const target=document.elementFromPoint(event.clientX,event.clientY)?.closest?.('.checklist-editor');
-      if(!target||target===dragStart.field)return;
-      const range=document.caretRangeFromPoint?.(event.clientX,event.clientY);
-      if(!range||!target.contains(range.startContainer))return;
-      const sel=window.getSelection();
-      try{sel.setBaseAndExtent(dragStart.node,dragStart.offset,range.startContainer,range.startOffset);}
-      catch(error){/* Browser may restrict selections crossing independent edit hosts. */}
-    });
-    document.addEventListener('pointerup',()=>{dragStart=null;});
+      if(!target||!root.contains(target))return;
+      const caret=caretFromPoint(event.clientX,event.clientY);
+      const offset=caret&&target.contains(caret.node)?textOffset(target,caret.node,caret.offset):
+        event.clientY<target.getBoundingClientRect().top?0:(target.textContent||'').length;
+      if(target.dataset.blockId===dragStart.id&&!dragStart.crossed)return;
+      dragStart.crossed=true;
+      documentRange={anchor:{id:dragStart.id,offset:dragStart.offset},focus:{id:target.dataset.blockId,offset}};
+      drawDocumentSelection();
+      event.preventDefault();
+    },{passive:false,capture:true});
+    document.addEventListener('pointerup',event=>{
+      if(dragStart?.crossed){
+        event.preventDefault();
+        suppressSelectionClick=true;
+        // A native selection may be collapsed by the browser, but our highlight persists.
+        window.getSelection()?.removeAllRanges();
+      }
+      dragStart=null;
+    },{capture:true});
+    document.addEventListener('click',event=>{
+      if(!suppressSelectionClick)return;
+      suppressSelectionClick=false;
+      event.preventDefault();event.stopImmediatePropagation();
+    },true);
+    window.addEventListener('scroll',()=>{if(documentRange)drawDocumentSelection();},{passive:true});
+    window.addEventListener('resize',()=>{if(documentRange)drawDocumentSelection();});
     function longestFor(h){
       const done=new Set(h.completions||[]),freeze=new Set(h.freezeDates||[]);
       const all=[...done,...freeze].sort();if(!all.length)return 0;
