@@ -543,3 +543,73 @@ html[data-theme="light"] .checklist-page .checklist-handle:hover{background:#ece
   .checklist-page .checklist-line{margin-bottom:2px}
   body.workspace-signed-in:has(.checklist-editor:focus) .workspace-bottom-nav{display:none!important}
 }
+
+/* Insights: animated two-way thumb, matching the settings theme picker. */
+.insight-section-tabs{
+ position:relative;isolation:isolate;
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+ width:min(100%,366px);max-width:100%;
+ gap:0;padding:5px;
+}
+.insight-section-tabs::before{
+ content:"";position:absolute;z-index:-1;
+ left:5px;top:5px;bottom:5px;width:calc((100% - 10px)/2);
+ border-radius:999px;background:#3e3029;
+ box-shadow:0 3px 13px #0003,inset 0 1px #ffffff10;
+ transform:translateX(0);
+ transition:transform .34s cubic-bezier(.22,1,.36,1),background .25s ease,box-shadow .25s ease;
+ pointer-events:none;
+}
+.insight-section-tabs[data-selected="achievements"]::before{transform:translateX(100%)}
+.insight-section-tabs button{
+ justify-content:center;position:relative;z-index:1;
+ min-width:0;padding:11px 8px;border-radius:999px;
+ background:transparent!important;box-shadow:none!important;
+ transition:color .23s ease;
+}
+.insight-section-tabs button.active,.insight-section-tabs button.active:hover{
+ background:transparent!important;box-shadow:none!important;
+ color:#ff915c;
+}
+.insight-section-tabs .insight-tab-symbol svg{width:19px;height:19px}
+html[data-theme="light"] .insight-section-tabs::before{
+ background:#fff0e5;box-shadow:0 2px 10px #bb67331f,inset 0 1px #fff9;
+}
+html[data-theme="light"] .insight-section-tabs button.active,
+html[data-theme="light"] .insight-section-tabs button.active:hover{
+ background:transparent!important;box-shadow:none!important;color:#be5019;
+}
+@media(max-width:440px){
+ .insight-section-tabs{width:100%}
+ .insight-section-tabs button{padding:11px 5px;font-size:12px}
+ .insight-section-tabs .insight-tab-symbol svg{height:18px;width:18px}
+}
+@media(prefers-reduced-motion:reduce){.insight-section-tabs::before{transition:none}}
+
+/* Freeze protection is a BLUE outlined flame in all views and themes. */
+.insight-stat-icon.icy,.insight-stat-icon.icy svg,
+.insight-stat-icon .insight-freeze-flame,
+.insight-milestone .insight-freeze-flame,
+.achievement-emblem-freeze,.achievement-emblem-freeze svg{
+ color:#80baff!important;
+ stroke:#80baff!important;
+ fill:none!important;
+}
+.insight-freeze-flame{width:32px;height:32px;stroke-width:1.8!important}
+.achievement-emblem-freeze{background:linear-gradient(135deg,#173454,#202d45)!important;border-color:#497fc3!important}
+.achievement-card.unlocked .achievement-emblem-freeze{background:linear-gradient(135deg,#1b497a,#213651)!important;border-color:#659fe3!important}
+
+/* Nested subtask editor supports tasks and bullets without extra selection screens. */
+.checklist-subtask .subtask-bullet-dot{display:none;flex:none;color:#e0e0e5;font-size:22px;line-height:16px;width:16px;text-align:center}
+.checklist-subtask.subtask-bullet .subtask-bullet-dot{display:inline-block}
+.checklist-subtask.subtask-bullet>input[type="checkbox"]{display:none}
+.checklist-subtask>button[data-subtask-kind]{font-size:16px;line-height:1.2;opacity:0}
+.checklist-subtask:focus-within>button[data-subtask-kind],
+.checklist-subtask:hover>button[data-subtask-kind]{opacity:.8}
+.checklist-nested-actions{display:flex;align-items:center;flex-wrap:wrap;gap:14px;margin-top:6px}
+.checklist-nested-actions .checklist-add-subtask{font-size:12px}
+html[data-theme="light"] .checklist-subtask .subtask-bullet-dot{color:#2c3546}
+@media(max-width:799px){
+ .checklist-subtask>button[data-subtask-kind]{opacity:.7}
+ .checklist-nested-actions{gap:12px}
+}
