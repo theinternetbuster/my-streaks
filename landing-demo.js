@@ -134,3 +134,72 @@
   new MutationObserver(reconcile).observe(root,{attributes:true,attributeFilter:['hidden']});
   reconcile();
 })();
+
+
+/* Scroll-driven feature story: sample illustrations only, no authenticated data. */
+(() => {
+  const story=document.getElementById('features');
+  const login=document.getElementById('loginPanel');
+  if(!story||!login)return;
+  const grid=document.getElementById('storyCalendarGrid');
+  const flame=type=>'<svg viewBox="0 0 24 24" aria-hidden="true"><use href="#flame-'+type+'"></use></svg>';
+  if(grid){
+    let cells='';
+    // November 2026 begins on Sunday; use a fixed month for a coherent preview.
+    for(let i=0;i<6;i++)cells+='<span class="story-calendar-cell outside" aria-hidden="true"></span>';
+    for(let day=1;day<=30;day++){
+      const frozen=[5,13,21].includes(day);
+      const done=[2,3,4,6,7,9,10,11,12,14,16,17,18,19,20,22,23,24,25,26,27,29].includes(day);
+      const type=frozen?'frozen':done?'done':'blank';
+      cells+='<span class="story-calendar-cell '+type+'" aria-hidden="true"><small>'+day+'</small>'+(frozen?flame('outline'):done?flame('solid'):'')+'</span>';
+    }
+    grid.innerHTML=cells;
+  }
+  const reveals=[...story.querySelectorAll('.story-reveal')];
+  const motion=window.matchMedia('(prefers-reduced-motion: reduce)');
+  let observer=null;
+  function revealAll(){
+    reveals.forEach(el=>el.classList.add('is-visible'));
+  }
+  if(motion.matches||!('IntersectionObserver' in window))revealAll();
+  else {
+    observer=new IntersectionObserver(entries=>{
+      for(const entry of entries){
+        if(entry.isIntersecting){
+          entry.target.classList.add('is-visible');
+          observer.unobserve(entry.target);
+        }
+      }
+    },{threshold:0.12,rootMargin:'0px 0px -4% 0px'});
+    reveals.forEach(el=>observer.observe(el));
+  }
+  // Subtle scroll-based depth, throttled to one animation frame. No scroll hijacking.
+  const visuals=[...story.querySelectorAll('.story-feature-visual')];
+  let frame=0;
+  function updateParallax(){
+    frame=0;
+    if(motion.matches||login.hidden)return;
+    const viewHeight=window.innerHeight||720;
+    for(const element of visuals){
+      const rect=element.getBoundingClientRect();
+      if(rect.bottom<0||rect.top>viewHeight)continue;
+      const normalized=(rect.top+rect.height*.5-viewHeight*.5)/viewHeight;
+      const shift=Math.max(-25,Math.min(25,-normalized*32));
+      element.style.setProperty('--story-shift',shift.toFixed(1)+'px');
+    }
+  }
+  function onScroll(){
+    if(!frame)frame=requestAnimationFrame(updateParallax);
+  }
+  window.addEventListener('scroll',onScroll,{passive:true});
+  window.addEventListener('resize',onScroll,{passive:true});
+  motion.addEventListener?.('change',()=>{
+    if(motion.matches){
+      revealAll();
+      visuals.forEach(el=>el.style.removeProperty('--story-shift'));
+      observer?.disconnect();
+    }
+    else onScroll();
+  });
+  onScroll();
+})();
