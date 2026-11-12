@@ -32,7 +32,7 @@
       const now=Date.now();
       // Coalesce fast typing into one undo step but never merge different fields or structural edits.
       const typed=active?.matches?.('.checklist-editor,.checklist-note-editor,[data-subtask-text]');
-      const coalesce=typed&&field===lastHistoryField&&now-lastHistoryAt<650&&historyUndo.length>0;
+      const coalesce=!pendingUndoFocus&&typed&&field===lastHistoryField&&now-lastHistoryAt<650&&historyUndo.length>0;
       if(!coalesce||pendingUndoFocus){historyUndo.push({content:historyPresent,focus:pendingUndoFocus||{id:field,offset:typed?editorCaretOffset(active):0}});if(historyUndo.length>100)historyUndo.shift();}
       pendingUndoFocus=null;
       historyRedo=[];
@@ -43,8 +43,8 @@
       const to=direction==='undo'?historyRedo:historyUndo;
       if(!from.length)return;
       const active=document.activeElement;
-      const focusId=active?.dataset?.blockId||null;
-      const position=active?.matches?.('.checklist-editor')?editorCaretOffset(active):null;
+      const focusId=active?.dataset?.blockId||(active?.dataset?.noteId?'note:'+active.dataset.noteId:null);
+      const position=active?.matches?.('.checklist-editor,.checklist-note-editor')?editorCaretOffset(active):null;
       const previous=from.pop();
       const restored=typeof previous==='string'?{content:previous,focus:null}:previous;
       to.push({content:serializeBlocks(),focus:focusId?{id:focusId,offset:position??0}:null});
@@ -58,7 +58,10 @@
       const savedId=saved?.id;
       const target=savedId&&blocks.some(b=>b.id===savedId)?savedId:
         focusId&&blocks.some(b=>b.id===focusId)?focusId:blocks.at(-1)?.id;
-      if(target)requestAnimationFrame(()=>focusBlockAt(target,savedId===target?(saved.offset??0):(position??blocks.find(b=>b.id===target)?.text.length??0)));
+      if(target)requestAnimationFrame(()=>{
+        if(target.startsWith('note:'))focusEditableAt(root.querySelector('.checklist-note-editor[data-note-id="'+target.slice(5)+'"]'),saved?.offset??position??0);
+        else focusBlockAt(target,savedId===target?(saved.offset??0):(position??blocks.find(b=>b.id===target)?.text.length??0));
+      });
     }
     const key=d=>[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');
     const parse=s=>{const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d,12)};
@@ -319,6 +322,13 @@
         }
       });
     }
+    root.addEventListener('beforeinput',event=>{
+      const field=event.target.closest?.('.checklist-editor,.checklist-note-editor');
+      if(!field||restoringHistory)return;
+      if(event.inputType?.startsWith('delete')&&!event.inputType.includes('ByCut')){
+        pendingUndoFocus={id:field.dataset.blockId||('note:'+field.dataset.noteId),offset:editorCaretOffset(field)};
+      }
+    });
     root.addEventListener('input',e=>{
       const subtask=e.target.closest('[data-subtask-text]');
       if(subtask){const block=blocks.find(b=>b.id===subtask.dataset.subtaskText);const sub=block?.subtasks.find(t=>t.id===subtask.dataset.subtaskId);if(sub){sub.text=subtask.value;scheduleSave();}return;}
@@ -591,8 +601,7 @@
       if(insert){
         const before=blocks.find(b=>b.id===insert.dataset.insert);
         if(before){
-          const made=addBlock(before.id,'text','/');
-          requestAnimationFrame(()=>openSlash(made.id,''));
+          addBlock(before.id,'text','');
         }
       }else if(bullet){
         const block=blocks.find(x=>x.id===bullet.dataset.subtaskBullet);
