@@ -655,14 +655,10 @@
       }).join('\n');
     }
     function selectWholeChecklist(){
-      const fields=[...root.querySelectorAll('.checklist-editor,.checklist-note-editor')].filter(el=>el.getClientRects().length);
-      if(!fields.length)return;
-      const range=document.createRange();
-      range.setStart(fields[0],0);
-      range.setEnd(fields.at(-1),fields.at(-1).childNodes.length);
-      const sel=window.getSelection();
-      sel.removeAllRanges();sel.addRange(range);
+      if(!blocks.length)return;
+      documentRange={anchor:{id:blocks[0].id,offset:0},focus:{id:blocks.at(-1).id,offset:blocks.at(-1).text.length}};
       allBlocksSelected=true;
+      drawDocumentSelection();
     }
     document.addEventListener('keydown',event=>{
       if(!user||tab!=='checklist'||!root.isConnected)return;
@@ -678,10 +674,15 @@
         restoreHistory(key==='y'||(key==='z'&&event.shiftKey)?'redo':'undo');
         return;
       }
-      if(allBlocksSelected&&mod&&key==='c'){
+      if(documentRange&&mod&&key==='c'){
         event.preventDefault();
-        const value=checklistText();
+        const value=allBlocksSelected?checklistText():selectedDocumentText();
         navigator.clipboard?.writeText(value).catch(()=>{});
+        return;
+      }
+      if(documentRange&&!mod&&!event.altKey&&(key==='backspace'||key==='delete'||key.length===1)){
+        event.preventDefault();
+        removeDocumentSelection(key.length===1?event.key:'');
         return;
       }
       if(!allBlocksSelected&&(key==='backspace'||key==='delete')&&!mod){
@@ -697,14 +698,14 @@
       if(allBlocksSelected&&(key==='backspace'||key==='delete'||(!mod&&!event.altKey&&key.length===1))){
         event.preventDefault();
         blocks=[normalizeBlock({id:uniqueId(),type:'text',text:key.length===1?event.key:''},0)];
-        allBlocksSelected=false;
+        clearDocumentSelection();
         renderChecklist(true);scheduleSave(true);
         requestAnimationFrame(()=>focusBlock(blocks[0].id,true));
         return;
       }
     },true);
     root.addEventListener('pointerdown',event=>{
-      if(allBlocksSelected&&!event.target.closest('#checklistSlashMenu'))allBlocksSelected=false;
+      if(allBlocksSelected&&!event.target.closest('#checklistSlashMenu'))clearDocumentSelection();
     });
     // Cross-block range removal for selections made with mouse or Shift+arrows.
     root.addEventListener('beforeinput',event=>{
