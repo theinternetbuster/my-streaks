@@ -90,7 +90,7 @@
     }
     function normalizedType(t){return types.some(x=>x.id===t)?t:'text';}
     function normalizeBlock(b,i){
-      return {id:String(b.id||uniqueId()),type:normalizedType(b.type),text:String(b.text||'').slice(0,5000),checked:!!b.checked,collapsed:!!b.collapsed,note:String(b.note||'').slice(0,10000),detailsMode:b.detailsMode==='tasks'||b.type==='todoList'?'tasks':'notes',subtasks:Array.isArray(b.subtasks)?b.subtasks.slice(0,40).filter(t=>t&&typeof t.text==='string').map(t=>({id:String(t.id||uniqueId()),text:String(t.text).slice(0,500),checked:!!t.checked})):[],dueDate:/^\d{4}-\d{2}-\d{2}$/.test(b.dueDate||'')?b.dueDate:'',order:Number.isFinite(b.order)?b.order:i,createdAt:Number(b.createdAt)||Date.now()};
+      return {id:String(b.id||uniqueId()),type:normalizedType(b.type),text:String(b.text||'').slice(0,5000),checked:!!b.checked,collapsed:!!b.collapsed,detailsOpen:typeof b.detailsOpen==='boolean'?b.detailsOpen:(b.type==='todoNote'||b.type==='todoList')&&!b.collapsed,note:String(b.note||'').slice(0,10000),detailsMode:b.detailsMode==='tasks'||b.type==='todoList'?'tasks':'notes',subtasks:Array.isArray(b.subtasks)?b.subtasks.slice(0,40).filter(t=>t&&typeof t.text==='string').map(t=>({id:String(t.id||uniqueId()),text:String(t.text).slice(0,500),checked:!!t.checked})):[],dueDate:/^\d{4}-\d{2}-\d{2}$/.test(b.dueDate||'')?b.dueDate:'',order:Number.isFinite(b.order)?b.order:i,createdAt:Number(b.createdAt)||Date.now()};
     }
     function scheduleSave(soon=false){
       if(!user)return;
@@ -123,7 +123,7 @@
       await pendingWrite;
     }
     function addBlock(afterId=null,type='todo',text=''){
-      const b={id:uniqueId(),type,text,checked:false,collapsed:false,note:'',detailsMode:type==='todoList'?'tasks':'notes',subtasks:[],dueDate:'',order:blocks.length,createdAt:Date.now()};
+      const b={id:uniqueId(),type,text,checked:false,collapsed:false,detailsOpen:type==='todoNote'||type==='todoList',note:'',detailsMode:type==='todoList'?'tasks':'notes',subtasks:[],dueDate:'',order:blocks.length,createdAt:Date.now()};
       const index=afterId?blocks.findIndex(x=>x.id===afterId):-1;
       if(index>=0)blocks.splice(index+1,0,b);else blocks.push(b);
       renderChecklist(true);scheduleSave(true);
@@ -158,7 +158,7 @@
       b.type=normalizedType(type);
       b.text=b.text.replace(/^\/[a-z0-9 -]*/i,'');
       b.checked=false;
-      if(type==='todoNote'||type==='todoList')b.collapsed=false;
+      b.detailsOpen=type==='todoNote'||type==='todoList';
       closeSlash();renderChecklist(true);scheduleSave(true);
       requestAnimationFrame(()=>focusBlock(id));
     }
@@ -177,11 +177,12 @@
       root.innerHTML=blocks.map(b=>{
         const isTask=['todo','todoNote','todoList'].includes(b.type);
         const isToggle=b.type==='toggle',isBullet=b.type==='bullet';
-        const expanded=isTask&&!b.collapsed;
+        const expanded=isTask&&b.detailsOpen;
         const noteExpanded=isToggle&&!b.collapsed;
         const checkbox=isTask?'<input class="checklist-check" type="checkbox" data-toggle-check="'+safe(b.id)+'" '+(b.checked?'checked':'')+' aria-label="Complete task"/>':'';
+        const isOpen=isTask?b.detailsOpen:!b.collapsed;
         const arrow=isTask||isToggle?
-          '<button type="button" class="checklist-toggle-icon '+(b.collapsed?'collapsed':'')+'" data-collapse="'+safe(b.id)+'" aria-label="'+(b.collapsed?'Expand details':'Collapse details')+'" aria-expanded="'+String(!b.collapsed)+'">'+(b.collapsed?'▸':'▾')+'</button>':'';
+          '<button type="button" class="checklist-toggle-icon '+(!isOpen?'collapsed':'')+'" data-collapse="'+safe(b.id)+'" aria-label="'+(!isOpen?'Expand details':'Collapse details')+'" aria-expanded="'+String(isOpen)+'">'+(!isOpen?'▸':'▾')+'</button>':'';
         const icon=isTask?checkbox+arrow:isToggle?arrow:isBullet?'<span class="checklist-bullet">•</span>':'';
         const placeholder=(b.type==='h1'?'Heading':b.type==='h2'?'Subheading':isTask?'To-do':isToggle?'Toggle title':isBullet?'List item':"Press '/' for commands");
         let details='';
@@ -309,7 +310,11 @@
         blocks=blocks.filter(x=>x.id!==deletion.dataset.delete);renderChecklist(true);scheduleSave(true);
       }else if(collapse){
         const block=blocks.find(x=>x.id===collapse.dataset.collapse);
-        if(block){block.collapsed=!block.collapsed;renderChecklist(true);scheduleSave(true);}
+        if(block){
+          if(['todo','todoNote','todoList'].includes(block.type))block.detailsOpen=!block.detailsOpen;
+          else block.collapsed=!block.collapsed;
+          renderChecklist(true);scheduleSave(true);
+        }
       }
     });
     $('checklistAdd').addEventListener('click',()=>addBlock(blocks.at(-1)?.id||null,'todo'));
@@ -491,7 +496,7 @@
       }).join('');
     }
     function onHabitsChange(){if(tab==='insights')renderInsights();}
-    function dispose(){if(unsub)unsub();clearTimeout(saveTimer);if(sortable)sortable.destroy();}
+    function dispose(){if(unsub)unsub();if(insightUnsub)insightUnsub();clearTimeout(saveTimer);if(sortable)sortable.destroy();}
     // Deep links should initialize consistently once the account loads.
     updateNav();
     return {setUser,selectTab,onHabitsChange,renderInsights,renderChecklist,tab:()=>tab,dispose};
