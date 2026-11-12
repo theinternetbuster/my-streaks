@@ -172,6 +172,9 @@
     window.addEventListener('scroll',()=>{if(slashFor)closeSlash();},{passive:true});
     function renderChecklist(force=false){
       if(!root)return;
+      // A blank document opens with a real editable paragraph, not a button.
+      // The initial empty paragraph is local until the user types.
+      if(!blocks.length)blocks=[normalizeBlock({id:uniqueId(),type:'text',text:''},0)];
       const focus=document.activeElement?.dataset?.blockId;
       if(!force&&focus&&root.contains(document.activeElement))return;
       root.innerHTML=blocks.map(b=>{
@@ -184,7 +187,7 @@
         const arrow=isTask||isToggle?
           '<button type="button" class="checklist-toggle-icon '+(!isOpen?'collapsed':'')+'" data-collapse="'+safe(b.id)+'" aria-label="'+(!isOpen?'Expand details':'Collapse details')+'" aria-expanded="'+String(isOpen)+'">'+(!isOpen?'▸':'▾')+'</button>':'';
         const icon=isTask?checkbox+arrow:isToggle?arrow:isBullet?'<span class="checklist-bullet">•</span>':'';
-        const placeholder=(b.type==='h1'?'Heading':b.type==='h2'?'Subheading':isTask?'To-do':isToggle?'Toggle title':isBullet?'List item':"Press '/' for commands");
+        const placeholder=(b.type==='h1'?'Heading':b.type==='h2'?'Subheading':isTask?'To-do':isToggle?'Toggle title':isBullet?'List item':"Type here, or press / for commands");
         let details='';
         if(noteExpanded)details='<textarea class="checklist-note" data-note-id="'+safe(b.id)+'" maxlength="10000" rows="2" placeholder="Additional information…">'+safe(b.note)+'</textarea>';
         if(expanded){
@@ -204,7 +207,7 @@
           (isTask?'<label class="checklist-date-pill '+(b.dueDate?'has-date':'')+'" title="Optional due date"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4m8-4v4"/></svg><span>'+safe(b.dueDate?new Date(b.dueDate+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}):'Date')+'</span><input type="date" data-due-date="'+safe(b.id)+'" value="'+safe(b.dueDate)+'" aria-label="Due date"/></label>':'')+
           '<button type="button" class="checklist-delete" data-delete="'+safe(b.id)+'" aria-label="Delete block">×</button></div>';
       }).join('');
-      $('checklistEmpty').hidden=false;
+      $('checklistEmpty').hidden=true;
       root.querySelectorAll('textarea').forEach(resizeField);
       setupSortable();
     }
@@ -317,7 +320,20 @@
         }
       }
     });
-    $('checklistAdd').addEventListener('click',()=>addBlock(blocks.at(-1)?.id||null,'todo'));
+    // Clicking open writing space feels like a document, not an insert-block UI.
+    root.addEventListener('click',event=>{
+      if(event.target!==root)return;
+      const last=blocks.at(-1);
+      if(last && !last.text.trim() && last.type==='text')focusBlock(last.id);
+      else addBlock(last?.id||null,'text');
+    });
+    document.querySelector('.checklist-document')?.addEventListener('click',event=>{
+      if(!event.target.classList.contains('checklist-document'))return;
+      const last=blocks.at(-1);
+      if(last && !last.text.trim() && last.type==='text')focusBlock(last.id);
+      else addBlock(last?.id||null,'text');
+    });
+    $('checklistAdd').addEventListener('click',()=>addBlock(blocks.at(-1)?.id||null,'text'));
     $('checklistAddBottom').addEventListener('click',()=>addBlock(blocks.at(-1)?.id||null,'text'));
     $('checklistEmpty').addEventListener('click',()=>addBlock(blocks.at(-1)?.id||null,'text'));
     function longestFor(h){
