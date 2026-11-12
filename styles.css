@@ -266,3 +266,120 @@ body.account-open{overflow:hidden}
   .account-backup-detail button:hover,.account-backup-detail .import-label:hover{background:#eee}
   .account-sign-out{background:#f2f2f2;border-color:#dedede;color:#222}
 }
+
+
+/* v4: Native-feeling streak sheet, habit card calendar layouts, touch organization */
+.modal input:focus,.profile-form input:focus{border-color:#ff5a12 !important;outline:2px solid #ff5a1255;outline-offset:1px}
+.dashboard-toolbar{justify-content:space-between}
+.toolbar-hint{color:#8f8f96;font-size:12px;max-width:66%;line-height:1.45}
+.toolbar-actions{display:flex;gap:10px;align-items:center;margin-left:auto}
+.layout-switch{height:51px;width:51px;display:grid;place-items:center;border-radius:15px;border:1px solid #4d4d51;background:#28282c;color:inherit;cursor:pointer}
+.layout-switch[aria-pressed="true"]{color:#ff6b2f;border-color:#a95539}
+.habit-edit-toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;color:#bbb;font-size:12px;margin:-6px 0 19px}
+.habit-edit-toolbar button{border:0;border-radius:11px;background:#ff5a12;color:#fff;padding:9px 16px;font-weight:750}
+.habit-card{position:relative;cursor:pointer;touch-action:pan-y}
+.habit-card-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.card-delete{position:absolute;top:-9px;right:-8px;width:34px;height:34px;border-radius:50%;background:#c94336;border:3px solid #000;color:#fff;font-size:23px;line-height:1;display:none;align-items:center;justify-content:center;z-index:6;cursor:pointer}
+.habit-grid.editing .card-delete{display:flex}
+.habit-grid.editing .habit-card{outline:1px dashed #ff834e;cursor:grab;touch-action:none}
+.habit-grid.editing .habit-card:active{cursor:grabbing}
+.habit-card.sortable-selected{box-shadow:0 0 0 2px #ff6b2f !important}
+.habit-card.sortable-ghost{opacity:.28}
+.habit-card.sortable-dragging{cursor:grabbing;opacity:.95;box-shadow:0 20px 35px #0008 !important}
+.sortable-fallback{box-shadow:0 20px 40px #0008 !important}
+.habit-grid.calendar-layout{grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:17px}
+.calendar-layout .habit-card{min-height:0;padding:19px 18px 22px;display:flex;flex-direction:column;gap:15px}
+.calendar-layout .habit-card h3{font-size:18px}
+.mini-streak{display:inline-flex;align-items:center;gap:3px;font-weight:800;font-size:19px;font-variant-numeric:tabular-nums}
+.mini-streak svg{width:22px;height:22px;fill:#ff5a12;color:#ff5a12}
+.mini-calendar{width:100%}
+.mini-month{font-size:12px;font-weight:650;color:#a8a8af;margin-bottom:9px}
+.mini-calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.mini-weekdays{color:#96969f;text-align:center;font-size:10px;padding:3px 0}
+.mini-day{min-width:0;aspect-ratio:.87;border-radius:6px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:0;color:#bebec4}
+.mini-day small{font-size:10px;line-height:1}
+.mini-day svg{height:12px;width:12px}
+.mini-day.done{background:#632408;color:#fff}
+.mini-day.done svg{color:#ff5a12;fill:#ff5a12}
+.mini-day.freeze{background:#1b4583;color:#fff}
+.mini-day.freeze svg{color:#458ef0;fill:none}
+.mini-day.blank{visibility:hidden}
+body.detail-mode{overflow:hidden}
+body.detail-mode .topbar{display:flex}
+body.detail-mode .shell{max-width:1080px;margin:0 auto;padding:48px 24px 80px}
+#detail{position:fixed;inset:0;z-index:75;display:flex;align-items:flex-end;justify-content:center;background:transparent !important;overflow:hidden}
+.detail-scrim{position:absolute;inset:0;background:#000b}
+#detail .babbel-panel{position:relative;z-index:1;width:min(100%,790px);height:min(100dvh - 20px,1060px);max-height:calc(100dvh - 12px);overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;border-radius:35px 35px 0 0;padding:35px clamp(21px,5vw,50px) max(65px,env(safe-area-inset-bottom,0px) + 24px);background:#1c1c1f;color:#fff;animation:sheet-rise .28s cubic-bezier(.2,.82,.26,1) both}
+@keyframes sheet-rise{from{transform:translateY(100%)}to{transform:translateY(0)}}
+body.detail-mode .babbel-top-actions{margin-bottom:20px}
+@media(max-width:620px){
+  body.detail-mode .shell{padding:34px 17px 60px}
+  #detail .babbel-panel{height:calc(100dvh - 14px);max-height:calc(100dvh - 14px);padding:23px 20px max(55px,env(safe-area-inset-bottom,0px) + 28px);border-radius:35px 35px 0 0}
+  .habit-grid.calendar-layout{grid-template-columns:1fr;gap:13px}
+  .calendar-layout .habit-card{padding:18px 20px 21px}
+  .mini-calendar-grid{gap:5px}
+  .mini-day small{font-size:11px}
+  .mini-day svg{height:16px;width:16px}
+  .toolbar-hint{max-width:55%;font-size:11px}
+}
+@media(prefers-reduced-motion:reduce){#detail .babbel-panel{animation:none}}
+.profile-form{padding:9px 0 18px}
+.profile-form label{display:block;font-size:13px;font-weight:700;margin-bottom:9px}
+.profile-input-row{display:flex;align-items:center;gap:9px}
+.profile-input-row input{width:100%;min-width:0;min-height:45px;padding:11px 12px;border-radius:11px;border:1px solid #686870;background:#242426;color:#fff;font:inherit}
+.profile-input-row button{border:0;background:#ff5a12;color:#fff;padding:12px 16px;border-radius:11px;font-weight:750;cursor:pointer}
+.profile-form small{display:block;color:#b5b5bd;margin-top:9px;line-height:1.5}
+.account-info-row{display:flex;justify-content:space-between;align-items:start;gap:15px;padding:13px 0;border-top:1px solid #444;font-size:13px}
+.account-info-row span{color:#c2c2c8;text-align:right;overflow-wrap:anywhere;max-width:60%}
+.account-detail .account-sign-out{margin-top:20px}
+.theme-picker{border:0;margin:0;padding:6px 0 4px}
+.theme-picker legend{font-weight:700;font-size:13px;margin-bottom:12px}
+.theme-picker label{display:flex;align-items:center;gap:10px;padding:10px 0;cursor:pointer;font-size:15px;color:inherit}
+.theme-picker input{width:19px;height:19px;accent-color:#ff5a12}
+/* Explicit theme overrides supersede OS defaults when the user chooses manually. */
+html[data-theme="dark"],html[data-theme="dark"] body{color-scheme:dark;background:#000;color:#fafafa}
+html[data-theme="dark"] .topbar{background:#000;border-color:#292929}
+html[data-theme="dark"] .habit-card{background:#232323;color:#fff;border-color:#393939;box-shadow:none}
+html[data-theme="dark"] .habit-card:hover{background:#292929}
+html[data-theme="dark"] .login-panel,html[data-theme="dark"] .modal,html[data-theme="dark"] .empty-state{background:#232323;border-color:#393939;color:#fff}
+html[data-theme="dark"] .modal input{background:#202022;color:#fff;border-color:#686868}
+html[data-theme="dark"] .avatar-button,html[data-theme="dark"] .secondary-btn,html[data-theme="dark"] .layout-switch{background:#242424;color:#fff;border-color:#404040}
+html[data-theme="dark"] .account-sheet{background:#000;color:#fff}
+html[data-theme="dark"] .account-link{color:#fff;border-color:#3c3c3c}
+html[data-theme="dark"] .account-detail{color:#c8c8c8;border-color:#3c3c3c}
+html[data-theme="dark"] .account-sign-out{background:#242424;color:#fff;border-color:#3a3a3a}
+html[data-theme="dark"] .account-profile p{color:#d4d4d4}
+html[data-theme="dark"] .account-chevron{color:#fff}
+html[data-theme="dark"] .profile-input-row input{background:#242426;color:#fff}
+html[data-theme="dark"] .account-dismiss{background:#262626;color:#fff;border-color:#444}
+html[data-theme="dark"] #detail .babbel-panel{background:#1c1c1f;color:#fff}
+html[data-theme="dark"] body.detail-mode .calendar-day .number{color:#eee}
+html[data-theme="dark"] body.detail-mode .month-nav button{color:#fff}
+html[data-theme="dark"] body.detail-mode .weekdays span{color:#dedee1}
+html[data-theme="dark"] .babbel-description{color:#ceced1}
+html[data-theme="dark"] body.detail-mode .secondary-btn{background:#363639;color:#fff;border-color:#505054}
+html[data-theme="light"],html[data-theme="light"] body{color-scheme:light;background:#f7f8fc;color:#202638}
+html[data-theme="light"] .topbar{background:#fff;border-color:#e9ebf0}
+html[data-theme="light"] .brand-icon{background:#fff1e6}
+html[data-theme="light"] .habit-card{background:#fff;color:#202638;border-color:#ebedf3;box-shadow:0 10px 28px #26354b08}
+html[data-theme="light"] .habit-card:hover{background:#fff}
+html[data-theme="light"] .login-panel,html[data-theme="light"] .modal,html[data-theme="light"] .empty-state{background:#fff;border-color:#e9edf4;color:#202638}
+html[data-theme="light"] .modal input{background:#fff;color:#202638;border-color:#ccd3df}
+html[data-theme="light"] .avatar-button,html[data-theme="light"] .secondary-btn,html[data-theme="light"] .layout-switch{background:#fff;color:#526070;border-color:#dfe4ec}
+html[data-theme="light"] .account-sheet{background:#fff;color:#242424}
+html[data-theme="light"] .account-link{color:#242424;border-color:#ddd}
+html[data-theme="light"] .account-detail{color:#555;border-color:#ddd}
+html[data-theme="light"] .account-sign-out{background:#f2f2f2;color:#242424;border-color:#ddd}
+html[data-theme="light"] .account-profile p{color:#666}
+html[data-theme="light"] .account-chevron{color:#333}
+html[data-theme="light"] .profile-input-row input{background:#fff;color:#202638;border-color:#d2d2d8}
+html[data-theme="light"] .account-dismiss{background:#f2f2f3;color:#242424;border-color:#d7d7db}
+html[data-theme="light"] #detail .babbel-panel{background:#f6f6f8;color:#202638}
+html[data-theme="light"] body.detail-mode .calendar-day .number{color:#344053}
+html[data-theme="light"] body.detail-mode .month-nav button{color:#293445}
+html[data-theme="light"] body.detail-mode .weekdays span{color:#5f6b7c}
+html[data-theme="light"] .babbel-description{color:#677284}
+html[data-theme="light"] body.detail-mode .secondary-btn{background:#fff;color:#526070;border-color:#dfe4ec}
+html[data-theme="light"] .mini-day.done{background:#fff0df;color:#9b511c}
+html[data-theme="light"] .mini-day.freeze{background:#e4f0ff;color:#3464a2}
+html[data-theme="light"] .mini-month,html[data-theme="light"] .toolbar-hint{color:#707986}
