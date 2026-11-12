@@ -16,7 +16,7 @@
     if(!root)return null;
     let tab='home',user=null,unsub=null,blocks=[],dirty=false,saveTimer=null,selectedHabit=null,
         slashFor=null,slashMatches=types,slashSelected=0,sortable=null,saveSerial=0,listenerEpoch=0;
-    let pendingWrite=Promise.resolve();
+    let pendingWrite=Promise.resolve(),editRevision=0;
     const key=d=>[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');
     const parse=s=>{const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d,12)};
     const shift=(d,n)=>{const r=new Date(d);r.setDate(r.getDate()+n);return r};
@@ -54,7 +54,7 @@
     });
     function setUser(next){
       if(unsub){unsub();unsub=null;}
-      clearTimeout(saveTimer);
+      clearTimeout(saveTimer);editRevision++;
       user=next;blocks=[];dirty=false;saveSerial++;selectedHabit=null;
       tab=['insights','checklist'].includes(new URLSearchParams(location.search).get('view'))?
         new URLSearchParams(location.search).get('view'):'home';
@@ -80,11 +80,11 @@
     }
     function normalizedType(t){return types.some(x=>x.id===t)?t:'text';}
     function normalizeBlock(b,i){
-      return {id:String(b.id||uniqueId()),type:normalizedType(b.type),text:String(b.text||'').slice(0,5000),checked:!!b.checked,collapsed:!!b.collapsed,order:Number.isFinite(b.order)?b.order:i,createdAt:Number(b.createdAt)||Date.now()};
+      return {id:String(b.id||uniqueId()),type:normalizedType(b.type),text:String(b.text||'').slice(0,5000),checked:!!b.checked,collapsed:!!b.collapsed,note:String(b.note||'').slice(0,10000),order:Number.isFinite(b.order)?b.order:i,createdAt:Number(b.createdAt)||Date.now()};
     }
     function scheduleSave(soon=false){
       if(!user)return;
-      dirty=true;clearTimeout(saveTimer);
+      dirty=true;editRevision++;clearTimeout(saveTimer);
       $('checklistSyncStatus').textContent='Saving…';
       saveTimer=setTimeout(saveChecklist,soon?100:700);
     }
@@ -92,7 +92,7 @@
       if(!user)return;
       const thisUser=user.uid;
       const payload=blocks.map((b,i)=>({...b,order:i}));
-      const serial=++saveSerial;
+      const serial=++saveSerial,revision=editRevision;
       // Serialize writes so a slower earlier save cannot overwrite a newer edit.
       const run=async()=>{
         if(!user||user.uid!==thisUser)return;
@@ -100,7 +100,7 @@
           await setDoc(doc(db,'users',thisUser,'settings','checklist'),{
             blocks:payload,updatedAt:Date.now()
           },{merge:true});
-          if(serial===saveSerial&&user&&user.uid===thisUser){
+          if(serial===saveSerial&&revision===editRevision&&user&&user.uid===thisUser){
             dirty=false;$('checklistSyncStatus').textContent='Saved';
           }
         }catch(err){
@@ -113,10 +113,10 @@
       await pendingWrite;
     }
     function addBlock(afterId=null,type='todo',text=''){
-      const b={id:uniqueId(),type,text,checked:false,collapsed:false,order:blocks.length,createdAt:Date.now()};
+      const b={id:uniqueId(),type,text,checked:false,collapsed:false,note:'',order:blocks.length,createdAt:Date.now()};
       const index=afterId?blocks.findIndex(x=>x.id===afterId):-1;
       if(index>=0)blocks.splice(index+1,0,b);else blocks.push(b);
-      renderChecklist();scheduleSave(true);
+      renderChecklist(true);scheduleSave(true);
       requestAnimationFrame(()=>focusBlock(b.id));
       return b;
     }
@@ -148,7 +148,7 @@
       b.type=normalizedType(type);
       b.text=b.text.replace(/^\/[a-z0-9 -]*/i,'');
       b.checked=false;
-      closeSlash();renderChecklist();scheduleSave(true);
+      closeSlash();renderChecklist(true);scheduleSave(true);
       requestAnimationFrame(()=>focusBlock(id));
     }
     $('checklistSlashMenu').addEventListener('pointerdown',e=>e.preventDefault());
@@ -159,10 +159,10 @@
       if(slashFor&&!e.target.closest('#checklistSlashMenu')&&!e.target.closest('#checklistBlocks'))closeSlash();
     });
     window.addEventListener('scroll',()=>{if(slashFor)closeSlash();},{passive:true});
-    function renderChecklist(){
+    function renderChecklist(force=false){
       if(!root)return;
       const focus=document.activeElement?.dataset?.blockId;
-      if(focus&&root.contains(document.activeElement)&&dirty)return;
+      if(!force&&focus&&root.contains(document.activeElement)&&dirty)return;
       root.innerHTML=blocks.map((b,i)=>{
         const isTask=b.type==='todo',isToggle=b.type==='toggle',isBullet=b.type==='bullet';
         const icon=isTask?'<input class="checklist-check" type="checkbox" data-toggle-check="'+safe(b.id)+'" '+(b.checked?'checked':'')+' aria-label="Complete task"/>':
@@ -170,7 +170,7 @@
           isBullet?'<span class="checklist-bullet">•</span>':'';
         return '<div class="checklist-line checklist-type-'+b.type+(b.checked?' is-done':'')+(b.collapsed?' is-collapsed':'')+'" data-id="'+safe(b.id)+'">'+
           '<button type="button" class="checklist-handle" aria-label="Drag to rearrange">⠿</button>'+
-          '<div class="checklist-line-inner">'+icon+'<textarea data-block-id="'+safe(b.id)+'" rows="1" maxlength="5000" spellcheck="true" placeholder="'+(b.type==='h1'?'Heading':b.type==='h2'?'Subheading':b.type==='todo'?'To-do':b.type==='toggle'?'Toggle title':b.type==='bullet'?'List item':"Type '/' for commands")+'" '+(b.collapsed&&b.type==='toggle'?'aria-expanded="false"':'')+'>'+safe(b.text)+'</textarea></div>'+
+          '<div class="checklist-line-inner">'+icon+'<div class="checklist-field-group"><textarea data-block-id="'+safe(b.id)+'" rows="1" maxlength="5000" spellcheck="true" placeholder="'+(b.type==='h1'?'Heading':b.type==='h2'?'Subheading':b.type==='todo'?'To-do':b.type==='toggle'?'Toggle title':b.type==='bullet'?'List item':"Type '/' for commands")+'" '+(b.collapsed&&b.type==='toggle'?'aria-expanded="false"':'')+'>'+safe(b.text)+'</textarea>'+(isToggle&&!b.collapsed?'<textarea class="checklist-note" data-note-id="'+safe(b.id)+'" maxlength="10000" rows="2" placeholder="Add extra information…">'+safe(b.note)+'</textarea>':'')+'</div></div>'+
           '<button type="button" class="checklist-delete" data-delete="'+safe(b.id)+'" aria-label="Delete block">×</button></div>';
       }).join('');
       $('checklistEmpty').hidden=blocks.length>0;
@@ -195,6 +195,8 @@
       });
     }
     root.addEventListener('input',e=>{
+      const note=e.target.closest('textarea[data-note-id]');
+      if(note){const b=blocks.find(x=>x.id===note.dataset.noteId);if(b){b.note=note.value;resizeField(note);scheduleSave();}return;}
       const field=e.target.closest('textarea[data-block-id]');if(!field)return;
       const b=blocks.find(b=>b.id===field.dataset.blockId);if(!b)return;
       b.text=field.value;resizeField(field);scheduleSave();
@@ -220,7 +222,7 @@
       }
       if(e.key==='Backspace'&&!field.value&&blocks.length>1){
         e.preventDefault();const index=blocks.findIndex(x=>x.id===id);blocks.splice(index,1);
-        renderChecklist();scheduleSave(true);requestAnimationFrame(()=>focusBlock(blocks[Math.max(0,index-1)].id));return;
+        renderChecklist(true);scheduleSave(true);requestAnimationFrame(()=>focusBlock(blocks[Math.max(0,index-1)].id));return;
       }
     });
     root.addEventListener('change',e=>{
@@ -232,10 +234,10 @@
       const deleteBtn=e.target.closest('[data-delete]');
       const collapse=e.target.closest('[data-collapse]');
       if(deleteBtn){
-        blocks=blocks.filter(b=>b.id!==deleteBtn.dataset.delete);renderChecklist();scheduleSave(true);
+        blocks=blocks.filter(b=>b.id!==deleteBtn.dataset.delete);renderChecklist(true);scheduleSave(true);
       }else if(collapse){
         const b=blocks.find(x=>x.id===collapse.dataset.collapse);
-        if(b){b.collapsed=!b.collapsed;renderChecklist();scheduleSave(true);}
+        if(b){b.collapsed=!b.collapsed;renderChecklist(true);scheduleSave(true);}
       }
     });
     $('checklistAdd').addEventListener('click',()=>addBlock(blocks.at(-1)?.id||null,'todo'));
