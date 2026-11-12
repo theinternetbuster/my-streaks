@@ -168,8 +168,9 @@ function renderDashboard(){
  el('layoutToggleBtn').title=layoutMode==='calendar'?'Compact cards':'Calendar cards';
  el('layoutToggleBtn').setAttribute('aria-pressed',String(layoutMode==='calendar'));
  grid.innerHTML=habits.map(h=>{
-   const info=evaluateHabit(h);
-   return '<div class="habit-card'+(info.doneToday?' completed-today':'')+'" data-id="'+escapeHTML(h.id)+'" data-done="'+info.doneToday+'" role="button" tabindex="0" aria-label="'+escapeHTML(h.name)+(info.doneToday?' completed today':' — hold to check in')+'">'+
+   const shown=pendingCheckins.has(h.id)?{...h,completions:[...new Set([...h.completions,todayKey()])]}:h;
+   const info=evaluateHabit(shown);
+   return '<div class="habit-card'+(info.doneToday?' completed-today':'')+'" data-id="'+escapeHTML(h.id)+'" data-done="'+info.doneToday+'" role="button" tabindex="0" aria-label="'+escapeHTML(h.name)+(layoutMode==='calendar'?' — hold to edit calendar':info.doneToday?' completed today':' — hold to check in')+'">'+
      '<span class="hold-progress" aria-hidden="true"></span>'+
      '<div class="habit-card-head"><h3>'+escapeHTML(h.name)+'</h3>'+
      (layoutMode==='calendar'?'<span class="mini-streak"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#flame-solid"></use></svg>'+info.streak+'</span>':'')+'</div>'+
@@ -178,10 +179,7 @@ function renderDashboard(){
      '</div>';
  }).join('');
  el('emptyState').hidden=habits.length!==0;
- const total=habits.length,complete=habits.filter(h=>evaluateHabit(h).doneToday).length;
- el('footerProgressCount').textContent=complete+' of '+total+' habit'+(total===1?'':'s');
- el('footerProgressFill').style.width=(total?100*complete/total:0)+'%';
- el('footerProgressTrack').setAttribute('aria-valuenow',String(total?Math.round(100*complete/total):0));
+
 }
 
 function openCalendarEditor(id){
@@ -326,6 +324,7 @@ async function saveReorderedHabits(){
    if(!desktopSettings.matches)backToAccountHome();
  });
 }
+const pendingCheckins=new Map();
 let holdDelayTimer=null;
 function stopHold(cancelClick=false){
  clearTimeout(holdDelayTimer);
@@ -339,19 +338,25 @@ function stopHold(cancelClick=false){
  activeHold=null;
 }
 async function checkInHabit(id){
- if(busy||!user)return;
+ if(busy||!user||pendingCheckins.has(id))return;
  const habit=habits.find(h=>h.id===id);
  if(!habit||evaluateHabit(habit).doneToday)return;
- await withBusy(async()=>{
-   const ref=habitDoc(id),key=todayKey();
+ const key=todayKey();
+ pendingCheckins.set(id,key);
+ renderDashboard(); // The completed card and streak number appear at the end of the hold.
+ try{
    await runTransaction(db,async tx=>{
-     const snapshot=await tx.get(ref);
+     const ref=habitDoc(id),snapshot=await tx.get(ref);
      if(!snapshot.exists())throw Error('Habit no longer exists');
      const dates=Array.isArray(snapshot.data().completions)?snapshot.data().completions:[];
      if(!dates.includes(key))tx.update(ref,{completions:[...dates,key].sort()});
    });
    showToast('Today completed! 🔥');
- });
+ }catch(error){
+   pendingCheckins.delete(id);
+   renderDashboard();
+   showToast(errorMessage(error));
+ }
 }
 async function quickDeleteHabit(id){
   const h=habits.find(x=>x.id===id);if(!h)return;
@@ -454,6 +459,7 @@ onAuthStateChanged(auth,u=>{
  },err=>console.error('Settings sync issue',err));
  unsubscribe=onSnapshot(habitCollection(),snapshot=>{
    habits=snapshot.docs.map(s=>normalise({id:s.id,...s.data()})).sort((a,b)=>(a.order??(1000000+a.createdAt))-(b.order??(1000000+b.createdAt))||a.name.localeCompare(b.name));
+   for(const [id,key] of pendingCheckins){if(habits.find(h=>h.id===id)?.completions.includes(key))pendingCheckins.delete(id);}
    for(const [previewKey,desired] of editorPreview){
      const divider=previewKey.lastIndexOf(':'),id=previewKey.slice(0,divider),date=previewKey.slice(divider+1);
      const matched=habits.find(h=>h.id===id);
@@ -618,12 +624,14 @@ el('layoutToggleBtn').addEventListener('click',()=>{layoutMode=layoutMode==='car
 const grid=el('habitGrid');
 grid.addEventListener('click',event=>{
  const card=event.target.closest('.habit-card');
- if(!card||!el('calendarEditor').hidden||Date.now()<suppressCardClicksUntil)return;
+ if(!card||layoutMode==='calendar'||!el('calendarEditor').hidden||Date.now()<suppressCardClicksUntil)return;
  openHabit(card.dataset.id);
 });
 grid.addEventListener('keydown',event=>{
  if((event.key==='Enter'||event.key===' ')&&event.target.classList.contains('habit-card')){
-   event.preventDefault();if(layoutMode==='calendar'&&event.shiftKey)openCalendarEditor(event.target.dataset.id);else openHabit(event.target.dataset.id);
+   event.preventDefault();
+   if(layoutMode==='calendar')openCalendarEditor(event.target.dataset.id);
+   else openHabit(event.target.dataset.id);
  }
 });
 grid.addEventListener('pointerdown',event=>{
@@ -687,26 +695,3 @@ el('prevMonth').addEventListener('click',()=>{shownMonth=new Date(shownMonth.get
 el('nextMonth').addEventListener('click',()=>{shownMonth=new Date(shownMonth.getFullYear(),shownMonth.getMonth()+1,1);renderDetail();});
 el('accountExport').addEventListener('click',exportBackup);
 el('importFile').addEventListener('change',e=>{importBackup(e.target.files[0]);e.target.value='';});
-el('historyBtn').addEventListener('click',()=>{el('historyPanel').hidden=!el('historyPanel').hidden;el('historyDate').value=todayKey();});
-el('historyDate').addEventListener('change',()=>{const h=selectedHabit();const k=el('historyDate').value;el('historyHint').textContent=h?.completions.includes(k)?'Currently completed':'Currently not completed';});
-el('toggleHistoryBtn').addEventListener('click',()=>withBusy(async()=>{
- const h=selectedHabit(),key=el('historyDate').value;if(!h||!key||key>todayKey())throw Error('Choose today or a past date');
- await runTransaction(db,async tx=>{const ref=habitDoc(h.id);const snap=await tx.get(ref);if(!snap.exists())throw Error('Habit no longer exists');const current=snap.data();if(Array.isArray(current.freezeDates)&&current.freezeDates.includes(key))throw Error('Blue freeze dates cannot be changed');let dates=Array.isArray(current.completions)?current.completions:[];dates=dates.includes(key)?dates.filter(x=>x!==key):[...dates,key];tx.update(ref,{completions:[...new Set(dates)].sort()});});showToast('History updated');
-}));
-
-
-/* Refresh the day boundary after midnight or when the iPhone web app resumes. */
-let lastVisibleDay=todayKey();
-function refreshDayBoundary(){
- const current=todayKey();
- if(current===lastVisibleDay)return;
- lastVisibleDay=current;
- if(!user)return;
- for(const habit of habits)reconcileFreezeLedger(habit.id);
- if(editorHabitId)renderCalendarEditor();
- if(selectedId)renderDetail();
- if(!el('dashboard').hidden)renderDashboard();
-}
-document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshDayBoundary();});
-window.addEventListener('focus',refreshDayBoundary);
-setInterval(refreshDayBoundary,60000);
