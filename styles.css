@@ -76,3 +76,31 @@ body{background:#1c1c1f;color:#f5f5f7;min-height:100svh}
 .account-menu button:hover,.import-label:hover{background:#39393e}
 #toast{background:#3d3d43;color:#fff}
 @media(display-mode:standalone){body{padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}.topbar{padding-top:0}}
+
+
+/* Dark appearance for the dashboard and other non-calendar screens */
+:root{color-scheme:dark;color:#f6f6f8;background:#1c1c1f}
+body{background:#1c1c1f;color:#f6f6f8}
+.topbar{background:#202023;border-color:#38383d}
+.brand-icon{background:#35291f}
+.brand small,.subheading,.bottom-note{color:#aaaab2}
+.sync-pill{background:#303035;color:#c7c7ce}
+.sync-pill.online{background:#203d32;color:#a4e5c8}
+.avatar-button,.ghost-icon{background:#303034;color:#f5f5f7;border-color:#4a4a50}
+.habit-card{background:#2b2b2f;border-color:#444449;box-shadow:none;color:#f7f7fa}
+.habit-card:hover{background:#333338;box-shadow:0 14px 34px #0004}
+.card-arrow{color:#a9a9b2}
+.empty-state,.login-panel{background:#29292e;border-color:#444449;box-shadow:none}
+.empty-state p,.login-panel p,.login-panel .small{color:#b4b4bd}
+.loading-panel{color:#b9b9c1}
+.secondary-btn{background:#34343a;color:#f5f5f7;border-color:#56565d}
+.modal{background:#29292e;color:#f5f5f8;border:1px solid #48484e}
+.modal input,.history-panel input{background:#202024;color:#f6f6f7;border-color:#55555d}
+.modal input::placeholder{color:#8f8f99}
+.danger-btn{background:#392426;color:#ffb6b4;border-color:#754547}
+.account-menu{background:#2b2b2f;border-color:#45454a;box-shadow:0 18px 35px #0006}
+.account-menu span{color:#b6b6bd}
+.account-menu button,.import-label{color:#f0f0f4}
+.account-menu button:hover,.import-label:hover{background:#3d3d43}
+.history-panel{background:#29292e;border-color:#48484e}
+.text-btn{color:#bbbbc4}
