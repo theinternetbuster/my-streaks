@@ -90,7 +90,7 @@
     }
     function normalizedType(t){return types.some(x=>x.id===t)?t:'text';}
     function normalizeBlock(b,i){
-      return {id:String(b.id||uniqueId()),type:normalizedType(b.type),text:String(b.text||'').slice(0,5000),checked:!!b.checked,collapsed:!!b.collapsed,note:String(b.note||'').slice(0,10000),subtasks:Array.isArray(b.subtasks)?b.subtasks.slice(0,40).filter(t=>t&&typeof t.text==='string').map(t=>({id:String(t.id||uniqueId()),text:String(t.text).slice(0,500),checked:!!t.checked})):[],dueDate:/^\d{4}-\d{2}-\d{2}$/.test(b.dueDate||'')?b.dueDate:'',order:Number.isFinite(b.order)?b.order:i,createdAt:Number(b.createdAt)||Date.now()};
+      return {id:String(b.id||uniqueId()),type:normalizedType(b.type),text:String(b.text||'').slice(0,5000),checked:!!b.checked,collapsed:!!b.collapsed,note:String(b.note||'').slice(0,10000),detailsMode:b.detailsMode==='tasks'||b.type==='todoList'?'tasks':'notes',subtasks:Array.isArray(b.subtasks)?b.subtasks.slice(0,40).filter(t=>t&&typeof t.text==='string').map(t=>({id:String(t.id||uniqueId()),text:String(t.text).slice(0,500),checked:!!t.checked})):[],dueDate:/^\d{4}-\d{2}-\d{2}$/.test(b.dueDate||'')?b.dueDate:'',order:Number.isFinite(b.order)?b.order:i,createdAt:Number(b.createdAt)||Date.now()};
     }
     function scheduleSave(soon=false){
       if(!user)return;
@@ -123,7 +123,7 @@
       await pendingWrite;
     }
     function addBlock(afterId=null,type='todo',text=''){
-      const b={id:uniqueId(),type,text,checked:false,collapsed:false,note:'',subtasks:[],dueDate:'',order:blocks.length,createdAt:Date.now()};
+      const b={id:uniqueId(),type,text,checked:false,collapsed:false,note:'',detailsMode:type==='todoList'?'tasks':'notes',subtasks:[],dueDate:'',order:blocks.length,createdAt:Date.now()};
       const index=afterId?blocks.findIndex(x=>x.id===afterId):-1;
       if(index>=0)blocks.splice(index+1,0,b);else blocks.push(b);
       renderChecklist(true);scheduleSave(true);
@@ -174,18 +174,36 @@
       if(!root)return;
       const focus=document.activeElement?.dataset?.blockId;
       if(!force&&focus&&root.contains(document.activeElement))return;
-      root.innerHTML=blocks.map((b,i)=>{
-        const isTask=b.type==='todo',isToggle=b.type==='toggle',isBullet=b.type==='bullet';
-        const icon=isTask?'<input class="checklist-check" type="checkbox" data-toggle-check="'+safe(b.id)+'" '+(b.checked?'checked':'')+' aria-label="Complete task"/>':
-          isToggle?'<button type="button" class="checklist-toggle-icon" data-collapse="'+safe(b.id)+'" aria-label="'+(b.collapsed?'Expand':'Collapse')+' notes">'+(b.collapsed?'▸':'▾')+'</button>':
-          isBullet?'<span class="checklist-bullet">•</span>':'';
+      root.innerHTML=blocks.map(b=>{
+        const isTask=['todo','todoNote','todoList'].includes(b.type);
+        const isToggle=b.type==='toggle',isBullet=b.type==='bullet';
+        const expanded=isTask&&!b.collapsed;
+        const noteExpanded=isToggle&&!b.collapsed;
+        const checkbox=isTask?'<input class="checklist-check" type="checkbox" data-toggle-check="'+safe(b.id)+'" '+(b.checked?'checked':'')+' aria-label="Complete task"/>':'';
+        const arrow=isTask||isToggle?
+          '<button type="button" class="checklist-toggle-icon '+(b.collapsed?'collapsed':'')+'" data-collapse="'+safe(b.id)+'" aria-label="'+(b.collapsed?'Expand details':'Collapse details')+'" aria-expanded="'+String(!b.collapsed)+'">'+(b.collapsed?'▸':'▾')+'</button>':'';
+        const icon=isTask?checkbox+arrow:isToggle?arrow:isBullet?'<span class="checklist-bullet">•</span>':'';
+        const placeholder=(b.type==='h1'?'Heading':b.type==='h2'?'Subheading':isTask?'To-do':isToggle?'Toggle title':isBullet?'List item':"Press '/' for commands");
+        let details='';
+        if(noteExpanded)details='<textarea class="checklist-note" data-note-id="'+safe(b.id)+'" maxlength="10000" rows="2" placeholder="Additional information…">'+safe(b.note)+'</textarea>';
+        if(expanded){
+          const mode=b.detailsMode==='tasks'?'tasks':'notes';
+          const modeSelector='<div class="checklist-detail-modes" aria-label="Task detail type"><button type="button" data-details-mode="notes" data-id="'+safe(b.id)+'" class="'+(mode==='notes'?'selected':'')+'">Notes</button><button type="button" data-details-mode="tasks" data-id="'+safe(b.id)+'" class="'+(mode==='tasks'?'selected':'')+'">Subtasks</button></div>';
+          const notes='<textarea class="checklist-note" data-note-id="'+safe(b.id)+'" maxlength="10000" rows="2" placeholder="Add extra information…">'+safe(b.note)+'</textarea>';
+          const nested='<div class="checklist-subtasks">'+b.subtasks.map(t=>
+            '<div class="checklist-subtask"><input type="checkbox" data-subtask-check="'+safe(b.id)+'" data-subtask-id="'+safe(t.id)+'" '+(t.checked?'checked':'')+' aria-label="Complete subtask"/><input type="text" maxlength="500" data-subtask-text="'+safe(b.id)+'" data-subtask-id="'+safe(t.id)+'" value="'+safe(t.text)+'" placeholder="Subtask" class="'+(t.checked?'completed':'')+'"/><button type="button" data-subtask-remove="'+safe(b.id)+'" data-subtask-id="'+safe(t.id)+'" aria-label="Remove subtask">×</button></div>'
+          ).join('')+'<button type="button" class="checklist-add-subtask" data-subtask-add="'+safe(b.id)+'">＋ Add a subtask</button></div>';
+          details=modeSelector+(mode==='notes'?notes:nested);
+        }
         return '<div class="checklist-line checklist-type-'+b.type+(b.checked?' is-done':'')+(b.collapsed?' is-collapsed':'')+'" data-id="'+safe(b.id)+'">'+
           '<button type="button" class="checklist-handle" aria-label="Drag to rearrange">⠿</button>'+
-          '<div class="checklist-line-inner">'+icon+'<div class="checklist-field-group"><textarea data-block-id="'+safe(b.id)+'" rows="1" maxlength="5000" spellcheck="true" placeholder="'+(b.type==='h1'?'Heading':b.type==='h2'?'Subheading':b.type==='todo'?'To-do':b.type==='toggle'?'Toggle title':b.type==='bullet'?'List item':"Type '/' for commands")+'" '+(b.collapsed&&b.type==='toggle'?'aria-expanded="false"':'')+'>'+safe(b.text)+'</textarea>'+(isToggle&&!b.collapsed?'<textarea class="checklist-note" data-note-id="'+safe(b.id)+'" maxlength="10000" rows="2" placeholder="Add extra information…">'+safe(b.note)+'</textarea>':'')+'</div></div>'+
+          '<div class="checklist-line-inner">'+icon+
+          '<div class="checklist-field-group"><textarea data-block-id="'+safe(b.id)+'" rows="1" maxlength="5000" spellcheck="true" placeholder="'+placeholder+'">'+safe(b.text)+'</textarea>'+
+          (details?'<div class="checklist-details">'+details+'</div>':'')+'</div></div>'+
           (isTask?'<label class="checklist-date-pill '+(b.dueDate?'has-date':'')+'" title="Optional due date"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4m8-4v4"/></svg><span>'+safe(b.dueDate?new Date(b.dueDate+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}):'Date')+'</span><input type="date" data-due-date="'+safe(b.id)+'" value="'+safe(b.dueDate)+'" aria-label="Due date"/></label>':'')+
           '<button type="button" class="checklist-delete" data-delete="'+safe(b.id)+'" aria-label="Delete block">×</button></div>';
       }).join('');
-      $('checklistEmpty').hidden=blocks.length>0;
+      $('checklistEmpty').hidden=true;
       root.querySelectorAll('textarea').forEach(resizeField);
       setupSortable();
     }
