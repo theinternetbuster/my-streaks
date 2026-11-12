@@ -194,8 +194,29 @@
       menu.innerHTML='<div class="checklist-slash-label">TURN INTO</div>'+slashMatches.map((t,i)=>
         '<button type="button" role="menuitem" data-command="'+t.id+'" class="'+(!i?'selected':'')+'"><span class="checklist-cmd-icon">'+safe(t.symbol)+'</span><span><strong>'+safe(t.title)+'</strong><small>'+safe(t.subtitle)+'</small></span><kbd>/'+t.id+'</kbd></button>'
       ).join('');
-      const field=[...root.querySelectorAll('[contenteditable="true"][data-block-id]')].find(x=>x.dataset.blockId===id);
-      if(field){const rect=field.getBoundingClientRect();menu.style.left=Math.min(Math.max(12,rect.left),Math.max(12,window.innerWidth-325))+'px';menu.style.top=Math.min(window.innerHeight-280,Math.max(12,rect.bottom+8))+'px';}
+      const field=id.startsWith('note:')?
+        root.querySelector('.checklist-note-editor[data-note-id="'+id.slice(5)+'"]'):
+        root.querySelector('.checklist-editor[data-block-id="'+id+'"]');
+      if(field){
+        // Anchor to the current caret/line, not the bottom-left of the viewport.
+        const selection=window.getSelection();
+        let rect=null;
+        if(selection?.rangeCount&&field.contains(selection.anchorNode)){
+          const caret=selection.getRangeAt(0).cloneRange();
+          caret.collapse(true);
+          rect=caret.getClientRects()[0]||null;
+        }
+        rect=rect||field.getBoundingClientRect();
+        const width=Math.min(315,window.innerWidth-24);
+        const x=Math.max(12,Math.min(rect.left,window.innerWidth-width-12));
+        const below=rect.bottom+8;
+        const remaining=window.innerHeight-below-12;
+        const above=rect.top-8;
+        const placeAbove=remaining<175&&above>remaining;
+        menu.style.left=x+'px';
+        menu.style.top=(placeAbove?Math.max(12,above-Math.min(320,menu.scrollHeight||280)):Math.min(below,window.innerHeight-90))+'px';
+        menu.style.maxHeight=Math.min(350,Math.max(120,placeAbove?above-12:window.innerHeight-below-12))+'px';
+      }
       menu.hidden=false;
     }
     function applyCommand(type){
