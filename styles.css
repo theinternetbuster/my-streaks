@@ -1405,3 +1405,23 @@ html[data-theme="light"] .detail-edit-icon{background:#f3f3f5;color:#343941;bord
   }
   .footer-version{display:none!important}
 }
+
+/* v16 — iOS calendar editor is entirely nonselectable; day buttons still work. */
+#calendarEditor,
+#calendarEditor *,
+#calendarEditor *::before,
+#calendarEditor *::after {
+  -webkit-user-select:none!important;
+  -moz-user-select:none!important;
+  user-select:none!important;
+  -webkit-touch-callout:none!important;
+  -webkit-tap-highlight-color:transparent!important;
+}
+#calendarEditor .editor-day {
+  touch-action:manipulation;
+}
+#calendarEditor .editor-day:focus,
+#calendarEditor .editor-day:active {
+  -webkit-user-select:none!important;
+  user-select:none!important;
+}
