@@ -474,34 +474,59 @@
       return true;
     }
     // Strip pasted HTML, preserving clean text and preventing unexpected formatting.
+    // Convert pasted Markdown-style lists into genuine checklist bullet blocks.
+    // Hyphens at the start of list lines are formatting cues, not literal content.
+    const parsePastedLines=text=>text.replace(/\r/g,'').split('\n').map(line=>{
+      const bullet=line.match(/^\s*[-*•]\s+(.+)$/);
+      const task=line.match(/^\s*-\s*\[([ xX])\]\s*(.*)$/);
+      if(task)return {type:'todo',text:task[2],checked:task[1].toLowerCase()==='x'};
+      if(bullet)return {type:'bullet',text:bullet[1],checked:false};
+      return {type:'text',text:line,checked:false};
+    });
     root.addEventListener('paste',event=>{
       const note=event.target.closest('.checklist-note-editor');
       if(note){
         event.preventDefault();
-        const plain=(event.clipboardData?.getData('text/plain')||'').slice(0,10000);
-        document.execCommand('insertText',false,plain);
+        const block=blocks.find(x=>x.id===note.dataset.noteId);
+        if(!block)return;
+        const raw=(event.clipboardData?.getData('text/plain')||'').slice(0,10000);
+        const lines=parsePastedLines(raw);
+        const formatted=lines.map(x=>x.type==='bullet'?'• '+x.text:x.type==='todo'?(x.checked?'☑ ':'☐ ')+x.text:x.text).join('\n');
+        const selection=window.getSelection();
+        const start=editorCaretOffset(note);
+        const selected=selection&&!selection.isCollapsed&&note.contains(selection.anchorNode)?selection.toString().length:0;
+        block.note=block.note.slice(0,start)+formatted+block.note.slice(start+selected);
+        note.textContent=block.note;
+        focusEditableAt(note,start+formatted.length);
+        scheduleSave(true);
         return;
       }
       const field=event.target.closest('.checklist-editor');
       if(!field)return;
       event.preventDefault();
       const plain=(event.clipboardData?.getData('text/plain')||'').replace(/\r/g,'');
-      const parts=plain.split('\n');
-      if(parts.length===1){
-        document.execCommand('insertText',false,parts[0]);return;
+      const parts=parsePastedLines(plain);
+      if(parts.length===1&&parts[0].type==='text'){
+        document.execCommand('insertText',false,parts[0].text);return;
       }
       const block=blocks.find(b=>b.id===field.dataset.blockId);if(!block)return;
       const at=editorCaretOffset(field),original=(field.innerText||field.textContent||'');
-      block.text=original.slice(0,at)+parts.shift();
-      let afterId=block.id;
-      for(const line of parts){
-        const next=normalizeBlock({id:uniqueId(),type:'text',text:line},blocks.length);
-        blocks.splice(blocks.findIndex(b=>b.id===afterId)+1,0,next);
-        afterId=next.id;
+      const before=original.slice(0,at),after=original.slice(at);
+      const index=blocks.findIndex(b=>b.id===block.id);
+      if(!before&&parts.length) {
+        block.type=parts[0].type;block.checked=parts[0].checked;
       }
-      blocks.find(b=>b.id===afterId).text+=original.slice(at);
-      renderChecklist(true);scheduleSave(true);
-      requestAnimationFrame(()=>focusBlockAt(afterId,blocks.find(b=>b.id===afterId).text.length-original.slice(at).length));
+      block.text=before+parts[0].text;
+      let insertion=index;
+      for(const part of parts.slice(1)){
+        const next=normalizeBlock({id:uniqueId(),type:part.type,text:part.text,checked:part.checked},++insertion);
+        blocks.splice(insertion,0,next);
+      }
+      const last=blocks[insertion];
+      const finish=last.text.length;
+      last.text+=after;
+      closeSlash();renderChecklist(true);scheduleSave(true);
+      requestAnimationFrame(()=>focusBlockAt(last.id,finish));
     });
     root.addEventListener('change',e=>{
       const subcheck=e.target.closest('[data-subtask-check]');
