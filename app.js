@@ -161,7 +161,7 @@ function renderCalendarEditor(){
  el('editorCalendarDays').innerHTML=html;
 }
 async function toggleEditorDate(key){
- if(editorBusy || !/^\\d{4}-\\d{2}-\\d{2}$/.test(key) || key>todayKey())return;
+ if(editorBusy || !/^\d{4}-\d{2}-\d{2}$/.test(key) || key>todayKey())return;
  const id=editorHabitId,h=habits.find(h=>h.id===id);
  if(!h||evaluateHabit(h).states.get(key)==='freeze')return;
  editorBusy=true;
