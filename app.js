@@ -60,6 +60,7 @@ function applyHabitSnapshot(snapshot){
      Promise.resolve().then(()=>reconcileFreezeLedger(record.id)).catch(e=>console.warn('Freeze reconciliation',e));
    }
  }
+ workspace?.onHabitsChange();
  setSync(snapshot.metadata.hasPendingWrites?'Saving…':'Synced',!snapshot.metadata.hasPendingWrites);
 }
 
@@ -86,12 +87,17 @@ const addDays = (key, n) => { const d = parseKey(key); d.setDate(d.getDate()+n);
 const weekStart = key => { const d=parseKey(key); const dow=(d.getDay()+6)%7; return addDays(key,-dow); };
 function showToast(message){ const t=el('toast');t.textContent=message;t.classList.add('shown');clearTimeout(showToast.timer);showToast.timer=setTimeout(()=>t.classList.remove('shown'),3400); }
 function setSync(message, online=false){ el('syncState').textContent=message; el('syncState').classList.toggle('online',online); }
+let workspace=null;
 function display(view){
- ['loginPanel','loadingPanel','dashboard'].forEach(id=>el(id).hidden=(id!==view && !(view==='detail' && id==='dashboard')));
+ if(view==='dashboard'&&user&&workspace?.tab()!=='home'){
+   view=workspace.tab()==='insights'?'insightsPanel':'checklistPanel';
+ }
+ ['loginPanel','loadingPanel','dashboard','insightsPanel','checklistPanel'].forEach(id=>
+   el(id).hidden=(id!==view && !(view==='detail'&&id==='dashboard')));
  el('detail').hidden=view!=='detail';
  document.body.classList.toggle('detail-mode',view==='detail');
  document.body.classList.toggle('detail-open',view==='detail');
- if(user && view==='dashboard') syncDesktopRoute();
+ if(user && ['dashboard','insightsPanel','checklistPanel'].includes(view))syncDesktopRoute();
 }
 function escapeHTML(str){ return String(str).replace(/[&<>"']/g, ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
 function normalise(raw){ return {id:raw.id,name:String(raw.name||'Habit'),createdDate:raw.createdDate||todayKey(),createdAt:Number(raw.createdAt)||0,order:Number.isFinite(raw.order)?raw.order:null,completions:Array.isArray(raw.completions)?[...new Set(raw.completions.filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x)))].sort():[],freezeDates:Array.isArray(raw.freezeDates)?[...new Set(raw.freezeDates.filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x)))].sort():[],freezeProcessedThrough:raw.freezeProcessedThrough||null}; }
@@ -486,11 +492,20 @@ async function importBackup(file){if(!file||!user)return;let data;try{data=JSON.
  });}
 function signIn(){signInWithPopup(auth,provider).catch(async err=>{if(['auth/popup-blocked','auth/operation-not-supported-in-this-environment'].includes(err.code)){try{await signInWithRedirect(auth,provider);}catch(e){showToast(errorMessage(e));}}else if(err.code!=='auth/popup-closed-by-user'){showToast(errorMessage(err));}});}
 getRedirectResult(auth).catch(err=>showToast(errorMessage(err)));
+// Workspace enhancement is isolated so a checklist error cannot prevent habits loading.
+try{
+ workspace=window.MyStreaksWorkspace?.start({
+   db,doc,onSnapshot,setDoc,
+   getHabits:()=>habits,evaluateHabit,
+   onTabChange:()=>{if(user){display('dashboard');}}
+ })||null;
+}catch(error){console.error('Optional workspace failed to initialize',error);}
 onAuthStateChanged(auth,u=>{
  if(unsubscribe){unsubscribe();unsubscribe=null;}
  clearTimeout(initialLoadTimer);
  const currentEpoch=++initialLoadEpoch;
  user=u;habits=[];selectedId=null;
+ try{workspace?.setUser(u);}catch(error){console.error('Workspace account sync failed',error);}
  stopHold();
  if(unsubscribePrefs){unsubscribePrefs();unsubscribePrefs=null;}
  el('userBtn').hidden=!u;el('headerExploreLink').hidden=!!u;el('accountMenu').hidden=true;document.body.classList.remove('account-open');el('userBtn').setAttribute('aria-expanded','false');
