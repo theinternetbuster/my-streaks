@@ -230,7 +230,7 @@
     }
     // Due dates are explicit: users type @today/@tomorrow or choose a date.
     // Nothing is displayed on a plain task until a date has been assigned.
-    let dateTargetId=null,dateSuggestionId=null;
+    let dateTargetId=null,dateSuggestionId=null,dateViewMonth=null;
     const dateMenu=document.createElement('div');
     dateMenu.className='checklist-date-menu';
     dateMenu.setAttribute('role','dialog');
@@ -247,17 +247,42 @@
     function closeDateMenu(){
       dateMenu.hidden=true;dateTargetId=null;dateSuggestionId=null;
     }
+    function renderDateCalendar(){
+      if(!dateViewMonth)return '';
+      const first=new Date(dateViewMonth.getFullYear(),dateViewMonth.getMonth(),1);
+      const offset=(first.getDay()+6)%7;
+      const length=new Date(first.getFullYear(),first.getMonth()+1,0).getDate();
+      const selected=blocks.find(b=>b.id===dateTargetId)?.dueDate;
+      let cells='';
+      for(let i=0;i<Math.ceil((offset+length)/7)*7;i++){
+        const date=new Date(first.getFullYear(),first.getMonth(),i-offset+1,12);
+        const value=key(date),outside=date.getMonth()!==first.getMonth();
+        cells+='<button type="button" data-date-day="'+value+'" class="checklist-date-day'+
+          (outside?' outside':'')+(value===localDay()?' today':'')+(value===selected?' selected':'')+'">'+date.getDate()+'</button>';
+      }
+      return '<div class="checklist-date-cal-header"><strong>'+
+        first.toLocaleDateString('en-US',{month:'long',year:'numeric'})+
+        '</strong><div><button type="button" data-date-shift="-1" aria-label="Previous month">‹</button>'+
+        '<button type="button" data-date-shift="1" aria-label="Next month">›</button></div></div>'+
+        '<div class="checklist-date-weekdays">'+['M','T','W','T','F','S','S'].map(x=>'<span>'+x+'</span>').join('')+'</div>'+
+        '<div class="checklist-date-grid">'+cells+'</div>';
+    }
     function openDateMenu(id,anchorEl=null,query=''){
       const b=blocks.find(x=>x.id===id);
       if(!b||!['todo','todoNote','todoList'].includes(b.type))return;
       dateTargetId=id;
+      if(!dateViewMonth||dateMenu.hidden){
+        const selected=b.dueDate?new Date(b.dueDate+'T12:00:00'):new Date();
+        dateViewMonth=new Date(selected.getFullYear(),selected.getMonth(),1);
+      }
       dateMenu.innerHTML='<div class="checklist-date-menu-title">'+(query?'ADD A DATE':'DUE DATE')+'</div>'+
         '<div class="checklist-date-quick">'+
         '<button type="button" data-date-quick="today">Today <span>'+dateLabel(localDay())+'</span></button>'+
         '<button type="button" data-date-quick="tomorrow">Tomorrow <span>'+dateLabel(localDay(1))+'</span></button>'+
         '<button type="button" data-date-quick="week">Next week <span>'+dateLabel(localDay(7))+'</span></button>'+
         (b.dueDate?'<button type="button" data-date-quick="clear">Clear date</button>':'')+
-        '</div><div class="checklist-date-custom"><label for="checklistCustomDate">Choose a date</label>'+
+        '</div><div class="checklist-date-custom">'+renderDateCalendar()+
+        '<label for="checklistCustomDate">Or enter a date</label>'+
         '<input id="checklistCustomDate" type="date" value="'+safe(b.dueDate||localDay())+'" aria-label="Custom due date"/></div>';
       dateMenu.hidden=false;
       if(query){
@@ -276,7 +301,7 @@
         const range=sel.getRangeAt(0).cloneRange();range.collapse(true);
         rect=range.getClientRects()[0]||rect;
       }
-      const width=285,height=310;
+      const width=285,height=450;
       dateMenu.style.left=Math.max(12,Math.min(rect?.left||12,innerWidth-width-12))+'px';
       dateMenu.style.top=Math.max(12,Math.min((rect?.bottom||80)+7,innerHeight-height-12))+'px';
     }
@@ -305,6 +330,18 @@
       if(e.target.closest('[data-date-quick]'))e.preventDefault();
     });
     dateMenu.addEventListener('click',e=>{
+      const day=e.target.closest('[data-date-day]');
+      if(day&&dateTargetId){
+        applyDueDate(dateTargetId,day.dataset.dateDay,!!dateSuggestionId);return;
+      }
+      const navigation=e.target.closest('[data-date-shift]');
+      if(navigation&&dateTargetId){
+        dateViewMonth.setMonth(dateViewMonth.getMonth()+Number(navigation.dataset.dateShift));
+        const grid=dateMenu.querySelector('.checklist-date-custom');
+        if(grid)grid.innerHTML=renderDateCalendar()+
+          '<label for="checklistCustomDate">Or enter a date</label><input id="checklistCustomDate" type="date" value="'+safe(blocks.find(b=>b.id===dateTargetId)?.dueDate||localDay())+'" aria-label="Custom due date"/>';
+        return;
+      }
       const button=e.target.closest('[data-date-quick]');
       if(!button||!dateTargetId)return;
       const value=button.dataset.dateQuick;
