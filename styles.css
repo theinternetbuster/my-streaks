@@ -1958,3 +1958,58 @@ body:has(#loginPanel:not([hidden])) .shell,
  #loginPanel .demo-carousel-card.is-active .demo-count-change{animation:none}
  #loginPanel .story-feature-visual .story-tilt-card{transform:none!important;transition:none!important}
 }
+
+
+/* v21 — physical horizontal filmstrip, not independently teleporting panels */
+#loginPanel .demo-carousel-rail{
+ position:absolute!important;inset:0!important;
+ display:flex!important;align-items:stretch!important;
+ box-sizing:border-box!important;
+ width:100%!important;height:100%!important;
+ padding:0 8%!important;gap:2%!important;
+ overflow:visible!important;
+ transform:translate3d(0,0,0);
+ transition:transform .86s cubic-bezier(.22,1,.36,1)!important;
+ will-change:transform;
+}
+#loginPanel .demo-carousel-rail.demo-no-transition{transition:none!important}
+#loginPanel .demo-carousel-card{
+ position:relative!important;top:auto!important;left:auto!important;
+ flex:0 0 100%!important;width:100%!important;
+ height:100%!important;min-width:0!important;
+ overflow:hidden!important;transform:none!important;
+ opacity:.65!important;filter:brightness(.72)!important;
+ background:#080809;border:1px solid #46464d;border-radius:14px;
+ box-shadow:none!important;z-index:auto!important;
+ transition:opacity .65s ease,filter .65s ease!important;
+ pointer-events:none;
+}
+#loginPanel .demo-carousel-card.is-active{
+ opacity:1!important;filter:brightness(1)!important;
+ box-shadow:0 12px 32px #0008!important;
+}
+#loginPanel .demo-carousel-card .demo-screen{
+ display:flex!important;flex-direction:column!important;
+ opacity:1!important;visibility:visible!important;
+ transform:none!important;filter:none!important;
+ width:100%!important;height:100%!important;min-width:0!important;
+}
+#loginPanel .demo-stage{background:#080809!important}
+#loginPanel .demo-timeline-dot.is-active{width:62px!important;border-radius:99px!important}
+#loginPanel .demo-timeline-dot.is-active .demo-dot-fill{
+ display:block!important;opacity:1!important;
+}
+#loginPanel .demo-carousel-card .demo-ui-top,
+#loginPanel .demo-carousel-card .demo-ui-heading,
+#loginPanel .demo-carousel-card .demo-card-grid,
+#loginPanel .demo-carousel-card .demo-mini-grid,
+#loginPanel .demo-carousel-card .demo-settings-layout{visibility:visible!important}
+@media(max-width:650px){
+ #loginPanel .demo-carousel-rail{padding:0 5%!important;gap:2%!important}
+ #loginPanel .demo-carousel-card{border-radius:11px}
+ #loginPanel .demo-timeline-dot.is-active{width:48px!important}
+}
+@media(prefers-reduced-motion:reduce){
+ #loginPanel .demo-carousel-rail{transition:none!important}
+ #loginPanel .demo-carousel-card{transition:none!important}
+}
