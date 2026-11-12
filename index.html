@@ -16,7 +16,8 @@
   <link rel="icon" type="image/svg+xml" href="app-icon.svg" />
   <meta name="description" content="A private streak tracker with weekly freezes and cloud sync." />
   <title>My Streaks</title>
-  <link rel="stylesheet" href="styles.css?v=20261111-film22" />
+  <link rel="stylesheet" href="styles.css?v=20261112-tabs1" />
+  <link rel="stylesheet" href="workspace.css?v=20261112-tabs1" />
   <style id="critical-landing-styles">
 /* Critical inline fallback is scoped to logged-out view so signed-in themes are unchanged. */
 [hidden]{display:none!important}
@@ -784,6 +785,11 @@ body:has(#loginPanel:not([hidden])) .shell,
   <div id="app">
     <header class="topbar">
       <a class="brand brand-home" href="/my-streaks/" aria-label="My Streaks — Home"><div class="brand-icon"><svg class="brand-flame" viewBox="0 0 24 24" aria-hidden="true"><use href="#flame-solid"></use></svg></div><div><strong>My Streaks</strong><small>Stay consistent, your way.</small></div></a>
+      <nav id="workspaceTopNav" class="workspace-top-nav" aria-label="Main navigation" hidden>
+        <button type="button" data-workspace="home" class="workspace-link active" aria-current="page">Home</button>
+        <button type="button" data-workspace="insights" class="workspace-link">Insights</button>
+        <button type="button" data-workspace="checklist" class="workspace-link">Checklist</button>
+      </nav>
       <div class="top-actions"><span id="syncState" class="sr-only" aria-live="polite">Connecting…</span><a id="headerExploreLink" class="header-explore-link" href="#features" hidden>Explore features <span aria-hidden="true">↗</span></a><button id="userBtn" class="avatar-button account-trigger" aria-label="Open account and settings" aria-expanded="false" hidden><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.1 3.2-7 8-7s8 2.9 8 7"/></svg><span id="userGreeting">Hi!</span></button></div>
     </header>
     <main class="shell">
@@ -900,7 +906,28 @@ body:has(#loginPanel:not([hidden])) .shell,
 
       </section>
       <section id="loadingPanel" class="loading-panel"><div class="spinner"></div><p>Getting your streaks ready…</p></section>
-      <section id="dashboard" hidden>
+      <section id="insightsPanel" class="workspace-page insights-page" hidden>
+        <div class="workspace-eyebrow">YOUR JOURNEY</div>
+        <div class="workspace-heading"><div><h1>Every day <em>adds up.</em></h1><p>Explore your progress, one habit at a time.</p></div><span class="workspace-heading-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19V6M4 19h16M8 15l4-5 3 2 5-7"/></svg></span></div>
+        <div id="insightEmpty" class="workspace-empty" hidden><span class="workspace-empty-icon">✦</span><h2>Your story starts with one habit.</h2><p>Create a habit on Home to start exploring your progress.</p></div>
+        <div id="insightsContent">
+          <div class="insight-picker-wrap"><label for="insightHabitSelect">CHOOSE A HABIT</label><select id="insightHabitSelect" aria-label="Choose a habit"></select></div>
+          <div class="insight-stat-grid" id="insightStatGrid"></div>
+          <div class="insight-two-column">
+            <section class="insight-surface insight-activity"><div class="insight-surface-header"><div><span class="insight-kicker">ACTIVITY</span><h2>Little steps over time</h2></div><span class="insight-mark">↗</span></div><div id="insightActivityChart" class="insight-activity-chart"></div><p class="insight-footnote">Completed days only. Freeze days are shown separately.</p></section>
+            <section class="insight-surface insight-heatmap-surface"><div class="insight-surface-header"><div><span class="insight-kicker">YOUR HISTORY</span><h2>Recent months</h2></div><span class="insight-mark">✦</span></div><div id="insightHeatmap" class="insight-heatmap"></div><div class="insight-legend"><span><i class="insight-dot"></i> Not completed</span><span><i class="insight-dot completed"></i> Completed</span><span><i class="insight-dot frozen"></i> Freeze</span></div></section>
+          </div>
+          <section class="insight-surface insight-milestone-surface"><div class="insight-surface-header"><div><span class="insight-kicker">PERSONAL MILESTONES</span><h2>Moments worth noticing</h2></div></div><div id="insightMilestones" class="insight-milestones"></div></section>
+        </div>
+      </section>
+      <section id="checklistPanel" class="workspace-page checklist-page" hidden>
+        <div class="workspace-eyebrow">YOUR SPACE</div>
+        <div class="workspace-heading"><div><h1>Checklist<span class="workspace-heading-period">.</span></h1><p>A simple place for the things on your mind.</p></div><button type="button" id="checklistAdd" class="checklist-new" title="Add a block" aria-label="Add a new checklist item">＋ New</button></div>
+        <div class="checklist-document"><div class="checklist-document-top"><span><svg viewBox="0 0 24 24"><use href="#flame-solid"></use></svg> MY CHECKLIST</span><span id="checklistSyncStatus">Ready</span></div><div id="checklistBlocks" class="checklist-blocks"></div><div id="checklistEmpty" class="checklist-hint">Click below to start writing. Type <kbd>/</kbd> for headings, to-dos, notes, and more.</div><button type="button" id="checklistAddBottom" class="checklist-add-block"><span>＋</span> Add a block</button></div>
+        <div id="checklistSlashMenu" class="checklist-slash-menu" role="menu" aria-label="Insert block" hidden></div>
+        <p class="checklist-help">Saved to your account · Separate from your habit streaks</p>
+      </section>
+            <section id="dashboard" hidden>
         <div class="page-heading"><div><div class="eyebrow">YOUR HABITS</div><h1>Keep the <em>fire</em> going<span class="dot">.</span></h1><p class="subheading">One day at a time. You've got this.</p></div></div><div class="dashboard-toolbar"><span class="toolbar-hint" id="toolbarHint" hidden></span><div class="toolbar-actions"><button class="layout-switch" type="button" id="layoutToggleBtn" aria-label="Switch to calendar cards" title="Change layout"><svg viewBox="0 0 24 24" aria-hidden="true" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 10h18M8 4v5M16 4v5"/></svg></button><button class="primary-btn add-icon-btn" id="addHabitBtn" aria-label="Add a new habit" title="Add habit">＋</button></div></div>
         <div id="habitEditToolbar" class="habit-edit-toolbar" hidden></div>
         <div id="habitGrid" class="habit-grid"></div>
@@ -928,7 +955,14 @@ body:has(#loginPanel:not([hidden])) .shell,
         </div>
       </section>
     </main>
-    <section id="calendarEditor" class="calendar-editor-overlay" role="dialog" aria-modal="true" aria-labelledby="calendarEditorTitle" hidden>
+    <nav id="workspaceBottomNav" class="workspace-bottom-nav" aria-label="Main navigation" hidden>
+      <div class="workspace-bottom-pill" data-current="home"><span class="workspace-bottom-highlight" aria-hidden="true"></span>
+        <button type="button" class="workspace-bottom-item active" data-workspace="home" aria-label="Home" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m3 10 9-7 9 7v10H3z"/><path d="M9 20v-7h6v7"/></svg><span>Home</span></button>
+        <button type="button" class="workspace-bottom-item" data-workspace="insights" aria-label="Insights"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V4m0 16h17M8 16v-5m5 5V7m5 9V4"/></svg><span>Insights</span></button>
+        <button type="button" class="workspace-bottom-item" data-workspace="checklist" aria-label="Checklist"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="m7 9 1.5 1.5L11 8m2 2h4m-10 5 1.5 1.5L11 14m2 2h4"/></svg><span>Checklist</span></button>
+      </div>
+    </nav>
+        <section id="calendarEditor" class="calendar-editor-overlay" role="dialog" aria-modal="true" aria-labelledby="calendarEditorTitle" hidden>
       <div class="calendar-editor-scrim" id="calendarEditorScrim"></div>
       <div class="calendar-editor-sheet">
         <div class="calendar-editor-header">
@@ -1308,6 +1342,7 @@ body:has(#loginPanel:not([hidden])) .shell,
 })();
 
   </script>
-  <script type="module" src="app.js?v=20261111-film22"></script>
+  <script defer src="workspace.js?v=20261112-tabs1"></script>
+  <script type="module" src="app.js?v=20261112-tabs1"></script>
 </body>
 </html>
