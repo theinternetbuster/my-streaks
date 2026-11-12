@@ -209,7 +209,7 @@ function renderDashboard(){
  grid.innerHTML=habits.map(h=>{
    const shown=pendingCheckins.has(h.id)?{...h,completions:[...new Set([...h.completions,todayKey()])]}:h;
    const info=evaluateHabit(shown);
-   return '<div class="habit-card'+(info.doneToday?' completed-today':'')+'" data-id="'+escapeHTML(h.id)+'" data-done="'+info.doneToday+'" role="button" tabindex="0" aria-label="'+escapeHTML(h.name)+(layoutMode==='calendar'?' — hold to edit calendar':info.doneToday?' completed today':' — hold to check in')+'">'+
+   return '<div class="habit-card'+(info.doneToday?' completed-today':'')+'" data-id="'+escapeHTML(h.id)+'" data-done="'+info.doneToday+'" role="button" tabindex="0" aria-label="'+escapeHTML(h.name)+(layoutMode==='calendar'?' — tap to edit calendar':info.doneToday?' — hold to edit calendar':' — hold to check in')+'">'+
      '<span class="hold-progress" aria-hidden="true"></span>'+
      '<div class="habit-card-head"><h3>'+escapeHTML(h.name)+'</h3>'+
      (layoutMode==='calendar'?'<span class="mini-streak"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#flame-solid"></use></svg>'+info.streak+'</span>':'')+'</div>'+
@@ -223,7 +223,7 @@ function renderDashboard(){
 
 function openCalendarEditor(id){
  const h=habits.find(h=>h.id===id);
- if(!h || layoutMode!=='calendar')return;
+ if(!h)return;
  if(!h.freezeProcessedThrough){showToast('Synchronizing your frozen days. Try again shortly.');return;}
  clearTimeout(editorCloseTimer);
  editorHabitId=id;editorMonth=new Date(new Date().getFullYear(),new Date().getMonth(),1);
@@ -562,13 +562,16 @@ function sectionFromPath(){
 }
 function navigateSettings(section){
  const target='/my-streaks/'+settingsRoutes[section]+'/';
- if(location.pathname!==target)window.location.assign(target);
- else syncDesktopRoute();
+ // Desktop settings are client-side routed so switching sections never
+ // reinitializes Firebase or flashes the startup loading screen.
+ if(location.pathname!==target)history.pushState({section},'',target);
+ syncDesktopRoute();
+ window.scrollTo(0,0);
 }
 function exitDesktopSettings(){
  if(!desktopSettings.matches)return;
- if(location.pathname!=='/my-streaks/')window.location.assign('/my-streaks/');
- else syncDesktopRoute();
+ if(location.pathname!=='/my-streaks/')history.pushState({},'','/my-streaks/');
+ syncDesktopRoute();
 }
 function syncDesktopRoute(){
  const active=desktopSettings.matches && !!user && !!sectionFromPath();
@@ -669,8 +672,9 @@ el('layoutToggleBtn').addEventListener('click',()=>{layoutMode=layoutMode==='car
 const grid=el('habitGrid');
 grid.addEventListener('click',event=>{
  const card=event.target.closest('.habit-card');
- if(!card||layoutMode==='calendar'||!el('calendarEditor').hidden||Date.now()<suppressCardClicksUntil)return;
- openHabit(card.dataset.id);
+ if(!card||!el('calendarEditor').hidden||Date.now()<suppressCardClicksUntil)return;
+ if(layoutMode==='calendar')openCalendarEditor(card.dataset.id);
+ else openHabit(card.dataset.id);
 });
 grid.addEventListener('keydown',event=>{
  if((event.key==='Enter'||event.key===' ')&&event.target.classList.contains('habit-card')){
@@ -681,23 +685,23 @@ grid.addEventListener('keydown',event=>{
 });
 grid.addEventListener('pointerdown',event=>{
  const card=event.target.closest('.habit-card');
- if(!card||event.button>0||busy)return;
- if(layoutMode==='calendar'){
-  stopHold();const id=card.dataset.id;
-  activeHold={element:card,id,x:event.clientX,y:event.clientY,pointerId:event.pointerId,startedAt:performance.now(),progressStarted:false,editorHold:true};
-  holdDelayTimer=setTimeout(()=>{
-   if(activeHold?.editorHold&&activeHold.id===id){
-    stopHold(true);suppressCardClicksUntil=Date.now()+900;openCalendarEditor(id);
-   }
-  },480);
-  return;
- }
- if(card.dataset.done==='true')return;
+ if(!card||event.button>0||busy||layoutMode==='calendar')return;
+ // A completed card is held to open the edit-calendar; an unfinished card
+ // retains the existing delayed orange hold-to-complete interaction.
+ const done=card.dataset.done==='true',id=card.dataset.id;
  stopHold();
- activeHold={
-   element:card,id:card.dataset.id,x:event.clientX,y:event.clientY,
-   pointerId:event.pointerId,startedAt:performance.now(),progressStarted:false
- };
+ activeHold={element:card,id,x:event.clientX,y:event.clientY,
+   pointerId:event.pointerId,startedAt:performance.now(),progressStarted:false,
+   editorHold:done};
+ if(done){
+   holdDelayTimer=setTimeout(()=>{
+     if(!activeHold||activeHold.id!==id||!activeHold.editorHold)return;
+     stopHold(true);
+     suppressCardClicksUntil=Date.now()+900;
+     openCalendarEditor(id);
+   },470);
+   return;
+ }
  holdDelayTimer=setTimeout(()=>{
    const held=activeHold;
    if(!held||held.element!==card)return;
@@ -705,10 +709,10 @@ grid.addEventListener('pointerdown',event=>{
    card.classList.add('holding');
    holdCheckinTimer=setTimeout(async()=>{
      if(!activeHold||activeHold.element!==card)return;
-     const id=activeHold.id;
+     const targetId=activeHold.id;
      stopHold(true);
      if(navigator.vibrate)navigator.vibrate(12);
-     await checkInHabit(id);
+     await checkInHabit(targetId);
    },720);
  },190);
 });
