@@ -196,8 +196,8 @@ function smallCalendar(h,info){
  for(let i=0;i<first;i++)days+='<span class="mini-day blank"></span>';
  for(let n=1;n<=num;n++){
    const key=dateKey(new Date(year,month,n,12)),status=info.states.get(key);
-   const cls=status==='done'?'done':status==='freeze'?'freeze':'';
-   const flame=status==='done'||status==='freeze'?'<svg viewBox="0 0 24 24" class="mini-flame" aria-hidden="true"><use href="#flame-'+(status==='done'?'solid':'outline')+'"></use></svg>':'';
+   const cls=status==='done'?'done':status==='freeze'?'freeze':'empty';
+   const flame='<svg viewBox="0 0 24 24" class="mini-flame" aria-hidden="true"><use href="#flame-'+(status==='done'?'solid':'outline')+'"></use></svg>';
    days+='<span class="mini-day '+cls+'" title="'+key+'"><small>'+n+'</small>'+flame+'</span>';
  }
  return '<div class="mini-calendar"><div class="mini-month">'+now.toLocaleDateString('en-US',{month:'long',year:'numeric'})+'</div><div class="mini-calendar-grid">'+days+'</div></div>';
@@ -267,8 +267,8 @@ function renderCalendarEditor(){
   const previewKey=editorHabitId+':'+key;
   const done=freeze?false:(editorPreview.has(previewKey)?editorPreview.get(previewKey):state==='done');
   const locked=!inMonth||key>todayKey()||freeze;
-  const cls=[done?'done':'',freeze?'freeze':'',!inMonth?'outside':''].filter(Boolean).join(' ');
-  const flame=(done||freeze)?'<svg viewBox="0 0 24 24" aria-hidden="true"><use href="#flame-'+(done?'solid':'outline')+'"></use></svg>':'';
+  const cls=[done?'done':freeze?'freeze':'empty',!inMonth?'outside':''].filter(Boolean).join(' ');
+  const flame=inMonth?'<svg viewBox="0 0 24 24" aria-hidden="true"><use href="#flame-'+(done?'solid':'outline')+'"></use></svg>':'';
   html+='<button type="button" class="editor-day '+cls+'" data-date="'+key+'" aria-label="'+key+': '+(freeze?'freeze locked':done?'completed':'not completed')+'" aria-pressed="'+done+'" '+(locked?'disabled':'')+'><span>'+d.getDate()+'</span>'+flame+'</button>';
  }
  el('editorCalendarDays').innerHTML=html;
@@ -458,8 +458,8 @@ function drawCalendar(h,data){
     const date=new Date(month.getFullYear(),month.getMonth(),i-firstWeekday+1,12);
     const key=dateKey(date);const outside=date.getMonth()!==month.getMonth();
     const status=data.states.get(key); const future=key>realToday;
-    const classes=['calendar-day',outside?'outside':'',status==='done'?'done':'',status==='freeze'?'freeze':'',key===realToday?'today':'',future?'future':''].filter(Boolean).join(' ');
-    const icon = status==='done' || status==='freeze' || (key>=h.createdDate && !outside && key<=realToday && !status) ? `<svg class="day-flame" aria-hidden="true" viewBox="0 0 24 24"><use href="#flame-${status==='done'?'solid':'outline'}"></use></svg>` : '';
+    const classes=['calendar-day',outside?'outside':'',status==='done'?'done':status==='freeze'?'freeze':'empty',key===realToday?'today':'',future?'future':''].filter(Boolean).join(' ');
+    const icon = !outside ? `<svg class="day-flame" aria-hidden="true" viewBox="0 0 24 24"><use href="#flame-${status==='done'?'solid':'outline'}"></use></svg>` : '';
     const label = status==='done'?'Completed':status==='freeze'?'Streak freeze':future?'Future day':'Not completed';
     html+=`<div class="${classes}" aria-label="${key}: ${label}" title="${escapeHTML(key)} • ${label}"><span class="number">${date.getDate()}</span>${icon}</div>`;
   }
