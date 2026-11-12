@@ -221,6 +221,10 @@ function renderDashboard(){
 
 }
 
+function clearCalendarTextSelection(){
+ const selection=window.getSelection?.();
+ if(selection && selection.rangeCount)selection.removeAllRanges();
+}
 function openCalendarEditor(id){
  const h=habits.find(h=>h.id===id);
  if(!h)return;
@@ -230,7 +234,10 @@ function openCalendarEditor(id){
  el('calendarEditor').classList.remove('closing');
  el('calendarEditor').hidden=false;
  document.body.classList.add('calendar-editor-open');
+ clearCalendarTextSelection();
  renderCalendarEditor();
+ // iOS can carry an active long-press selection into the newly opened editor.
+ requestAnimationFrame(clearCalendarTextSelection);
 }
 function closeCalendarEditor(){
  const overlay=el('calendarEditor');if(overlay.hidden)return;
@@ -724,6 +731,11 @@ grid.addEventListener('pointerup',()=>stopHold(false));
 for(const type of ['pointercancel','pointerleave'])grid.addEventListener(type,()=>stopHold(true));
 grid.addEventListener('contextmenu',event=>{if(event.target.closest('.habit-card'))event.preventDefault();});
 grid.addEventListener('selectstart',event=>{if(event.target.closest('.habit-card'))event.preventDefault();});
+el('calendarEditor').addEventListener('selectstart',event=>event.preventDefault());
+el('calendarEditor').addEventListener('dragstart',event=>event.preventDefault());
+document.addEventListener('selectionchange',()=>{
+ if(!el('calendarEditor').hidden)clearCalendarTextSelection();
+});
 grid.addEventListener('dragstart',event=>{if(event.target.closest('.habit-card'))event.preventDefault();});
 el('saveReorderBtn').addEventListener('click',saveReorderedHabits);
 el('cancelReorderBtn').addEventListener('click',()=>{if(!desktopSettings.matches)backToAccountHome();else showAccountSection('accountSettingsBtn');});
