@@ -16,8 +16,8 @@
   <link rel="icon" type="image/svg+xml" href="app-icon.svg" />
   <meta name="description" content="A private streak tracker with weekly freezes and cloud sync." />
   <title>My Streaks</title>
-  <link rel="stylesheet" href="styles.css?v=20261112-insights5" />
-  <link rel="stylesheet" href="workspace.css?v=20261112-insights5" />
+  <link rel="stylesheet" href="styles.css?v=20261112-editor6" />
+  <link rel="stylesheet" href="workspace.css?v=20261112-editor6" />
   <style id="critical-landing-styles">
 /* Critical inline fallback is scoped to logged-out view so signed-in themes are unchanged. */
 [hidden]{display:none!important}
@@ -938,10 +938,10 @@ body:has(#loginPanel:not([hidden])) .shell,
       </section>
       <section id="checklistPanel" class="workspace-page checklist-page" hidden>
         <div class="workspace-eyebrow">YOUR SPACE</div>
-        <div class="workspace-heading"><div><h1>Checklist<span class="workspace-heading-period">.</span></h1><p>A simple place for the things on your mind.</p></div><button type="button" id="checklistAdd" class="checklist-new" title="Add a block" aria-label="Add a new checklist item">＋ New</button></div>
-        <div class="checklist-document"><div class="checklist-document-top"><span><svg viewBox="0 0 24 24"><use href="#flame-solid"></use></svg> MY CHECKLIST</span><span id="checklistSyncStatus">Ready</span></div><div id="checklistBlocks" class="checklist-blocks"></div><button type="button" id="checklistEmpty" class="checklist-hint" aria-label="Start a new blank line">Press / to insert blocks</button><button type="button" id="checklistAddBottom" class="checklist-add-block"><span>＋</span> Add a block</button></div>
+        <div class="workspace-heading"><div><h1>Checklist<span class="workspace-heading-period">.</span></h1><p>A simple place for the things on your mind.</p></div><button type="button" id="checklistAdd" class="checklist-new" title="New paragraph" aria-label="Add a new paragraph">＋ New line</button></div>
+        <div class="checklist-document"><div class="checklist-document-top"><span><svg viewBox="0 0 24 24"><use href="#flame-solid"></use></svg> MY CHECKLIST</span><span id="checklistSyncStatus">Ready</span></div><div id="checklistBlocks" class="checklist-blocks"></div><button type="button" id="checklistEmpty" class="checklist-hint" aria-label="Start a new blank line"></button><button type="button" id="checklistAddBottom" class="checklist-add-block"><span>＋</span> Add a block</button></div>
         <div id="checklistSlashMenu" class="checklist-slash-menu" role="menu" aria-label="Insert block" hidden></div>
-        <p class="checklist-help">Saved privately to your account · Type <kbd>/</kbd> for blocks · Drag ⠿ to rearrange</p>
+        <p class="checklist-help">Just type to begin · Press <kbd>/</kbd> for headings, tasks, and lists</p>
       </section>
             <section id="dashboard" hidden>
         <div class="page-heading"><div><div class="eyebrow">YOUR HABITS</div><h1>Keep the <em>fire</em> going<span class="dot">.</span></h1><p class="subheading">One day at a time. You've got this.</p></div></div><div class="dashboard-toolbar"><span class="toolbar-hint" id="toolbarHint" hidden></span><div class="toolbar-actions"><button class="layout-switch" type="button" id="layoutToggleBtn" aria-label="Switch to calendar cards" title="Change layout"><svg viewBox="0 0 24 24" aria-hidden="true" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 10h18M8 4v5M16 4v5"/></svg></button><button class="primary-btn add-icon-btn" id="addHabitBtn" aria-label="Add a new habit" title="Add habit">＋</button></div></div>
@@ -1358,7 +1358,7 @@ body:has(#loginPanel:not([hidden])) .shell,
 })();
 
   </script>
-  <script defer src="workspace.js?v=20261112-insights5"></script>
-  <script type="module" src="app.js?v=20261112-insights5"></script>
+  <script defer src="workspace.js?v=20261112-editor6"></script>
+  <script type="module" src="app.js?v=20261112-editor6"></script>
 </body>
 </html>
