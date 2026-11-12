@@ -19,6 +19,40 @@
     let tab='home',user=null,unsub=null,insightUnsub=null,blocks=[],dirty=false,saveTimer=null,selectedHabit='all',insightSection='overview',insightSelectionPending=false,
         slashFor=null,slashMatches=types,slashSelected=0,sortable=null,saveSerial=0,listenerEpoch=0;
     let pendingWrite=Promise.resolve(),editRevision=0;
+    // Snapshot-based editing history covers both typing and structural changes.
+    let historyUndo=[],historyRedo=[],historyPresent='[]',lastHistoryAt=0,lastHistoryField='',restoringHistory=false,allBlocksSelected=false;
+    const serializeBlocks=()=>JSON.stringify(blocks.map((b,i)=>({...b,order:i})));
+    const resetHistory=()=>{historyUndo=[];historyRedo=[];historyPresent=serializeBlocks();lastHistoryAt=0;lastHistoryField='';allBlocksSelected=false;};
+    function trackHistory(){
+      if(restoringHistory)return;
+      const next=serializeBlocks();
+      if(next===historyPresent)return;
+      const active=document.activeElement;
+      const field=active?.dataset?.blockId||active?.dataset?.noteId||active?.dataset?.subtaskText||'structure';
+      const now=Date.now();
+      // Coalesce fast typing into one undo step but never merge different fields or structural edits.
+      const typed=active?.matches?.('.checklist-editor,.checklist-note-editor,[data-subtask-text]');
+      const coalesce=typed&&field===lastHistoryField&&now-lastHistoryAt<650&&historyUndo.length>0;
+      if(!coalesce){historyUndo.push(historyPresent);if(historyUndo.length>100)historyUndo.shift();}
+      historyRedo=[];
+      historyPresent=next;lastHistoryAt=now;lastHistoryField=typed?field:'';
+    }
+    function restoreHistory(direction){
+      const from=direction==='undo'?historyUndo:historyRedo;
+      const to=direction==='undo'?historyRedo:historyUndo;
+      if(!from.length)return;
+      const active=document.activeElement;
+      const focusId=active?.dataset?.blockId||null;
+      const position=active?.matches?.('.checklist-editor')?editorCaretOffset(active):null;
+      const previous=from.pop();
+      to.push(serializeBlocks());
+      restoringHistory=true;
+      blocks=JSON.parse(previous).map(normalizeBlock);
+      historyPresent=serializeBlocks();lastHistoryAt=0;lastHistoryField='';
+      closeSlash();renderChecklist(true);restoringHistory=false;scheduleSave(true);
+      const target=focusId&&blocks.some(b=>b.id===focusId)?focusId:blocks.at(-1)?.id;
+      if(target)requestAnimationFrame(()=>focusBlockAt(target,position??blocks.find(b=>b.id===target)?.text.length??0));
+    }
     const key=d=>[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');
     const parse=s=>{const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d,12)};
     const shift=(d,n)=>{const r=new Date(d);r.setDate(r.getDate()+n);return r};
@@ -58,7 +92,7 @@
       if(unsub){unsub();unsub=null;}
       if(insightUnsub){insightUnsub();insightUnsub=null;}
       clearTimeout(saveTimer);editRevision++;
-      user=next;blocks=[];dirty=false;saveSerial++;selectedHabit='all';insightSection='overview';insightSelectionPending=false;
+      user=next;blocks=[];dirty=false;saveSerial++;resetHistory();selectedHabit='all';insightSection='overview';insightSelectionPending=false;
       tab=['insights','checklist'].includes(new URLSearchParams(location.search).get('view'))?
         new URLSearchParams(location.search).get('view'):'home';
       updateNav();
@@ -71,7 +105,7 @@
           if(!dirty){
             const incoming=snapshot.exists()?snapshot.data().blocks:[];
             blocks=Array.isArray(incoming)?incoming.filter(b=>b&&typeof b.text==='string').slice(0,500).map(normalizeBlock):[];
-            renderChecklist();
+            resetHistory();renderChecklist();
           }
           if(!snapshot.metadata?.hasPendingWrites)$('checklistSyncStatus').textContent='Saved';
         },error=>{
@@ -94,6 +128,7 @@
     }
     function scheduleSave(soon=false){
       if(!user)return;
+      trackHistory();
       dirty=true;editRevision++;clearTimeout(saveTimer);
       $('checklistSyncStatus').textContent='Saving…';
       saveTimer=setTimeout(saveChecklist,soon?100:700);
