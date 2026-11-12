@@ -90,7 +90,7 @@
     }
     function normalizedType(t){return types.some(x=>x.id===t)?t:'text';}
     function normalizeBlock(b,i){
-      return {id:String(b.id||uniqueId()),type:normalizedType(b.type),text:String(b.text||'').slice(0,5000),checked:!!b.checked,collapsed:!!b.collapsed,detailsOpen:typeof b.detailsOpen==='boolean'?b.detailsOpen:(b.type==='todoNote'||b.type==='todoList')&&!b.collapsed,note:String(b.note||'').slice(0,10000),detailsMode:b.detailsMode==='tasks'||b.type==='todoList'?'tasks':'notes',subtasks:Array.isArray(b.subtasks)?b.subtasks.slice(0,40).filter(t=>t&&typeof t.text==='string').map(t=>({id:String(t.id||uniqueId()),text:String(t.text).slice(0,500),checked:!!t.checked,type:t.type==='bullet'?'bullet':'todo'})):[],dueDate:/^\d{4}-\d{2}-\d{2}$/.test(b.dueDate||'')?b.dueDate:'',order:Number.isFinite(b.order)?b.order:i,createdAt:Number(b.createdAt)||Date.now()};
+      return {id:String(b.id||uniqueId()),type:normalizedType(b.type),text:String(b.text||'').slice(0,5000),checked:!!b.checked,collapsed:!!b.collapsed,detailsOpen:b.type==='todo'?false:(typeof b.detailsOpen==='boolean'?b.detailsOpen:(b.type==='todoNote'||b.type==='todoList')&&!b.collapsed),note:String(b.note||'').slice(0,10000),detailsMode:b.type==='todoList'?'tasks':'notes',subtasks:Array.isArray(b.subtasks)?b.subtasks.slice(0,40).filter(t=>t&&typeof t.text==='string').map(t=>({id:String(t.id||uniqueId()),text:String(t.text).slice(0,500),checked:!!t.checked,type:t.type==='bullet'?'bullet':'todo'})):[],dueDate:/^\d{4}-\d{2}-\d{2}$/.test(b.dueDate||'')?b.dueDate:'',order:Number.isFinite(b.order)?b.order:i,createdAt:Number(b.createdAt)||Date.now()};
     }
     function scheduleSave(soon=false){
       if(!user)return;
@@ -189,20 +189,20 @@
       root.innerHTML=blocks.map(b=>{
         const isTask=['todo','todoNote','todoList'].includes(b.type);
         const isToggle=b.type==='toggle',isBullet=b.type==='bullet';
-        const expanded=isTask&&b.detailsOpen;
+        const expanded=(b.type==='todoNote'||b.type==='todoList')&&b.detailsOpen;
         const noteExpanded=isToggle&&!b.collapsed;
         const checkbox=isTask?'<input class="checklist-check" type="checkbox" data-toggle-check="'+safe(b.id)+'" '+(b.checked?'checked':'')+' aria-label="Complete task"/>':'';
-        const isOpen=isTask?b.detailsOpen:!b.collapsed;
-        const arrow=isTask||isToggle?
+        const isOpen=(b.type==='todoNote'||b.type==='todoList')?b.detailsOpen:!b.collapsed;
+        const arrow=b.type==='todoNote'||b.type==='todoList'||isToggle?
           '<button type="button" class="checklist-toggle-icon '+(!isOpen?'collapsed':'')+'" data-collapse="'+safe(b.id)+'" aria-label="'+(!isOpen?'Expand details':'Collapse details')+'" aria-expanded="'+String(isOpen)+'">'+(!isOpen?'▸':'▾')+'</button>':'';
         const icon=isTask?checkbox+arrow:isToggle?arrow:isBullet?'<span class="checklist-bullet">•</span>':'';
         const placeholder=(b.type==='h1'?'Heading':b.type==='h2'?'Subheading':isTask?'To-do':isToggle?'Toggle title':isBullet?'List item':"Type here, or press / for commands");
         let details='';
-        if(noteExpanded)details='<textarea class="checklist-note" data-note-id="'+safe(b.id)+'" maxlength="10000" rows="2" placeholder="Additional information…">'+safe(b.note)+'</textarea>';
+        if(noteExpanded)details='<div class="checklist-note-editor" contenteditable="true" role="textbox" aria-multiline="true" data-note-id="'+safe(b.id)+'" data-placeholder="Type notes or /bullet…" spellcheck="true">'+safe(b.note)+'</div>';
         if(expanded){
           const mode=b.detailsMode==='tasks'?'tasks':'notes';
-          const modeSelector=b.type==='todo'?'<div class="checklist-detail-modes" aria-label="Task detail type"><button type="button" data-details-mode="notes" data-id="'+safe(b.id)+'" class="'+(mode==='notes'?'selected':'')+'">Notes</button><button type="button" data-details-mode="tasks" data-id="'+safe(b.id)+'" class="'+(mode==='tasks'?'selected':'')+'">Subtasks</button></div>':'';
-          const notes='<textarea class="checklist-note" data-note-id="'+safe(b.id)+'" maxlength="10000" rows="2" placeholder="Add extra information…">'+safe(b.note)+'</textarea>';
+          const modeSelector='';
+          const notes='<div class="checklist-note-editor" contenteditable="true" role="textbox" aria-multiline="true" data-note-id="'+safe(b.id)+'" data-placeholder="Type notes or /bullet…" spellcheck="true">'+safe(b.note)+'</div>';
           const nested='<div class="checklist-subtasks">'+b.subtasks.map(t=>
             '<div class="checklist-subtask '+(t.type==='bullet'?'subtask-bullet':'')+'"><span class="subtask-bullet-dot" aria-hidden="true">•</span><input type="checkbox" data-subtask-check="'+safe(b.id)+'" data-subtask-id="'+safe(t.id)+'" '+(t.checked?'checked':'')+' aria-label="Complete subtask"/><input type="text" maxlength="500" data-subtask-text="'+safe(b.id)+'" data-subtask-id="'+safe(t.id)+'" value="'+safe(t.text)+'" placeholder="'+(t.type==='bullet'?'Bullet point':'Subtask or /bullet')+'" class="'+(t.checked?'completed':'')+'"/><button type="button" data-subtask-kind="'+safe(b.id)+'" data-subtask-id="'+safe(t.id)+'" aria-label="Switch between task and bullet">⋯</button><button type="button" data-subtask-remove="'+safe(b.id)+'" data-subtask-id="'+safe(t.id)+'" aria-label="Remove subtask">×</button></div>'
           ).join('')+'<div class="checklist-nested-actions"><button type="button" class="checklist-add-subtask" data-subtask-add="'+safe(b.id)+'">＋ Add a subtask</button><button type="button" class="checklist-add-subtask" data-subtask-bullet="'+safe(b.id)+'">• Bullet list</button></div></div>';
@@ -240,8 +240,23 @@
     root.addEventListener('input',e=>{
       const subtask=e.target.closest('[data-subtask-text]');
       if(subtask){const block=blocks.find(b=>b.id===subtask.dataset.subtaskText);const sub=block?.subtasks.find(t=>t.id===subtask.dataset.subtaskId);if(sub){sub.text=subtask.value;scheduleSave();}return;}
-      const note=e.target.closest('textarea[data-note-id]');
-      if(note){const b=blocks.find(x=>x.id===note.dataset.noteId);if(b){b.note=note.value;resizeField(note);scheduleSave();}return;}
+      const note=e.target.closest('.checklist-note-editor[data-note-id]');
+      if(note){
+        const b=blocks.find(x=>x.id===note.dataset.noteId);
+        if(b){
+          b.note=(note.innerText||note.textContent||'').replace(/\n$/,'').slice(0,10000);
+          const pos=editorCaretOffset(note),before=b.note.slice(0,pos);
+          const command=before.match(/(^|\n)\/(bullet|bulleted|b)$/i);
+          if(command){
+            const beginning=pos-command[0].length+(command[1]?1:0);
+            b.note=b.note.slice(0,beginning)+'• '+b.note.slice(pos);
+            note.textContent=b.note;
+            focusEditableAt(note,beginning+2);
+          }
+          scheduleSave();
+        }
+        return;
+      }
       const field=e.target.closest('[contenteditable="true"][data-block-id]');if(!field)return;
       const b=blocks.find(b=>b.id===field.dataset.blockId);if(!b)return;
       b.text=(field.innerText||field.textContent||'').replace(/\n$/,'').slice(0,5000);
@@ -250,6 +265,26 @@
       if(match)openSlash(b.id,match[1].trim());else if(slashFor===b.id)closeSlash();
     });
     root.addEventListener('keydown',e=>{
+      const note=e.target.closest('.checklist-note-editor[data-note-id]');
+      if(note&&!e.isComposing){
+        if(handleChecklistArrow(e,note))return;
+        if(e.key==='Enter'&&!e.shiftKey){
+          const block=blocks.find(b=>b.id===note.dataset.noteId);
+          const pos=editorCaretOffset(note);
+          const before=(block?.note||'').slice(0,pos);
+          const line=before.slice(before.lastIndexOf('\n')+1);
+          if(/^•\s/.test(line)){
+            e.preventDefault();
+            const continuation=line.trim()==='•'?'\n':'\n• ';
+            block.note=(block.note||'').slice(0,pos)+continuation+block.note.slice(pos);
+            note.textContent=block.note;
+            focusEditableAt(note,pos+continuation.length);
+            scheduleSave();
+            return;
+          }
+        }
+        return;
+      }
       const nested=e.target.closest('[data-subtask-text]');
       if(nested&&!e.isComposing&&e.key===' '&&/^\/(bullet|bulleted|b)$/i.test(nested.value.trim())){
         e.preventDefault();
@@ -280,6 +315,7 @@
         }
         if(e.key==='Escape'){e.preventDefault();closeSlash();return;}
       }
+      if(handleChecklistArrow(e,field))return;
       if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){
         e.preventDefault();closeSlash();
         const offset=editorCaretOffset(field);
@@ -327,6 +363,42 @@
       if(node)range.setStart(node,Math.max(0,remaining));
       else range.selectNodeContents(field);
       range.collapse(true);sel.removeAllRanges();sel.addRange(range);
+    }
+    // Preserve the caret's relative text position when moving across Notion-like blocks.
+    function focusEditableAt(field,offset){
+      if(!field)return;
+      field.focus();
+      const walker=document.createTreeWalker(field,NodeFilter.SHOW_TEXT);
+      let node,remaining=Math.max(0,offset);
+      while((node=walker.nextNode())){
+        if(remaining<=node.textContent.length)break;
+        remaining-=node.textContent.length;
+      }
+      const range=document.createRange(),sel=window.getSelection();
+      if(node)range.setStart(node,Math.max(0,Math.min(remaining,node.textContent.length)));
+      else range.selectNodeContents(field);
+      range.collapse(true);sel.removeAllRanges();sel.addRange(range);
+    }
+    function handleChecklistArrow(event,field){
+      if(event.isComposing||event.altKey||event.ctrlKey||event.metaKey||event.shiftKey)return false;
+      if(event.key!=='ArrowUp'&&event.key!=='ArrowDown')return false;
+      const sel=window.getSelection();
+      if(!sel?.isCollapsed||!sel.rangeCount||!field.contains(sel.anchorNode))return false;
+      const caret=sel.getRangeAt(0).cloneRange();
+      caret.collapse(true);
+      const caretRect=caret.getBoundingClientRect(),box=field.getBoundingClientRect();
+      const lineHeight=parseFloat(getComputedStyle(field).lineHeight)||26;
+      const first=caretRect.top<=box.top+lineHeight*.65;
+      const last=caretRect.bottom>=box.bottom-lineHeight*.65;
+      if(event.key==='ArrowUp'&&!first||event.key==='ArrowDown'&&!last)return false;
+      const fields=[...root.querySelectorAll('.checklist-editor,.checklist-note-editor,[data-subtask-text]')]
+        .filter(el=>el.getClientRects().length&&el.offsetParent!==null);
+      const index=fields.indexOf(field),next=fields[index+(event.key==='ArrowDown'?1:-1)];
+      if(!next)return false;
+      event.preventDefault();
+      if(next.matches('input')){next.focus();next.setSelectionRange(Math.min(editorCaretOffset(field),next.value.length),Math.min(editorCaretOffset(field),next.value.length));}
+      else focusEditableAt(next,Math.min(editorCaretOffset(field),(next.innerText||next.textContent||'').length));
+      return true;
     }
     // Strip pasted HTML, preserving clean text and preventing unexpected formatting.
     root.addEventListener('paste',event=>{
