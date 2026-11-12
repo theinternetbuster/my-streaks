@@ -951,3 +951,144 @@ html[data-theme="light"] .theme-description{color:#6c6c76!important}
 @media(prefers-reduced-motion:reduce){
   .theme-segment .theme-thumb{transition:none!important}
 }
+
+
+/* v9 finishing touches: clean header, consistent settings, touch-friendly card organization */
+.brand-home{text-decoration:none;color:inherit;cursor:pointer;transition:opacity .18s ease}
+.brand-home:hover{opacity:.84}
+.brand-home:focus-visible{outline:2px solid #ff5a12;outline-offset:5px;border-radius:12px}
+.toolbar-hint[hidden]{display:none!important}
+.dashboard-toolbar{justify-content:flex-end!important}
+.toolbar-actions{margin-left:auto}
+/* Desktop settings navigation: current page is orange, no nested modal look */
+@media(min-width:800px){
+ body.desktop-settings-route .account-links .account-link{
+   text-align:left!important;
+   justify-content:flex-start!important;
+   font-weight:450!important;
+   letter-spacing:0!important;
+   border-radius:0!important;
+ }
+ body.desktop-settings-route .account-links .account-link.selected,
+ body.desktop-settings-route .account-links .account-link[aria-expanded="true"]{
+   color:#ff5a12!important;
+   font-weight:600!important;
+ }
+ html[data-theme="dark"] body.desktop-settings-route .account-detail,
+ html[data-theme="dark"] body.desktop-settings-route .account-detail h3,
+ html[data-theme="dark"] body.desktop-settings-route .account-info-row,
+ html[data-theme="dark"] body.desktop-settings-route .account-info-row span,
+ html[data-theme="dark"] body.desktop-settings-route .account-info-row strong{
+   color:#fff!important;
+ }
+ html[data-theme="dark"] body.desktop-settings-route .account-info-row{
+   border-top:0!important;
+   border-bottom:1px solid #e8e8e8!important;
+   padding:18px 0!important;
+   align-items:center!important;
+ }
+ html[data-theme="dark"] body.desktop-settings-route .settings-section-heading{
+   border:0!important;
+ }
+ body.desktop-settings-route .account-sign-out{
+   display:block!important;
+   padding:19px 0!important;
+   width:100%!important;max-width:none!important;
+   min-height:0!important;
+   margin:0!important;
+   background:transparent!important;
+   border:0!important;
+   border-bottom:1px solid #e5e5e5!important;
+   border-radius:0!important;
+   box-shadow:none!important;
+   font-size:15px!important;
+   font-weight:400!important;
+   text-align:left!important;
+   color:#fff!important;
+ }
+ body.desktop-settings-route .account-sign-out:hover{
+   color:#ff8553!important;background:transparent!important;
+ }
+ html[data-theme="light"] body.desktop-settings-route .account-info-row{
+   border-top:0!important;border-bottom:1px solid #d9d9db!important;
+   padding:18px 0!important;
+ }
+ html[data-theme="light"] body.desktop-settings-route .account-info-row span,
+ html[data-theme="light"] body.desktop-settings-route .account-info-row strong{
+   color:#242424!important;
+ }
+ html[data-theme="light"] body.desktop-settings-route .account-sign-out{
+   color:#202020!important;border-bottom:1px solid #d9d9db!important;
+ }
+}
+/* Arrange exactly as on the dashboard; tiles shift while dragged tile follows finger. */
+.account-reorder-detail{max-width:680px!important}
+.reorder-heading{display:flex;flex-direction:column;gap:9px;margin-bottom:22px}
+.reorder-heading h3{margin:0!important}
+.reorder-heading p{margin:0!important;font-size:14px;line-height:1.55;color:#b2b2bb}
+.reorder-grid{
+ display:grid!important;
+ grid-template-columns:repeat(2,minmax(0,1fr));
+ gap:14px;
+ width:100%;
+ max-width:620px;
+ padding:4px 0 10px;
+ position:relative;
+}
+.reorder-card{
+ position:relative;display:flex;flex-direction:column;justify-content:space-between;
+ min-width:0;min-height:145px;overflow:visible;
+ padding:19px 18px;border:1px solid #414147;border-radius:19px;
+ background:#28282c;color:#f9f9fc;
+ cursor:grab;touch-action:pan-y;
+ -webkit-user-select:none;user-select:none;
+ transition:background .18s ease,border-color .18s ease,box-shadow .18s ease;
+}
+.reorder-card:hover{background:#303035;border-color:#66666d}
+.reorder-card:focus-visible{outline:2px solid #ff5a12;outline-offset:2px}
+.reorder-card-name{font-size:17px;font-weight:700;line-height:1.25;overflow-wrap:anywhere;padding-right:20px}
+.reorder-card-foot{display:flex;justify-content:space-between;align-items:end;gap:10px}
+.reorder-card-streak{display:flex;align-items:center;gap:5px;font-size:31px;font-weight:800;font-variant-numeric:tabular-nums}
+.reorder-card-streak svg{width:30px;height:30px;fill:#ff5a12;color:#ff5a12}
+.reorder-grip{font-size:22px;color:#aaaab4;line-height:1}
+.reorder-delete{
+ position:absolute;right:-8px;top:-8px;z-index:5;
+ display:flex;align-items:center;justify-content:center;
+ width:30px;height:30px;padding:0;border-radius:50%;
+ border:3px solid #111;background:#d34435;color:#fff;
+ font-size:23px;line-height:1;cursor:pointer;
+}
+.reorder-delete:hover{background:#ff513d}
+.reorder-card.reorder-chosen{border-color:#ff6d35;box-shadow:0 0 0 2px #ff6d3545;cursor:grabbing}
+.reorder-card.reorder-placeholder{opacity:.22!important;background:#ff5a1225!important;border:2px dashed #ff5a12!important;box-shadow:none!important}
+.reorder-card.reorder-floating{
+ opacity:1!important;transform:scale(1.04);
+ background:#353539!important;border-color:#ff713a!important;
+ box-shadow:0 20px 45px #0009!important;z-index:10000!important;
+ pointer-events:none;
+}
+.reorder-actions{
+ display:flex;justify-content:flex-end;gap:11px;
+ max-width:620px;margin-top:24px;
+ padding-top:18px;border-top:1px solid #45454a;
+}
+.reorder-actions button{min-width:116px;min-height:45px;font-size:14px;font-weight:700;border-radius:14px}
+html[data-theme="light"] .reorder-card{
+ color:#252634;background:#fff;border-color:#e0e1e6;
+}
+html[data-theme="light"] .reorder-card:hover{background:#f5f5f7}
+html[data-theme="light"] .reorder-heading p{color:#677184}
+html[data-theme="light"] .reorder-delete{border-color:#f7f8fc}
+html[data-theme="light"] .reorder-grip{color:#7c8492}
+html[data-theme="light"] .reorder-card.reorder-floating{background:#fff!important;box-shadow:0 20px 36px #0003!important}
+html[data-theme="light"] .reorder-actions{border-color:#ddd}
+@media(max-width:799px){
+ .reorder-grid{gap:12px}
+ .reorder-card{min-height:133px;padding:17px 14px;border-radius:17px}
+ .reorder-card-name{font-size:15px}
+ .reorder-card-streak{font-size:28px}
+ .reorder-card-streak svg{height:26px;width:26px}
+ .reorder-heading p{font-size:13px}
+ .reorder-actions{position:sticky;bottom:0;padding:15px 0 max(10px,env(safe-area-inset-bottom,0px));margin-top:16px;background:#000;z-index:4}
+ html[data-theme="light"] .reorder-actions{background:#fff}
+}
