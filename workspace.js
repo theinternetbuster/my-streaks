@@ -656,14 +656,18 @@
         navigator.clipboard?.writeText(value).catch(()=>{});
         return;
       }
-      if(allBlocksSelected&&(key==='backspace'||key==='delete')){
+      if(allBlocksSelected&&(key==='backspace'||key==='delete'||(!mod&&!event.altKey&&key.length===1))){
         event.preventDefault();
-        blocks=[normalizeBlock({id:uniqueId(),type:'text',text:''},0)];
+        blocks=[normalizeBlock({id:uniqueId(),type:'text',text:key.length===1?event.key:''},0)];
         allBlocksSelected=false;
         renderChecklist(true);scheduleSave(true);
-        requestAnimationFrame(()=>focusBlock(blocks[0].id,false));
+        requestAnimationFrame(()=>focusBlock(blocks[0].id,true));
+        return;
       }
     },true);
+    root.addEventListener('pointerdown',event=>{
+      if(allBlocksSelected&&!event.target.closest('#checklistSlashMenu'))allBlocksSelected=false;
+    });
     // Cross-block range removal for selections made with mouse or Shift+arrows.
     root.addEventListener('beforeinput',event=>{
       if(event.inputType!=='deleteContentBackward'&&event.inputType!=='deleteContentForward'&&event.inputType!=='deleteByCut')return;
