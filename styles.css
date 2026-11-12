@@ -413,3 +413,98 @@ html[data-theme="dark"] .account-backup-detail button,html[data-theme="dark"] .a
 html[data-theme="dark"] .account-info-row{border-color:#444}
 html[data-theme="light"] .account-info-row{border-color:#ddd}
 html[data-theme="light"] .account-info-row span{color:#626a75}
+
+
+/* Account navigation v5 — desktop settings workspace and native mobile subpages */
+.account-sheet{isolation:isolate}
+.account-navigation{min-width:0}
+.account-subpage{min-width:0}
+.account-subheader{display:flex;align-items:center;gap:13px;justify-content:space-between;margin-bottom:30px}
+.account-subheader h2{font-size:clamp(22px,3vw,31px);font-weight:750;letter-spacing:-.03em;text-align:center;margin:0;flex:1}
+.account-back-button{width:43px;height:43px;border-radius:50%;display:grid;place-items:center;flex:none;background:#292929;border:1px solid #454545;color:inherit;cursor:pointer}
+.account-back-button svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round}
+.account-subheader > span{width:43px;flex:none}
+.account-subcontent .account-detail{border:0;padding:0;font-size:inherit;color:inherit}
+.account-detail h3{font-size:21px;margin:24px 0 18px;letter-spacing:-.02em;color:inherit}
+.account-detail h3:first-child{margin-top:0}
+.account-explanation{color:#aaaeb8;font-size:15px;line-height:1.6;margin:0 0 23px}
+.account-link.selected{color:#ff6b2f}
+.account-link.selected .account-chevron{color:#ff6b2f}
+.account-info-row strong{font-weight:650}
+@media(min-width:800px){
+  .account-overlay{align-items:center}
+  .account-sheet{
+    display:grid;
+    grid-template-columns:minmax(250px,32%) minmax(0,1fr);
+    max-width:1050px;width:min(95vw,1050px);
+    height:min(790px,90dvh);max-height:90dvh;
+    border-radius:26px;border:1px solid #3e3e3e;
+    padding:0;overflow:hidden;animation:account-desktop-in .22s ease-out both
+  }
+  @keyframes account-desktop-in{from{transform:translateY(15px);opacity:.7}to{transform:translateY(0);opacity:1}}
+  .account-navigation{overflow:auto;border-right:1px solid #363636;padding:22px 24px 45px}
+  .account-topbar{min-height:62px}
+  .account-profile{padding:32px 0 36px}
+  .account-profile h1{font-size:48px}
+  .account-profile p{font-size:15px}
+  .account-links .account-link{font-size:16px;min-height:65px;padding:16px 0;gap:12px}
+  .account-link-icon{width:29px;height:29px}
+  .account-link-icon svg{width:24px;height:24px}
+  .account-chevron{font-size:27px}
+  .account-subpage{position:relative!important;inset:auto!important;display:block!important;transform:none!important;animation:none!important;overflow-y:auto;overscroll-behavior:contain;padding:57px clamp(24px,4vw,58px) 60px}
+  .account-subheader{justify-content:flex-start;border-bottom:1px solid #353535;padding-bottom:22px;margin-bottom:30px}
+  .account-subheader h2{text-align:left}
+  .account-back-button,.account-subheader>span{display:none}
+  .account-info-row{font-size:15px}
+}
+@media(max-width:799px){
+  .account-sheet{height:100dvh;max-height:100dvh;width:100%;max-width:none;overflow:hidden;padding:0;border:0;border-radius:0}
+  .account-navigation{height:100%;padding:env(safe-area-inset-top,0px) 24px max(45px,env(safe-area-inset-bottom,0px) + 30px);overflow-y:auto;overscroll-behavior:contain}
+  .account-subpage{
+    position:absolute;inset:0;z-index:5;
+    background:#000;color:#fff;
+    padding:calc(env(safe-area-inset-top,0px) + 22px) 24px calc(env(safe-area-inset-bottom,0px) + 40px);
+    overflow-y:auto;overscroll-behavior:contain;
+    transform:translate3d(102%,0,0);
+    transition:transform .31s cubic-bezier(.22,.78,.24,1);
+    pointer-events:none;
+  }
+  .account-sheet.section-open .account-subpage{transform:translate3d(0,0,0);pointer-events:auto}
+  .account-subheader{min-height:65px;margin-bottom:38px}
+  .account-subcontent .account-detail{padding:0}
+  .account-profile{padding-top:42px}
+}
+@media(prefers-reduced-motion:reduce){.account-subpage{transition:none}}
+/* Keep the iPhone compact gallery's two-column footprint in calendar mode */
+@media(max-width:620px){
+  .habit-grid.calendar-layout{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:11px}
+  .calendar-layout .habit-card{min-width:0;min-height:185px;padding:13px 11px 14px;border-radius:17px;gap:10px}
+  .calendar-layout .habit-card h3{font-size:clamp(12px,3.5vw,15px);line-height:1.25}
+  .calendar-layout .habit-card-head{align-items:start;gap:4px}
+  .calendar-layout .mini-streak{font-size:clamp(12px,3.4vw,16px);gap:1px;flex:none}
+  .calendar-layout .mini-streak svg{height:15px;width:15px}
+  .calendar-layout .mini-month{font-size:10px;margin-bottom:7px}
+  .calendar-layout .mini-calendar-grid{gap:1px}
+  .calendar-layout .mini-weekdays{font-size:8px;padding:2px 0}
+  .calendar-layout .mini-day{aspect-ratio:1;border-radius:3px}
+  .calendar-layout .mini-day small{font-size:clamp(6px,1.7vw,8px)}
+  .calendar-layout .mini-day svg{height:8px;width:8px}
+  .calendar-layout .mini-day.done{background:#602507}
+  .calendar-layout .mini-day.freeze{background:#1b4485}
+}
+/* Animated reordering: card stays under the finger, neighboring cards yield a slot. */
+.habit-card.sortable-ghost{opacity:.27!important;outline:2px dashed #ff6b30!important;outline-offset:-3px!important;background:#ff5a1217!important}
+.habit-card.drag-following{opacity:.97!important;transform:scale(1.035);filter:drop-shadow(0 14px 22px #0008);outline:2px solid #ff7a40!important;outline-offset:0!important;z-index:9999!important;pointer-events:none}
+.habit-card.sortable-chosen{will-change:transform}
+.habit-grid.editing .habit-card:not(.drag-following){transition:transform .23s cubic-bezier(.2,.8,.2,1)}
+/* Appearance overrides for the mobile subpage and desktop settings. */
+html[data-theme="light"] .account-subpage{background:#fff;color:#242424}
+html[data-theme="dark"] .account-subpage{background:#000;color:#fff}
+html[data-theme="light"] .account-navigation{border-color:#ddd}
+html[data-theme="light"] .account-back-button{background:#f3f3f3;border-color:#dedede;color:#333}
+html[data-theme="light"] .account-subheader{border-color:#dedede}
+html[data-theme="light"] .account-explanation{color:#707986}
+html[data-theme="light"] .account-link.selected{color:#e65d20}
+html[data-theme="light"] .account-link.selected .account-chevron{color:#e65d20}
+html[data-theme="light"] .calendar-layout .mini-day.done{background:#fff0df}
+html[data-theme="light"] .calendar-layout .mini-day.freeze{background:#e4f0ff}
