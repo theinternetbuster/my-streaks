@@ -693,3 +693,20 @@ el('toggleHistoryBtn').addEventListener('click',()=>withBusy(async()=>{
  const h=selectedHabit(),key=el('historyDate').value;if(!h||!key||key>todayKey())throw Error('Choose today or a past date');
  await runTransaction(db,async tx=>{const ref=habitDoc(h.id);const snap=await tx.get(ref);if(!snap.exists())throw Error('Habit no longer exists');const current=snap.data();if(Array.isArray(current.freezeDates)&&current.freezeDates.includes(key))throw Error('Blue freeze dates cannot be changed');let dates=Array.isArray(current.completions)?current.completions:[];dates=dates.includes(key)?dates.filter(x=>x!==key):[...dates,key];tx.update(ref,{completions:[...new Set(dates)].sort()});});showToast('History updated');
 }));
+
+
+/* Refresh the day boundary after midnight or when the iPhone web app resumes. */
+let lastVisibleDay=todayKey();
+function refreshDayBoundary(){
+ const current=todayKey();
+ if(current===lastVisibleDay)return;
+ lastVisibleDay=current;
+ if(!user)return;
+ for(const habit of habits)reconcileFreezeLedger(habit.id);
+ if(editorHabitId)renderCalendarEditor();
+ if(selectedId)renderDetail();
+ if(!el('dashboard').hidden)renderDashboard();
+}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshDayBoundary();});
+window.addEventListener('focus',refreshDayBoundary);
+setInterval(refreshDayBoundary,60000);
