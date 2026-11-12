@@ -16,8 +16,8 @@
   <link rel="icon" type="image/svg+xml" href="app-icon.svg" />
   <meta name="description" content="A private streak tracker with weekly freezes and cloud sync." />
   <title>My Streaks</title>
-  <link rel="stylesheet" href="styles.css?v=20261112-insights3" />
-  <link rel="stylesheet" href="workspace.css?v=20261112-insights3" />
+  <link rel="stylesheet" href="styles.css?v=20261112-insights4" />
+  <link rel="stylesheet" href="workspace.css?v=20261112-insights4" />
   <style id="critical-landing-styles">
 /* Critical inline fallback is scoped to logged-out view so signed-in themes are unchanged. */
 [hidden]{display:none!important}
@@ -939,7 +939,7 @@ body:has(#loginPanel:not([hidden])) .shell,
       <section id="checklistPanel" class="workspace-page checklist-page" hidden>
         <div class="workspace-eyebrow">YOUR SPACE</div>
         <div class="workspace-heading"><div><h1>Checklist<span class="workspace-heading-period">.</span></h1><p>A simple place for the things on your mind.</p></div><button type="button" id="checklistAdd" class="checklist-new" title="Add a block" aria-label="Add a new checklist item">＋ New</button></div>
-        <div class="checklist-document"><div class="checklist-document-top"><span><svg viewBox="0 0 24 24"><use href="#flame-solid"></use></svg> MY CHECKLIST</span><span id="checklistSyncStatus">Ready</span></div><div id="checklistBlocks" class="checklist-blocks"></div><div id="checklistEmpty" class="checklist-hint" hidden></div><button type="button" id="checklistAddBottom" class="checklist-add-block"><span>＋</span> Add a block</button></div>
+        <div class="checklist-document"><div class="checklist-document-top"><span><svg viewBox="0 0 24 24"><use href="#flame-solid"></use></svg> MY CHECKLIST</span><span id="checklistSyncStatus">Ready</span></div><div id="checklistBlocks" class="checklist-blocks"></div><button type="button" id="checklistEmpty" class="checklist-hint" aria-label="Start a new blank line">Press / to insert blocks</button><button type="button" id="checklistAddBottom" class="checklist-add-block"><span>＋</span> Add a block</button></div>
         <div id="checklistSlashMenu" class="checklist-slash-menu" role="menu" aria-label="Insert block" hidden></div>
         <p class="checklist-help">Saved privately to your account · Type <kbd>/</kbd> for blocks · Drag ⠿ to rearrange</p>
       </section>
@@ -1358,7 +1358,7 @@ body:has(#loginPanel:not([hidden])) .shell,
 })();
 
   </script>
-  <script defer src="workspace.js?v=20261112-insights3"></script>
-  <script type="module" src="app.js?v=20261112-insights3"></script>
+  <script defer src="workspace.js?v=20261112-insights4"></script>
+  <script type="module" src="app.js?v=20261112-insights4"></script>
 </body>
 </html>
