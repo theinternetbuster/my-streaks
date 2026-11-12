@@ -1,6 +1,6 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js';
-import { getFirestore, collection, doc, onSnapshot, addDoc, runTransaction, deleteDoc, writeBatch, setDoc } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
+import { getFirestore, collection, doc, onSnapshot, getDocs, addDoc, runTransaction, deleteDoc, writeBatch, setDoc } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
 
 const firebaseConfig = {
   apiKey: 'AIzaSyBuTBTsa-kimaBMbppZcWSQ8P_bpG9DyRQ',
@@ -24,6 +24,45 @@ document.body.appendChild(el('modalBackdrop'));
 document.body.appendChild(el('calendarEditor'));
 
 let user = null, unsubscribe = null, habits = [], selectedId = null, shownMonth = null, modalEditingId = null;
+let initialLoadTimer=null,initialLoadEpoch=0;
+function startupError(error){
+ console.error('My Streaks startup error',error);
+ setSync('Connection issue');
+ const loading=el('loadingPanel');
+ if(loading && !loading.hidden){
+   let message=el('streakStartupError');
+   if(!message){
+     message=document.createElement('div');
+     message.id='streakStartupError';
+     message.className='startup-error';
+     loading.appendChild(message);
+   }
+   message.textContent='Your habits could not be loaded. They are still stored in Firebase. Please reload to try again.';
+ }
+}
+function applyHabitSnapshot(snapshot){
+ habits=snapshot.docs.map(s=>normalise({id:s.id,...s.data()})).sort((a,b)=>(a.order??(1000000+a.createdAt))-(b.order??(1000000+b.createdAt))||a.name.localeCompare(b.name));
+ for(const [id,key] of pendingCheckins){if(habits.find(h=>h.id===id)?.completions.includes(key))pendingCheckins.delete(id);}
+ for(const [previewKey,desired] of editorPreview){
+   const divider=previewKey.lastIndexOf(':'),id=previewKey.slice(0,divider),date=previewKey.slice(divider+1);
+   const matched=habits.find(h=>h.id===id);
+   if(matched && matched.completions.includes(date)===desired && !editorInflight.has(previewKey) && !editorSaveTimers.has(previewKey)){
+     editorPreview.delete(previewKey);
+   }
+ }
+ if(editorHabitId)renderCalendarEditor();
+ if(selectedId&&habits.some(h=>h.id===selectedId)){renderDetail();display('detail');}
+ else {selectedId=null;renderDashboard();display('dashboard');}
+ // Background tasks should never prevent the user's dashboard from opening.
+ for(const record of snapshot.docs){
+   const raw=record.data();
+   if(!Array.isArray(raw.freezeDates) || (raw.freezeProcessedThrough && raw.freezeProcessedThrough<yesterdayKey())){
+     Promise.resolve().then(()=>reconcileFreezeLedger(record.id)).catch(e=>console.warn('Freeze reconciliation',e));
+   }
+ }
+ setSync(snapshot.metadata.hasPendingWrites?'Saving…':'Synced',!snapshot.metadata.hasPendingWrites);
+}
+
 let editMode = false, layoutMode = 'cards', themeMode = 'system', profileName = '', unsubscribePrefs = null;
 let sortableInstance = null, holdTimer = null, touchStart = null, suppressClickUntil = 0;
 let busy = false;
@@ -442,6 +481,8 @@ function signIn(){signInWithPopup(auth,provider).catch(async err=>{if(['auth/pop
 getRedirectResult(auth).catch(err=>showToast(errorMessage(err)));
 onAuthStateChanged(auth,u=>{
  if(unsubscribe){unsubscribe();unsubscribe=null;}
+ clearTimeout(initialLoadTimer);
+ const currentEpoch=++initialLoadEpoch;
  user=u;habits=[];selectedId=null;
  stopHold();
  if(unsubscribePrefs){unsubscribePrefs();unsubscribePrefs=null;}
@@ -449,6 +490,19 @@ onAuthStateChanged(auth,u=>{
  if(!u){setSync('Not signed in');document.body.classList.remove('desktop-settings-route');display('loginPanel');return;}
  profileName=u.displayName||u.email?.split('@')[0]||'there';showProfile();
  el('accountEmail').textContent=u.email||'Signed in';setSync('Syncing…');display('loadingPanel');
+ const oldError=el('streakStartupError');if(oldError)oldError.remove();
+ let firstSnapshotReceived=false;
+ initialLoadTimer=setTimeout(async()=>{
+   if(currentEpoch!==initialLoadEpoch||firstSnapshotReceived||!user)return;
+   try{
+     // A one-time fetch recovers from delayed realtime listeners.
+     const snapshot=await getDocs(habitCollection());
+     if(currentEpoch===initialLoadEpoch&&!firstSnapshotReceived){
+       applyHabitSnapshot(snapshot);
+       firstSnapshotReceived=true;
+     }
+   }catch(error){startupError(error);}
+ },7500);
  unsubscribePrefs=onSnapshot(preferencesDoc(),snapshot=>{
     const prefs=snapshot.exists()?snapshot.data():{};
     profileName=prefs.displayName||u.displayName||u.email?.split('@')[0]||'there';
@@ -458,26 +512,17 @@ onAuthStateChanged(auth,u=>{
     applyTheme();showProfile();if(!el('dashboard').hidden)renderDashboard();
  },err=>console.error('Settings sync issue',err));
  unsubscribe=onSnapshot(habitCollection(),snapshot=>{
-   habits=snapshot.docs.map(s=>normalise({id:s.id,...s.data()})).sort((a,b)=>(a.order??(1000000+a.createdAt))-(b.order??(1000000+b.createdAt))||a.name.localeCompare(b.name));
-   for(const [id,key] of pendingCheckins){if(habits.find(h=>h.id===id)?.completions.includes(key))pendingCheckins.delete(id);}
-   for(const [previewKey,desired] of editorPreview){
-     const divider=previewKey.lastIndexOf(':'),id=previewKey.slice(0,divider),date=previewKey.slice(divider+1);
-     const matched=habits.find(h=>h.id===id);
-     if(matched && matched.completions.includes(date)===desired && !editorInflight.has(previewKey) && !editorSaveTimers.has(previewKey)){
-       editorPreview.delete(previewKey);
-     }
-   }
-   for(const record of snapshot.docs){
-     const raw=record.data();
-     if(!Array.isArray(raw.freezeDates) || (raw.freezeProcessedThrough && raw.freezeProcessedThrough<yesterdayKey())){
-       reconcileFreezeLedger(record.id);
-     }
-   }
-   setSync(snapshot.metadata.hasPendingWrites?'Saving…':'Synced',!snapshot.metadata.hasPendingWrites);
-   if(editorHabitId)renderCalendarEditor();
-   if(selectedId&&habits.some(h=>h.id===selectedId)){renderDetail();display('detail');}
-   else{selectedId=null;renderDashboard();display('dashboard');}
- },err=>{console.error(err);setSync('Sync issue');display('dashboard');showToast(errorMessage(err));});
+   if(currentEpoch!==initialLoadEpoch)return;
+   try{
+     applyHabitSnapshot(snapshot);
+     firstSnapshotReceived=true;
+     clearTimeout(initialLoadTimer);
+   }catch(error){startupError(error);}
+ },error=>{
+   if(currentEpoch!==initialLoadEpoch)return;
+   clearTimeout(initialLoadTimer);
+   startupError(error);
+ });
 });
 el('googleLogin').addEventListener('click',signIn);
 const accountSections=[
