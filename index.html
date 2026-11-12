@@ -16,7 +16,7 @@
   <link rel="icon" type="image/svg+xml" href="app-icon.svg" />
   <meta name="description" content="A private streak tracker with weekly freezes and cloud sync." />
   <title>My Streaks</title>
-  <link rel="stylesheet" href="styles.css?v=20261111-v7" />
+  <link rel="stylesheet" href="styles.css?v=20261111-v8" />
 </head>
 <body>
   <svg class="svg-defs" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs>
@@ -72,7 +72,7 @@
       <div id="accountScrim" class="account-scrim" aria-hidden="true"></div>
       <section class="account-sheet">
         <div class="account-navigation">
-          <a class="settings-home-link" href="/my-streaks/">← Back to My Streaks</a>
+          
           <h1 class="desktop-settings-heading">Profile and Settings</h1>
           <header class="account-topbar"><span class="account-handle" aria-hidden="true"></span><button type="button" id="closeAccountMenu" class="babbel-close account-dismiss" aria-label="Close profile and settings">×</button></header>
           <div class="account-profile"><h1 id="accountGreeting">My account</h1><p id="accountEmail"></p></div>
@@ -99,7 +99,7 @@
             </div>
             <div id="accountAppearanceDetail" class="account-detail" hidden>
               <h3>Appearance</h3><p class="account-explanation">Choose how My Streaks looks on this device and your other signed-in devices.</p>
-              <fieldset class="theme-picker"><legend>Theme</legend><label><input type="radio" name="appearanceMode" value="system" checked/><span>Device theme</span></label><label><input type="radio" name="appearanceMode" value="light"/><span>Light</span></label><label><input type="radio" name="appearanceMode" value="dark"/><span>Dark</span></label></fieldset>
+              <fieldset class="theme-picker"><legend>Theme</legend><div class="theme-segment" role="radiogroup" aria-label="Appearance"><span class="theme-thumb" aria-hidden="true"></span><label><input type="radio" name="appearanceMode" value="light"/><span>Light</span></label><label><input type="radio" name="appearanceMode" value="system" checked/><span>Device</span></label><label><input type="radio" name="appearanceMode" value="dark"/><span>Dark</span></label></div><p class="theme-description">Device uses your phone or computer's appearance settings.</p></fieldset>
             </div>
             <div id="accountReorderDetail" class="account-detail account-reorder-detail" hidden>
               <h3>Rearrange habits</h3>
@@ -142,6 +142,6 @@
   })();
   </script>
   <style>.loading-recovery{max-width:330px;text-align:center;line-height:1.5;margin-top:15px}.loading-recovery button{background:#ff5a12;color:#fff;border:0;border-radius:12px;padding:13px 20px;font:700 15px system-ui;cursor:pointer}</style>
-  <script type="module" src="app.js?v=20261111-v7"></script>
+  <script type="module" src="app.js?v=20261111-v8"></script>
 </body>
 </html>
