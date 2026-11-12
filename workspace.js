@@ -7,6 +7,8 @@
     {id:'h1',title:'Heading 1',subtitle:'Large section heading',symbol:'H1'},
     {id:'h2',title:'Heading 2',subtitle:'Smaller heading',symbol:'H2'},
     {id:'todo',title:'To-do list',subtitle:'A task to check off',symbol:'☐'},
+    {id:'todoNote',title:'To-do with notes',subtitle:'Expandable notes beneath a task',symbol:'☷'},
+    {id:'todoList',title:'To-do with subtasks',subtitle:'Expandable mini-checklist',symbol:'☰'},
     {id:'toggle',title:'Toggle',subtitle:'Collapsible notes',symbol:'▸'},
     {id:'bullet',title:'Bulleted list',subtitle:'Simple list item',symbol:'•'},
     {id:'text',title:'Text',subtitle:'Regular notes',symbol:'T'}
@@ -14,7 +16,7 @@
   function start({db,doc,onSnapshot,setDoc,getHabits,evaluateHabit,onTabChange}){
     const root=$('checklistBlocks');
     if(!root)return null;
-    let tab='home',user=null,unsub=null,blocks=[],dirty=false,saveTimer=null,selectedHabit=null,
+    let tab='home',user=null,unsub=null,insightUnsub=null,blocks=[],dirty=false,saveTimer=null,selectedHabit='all',insightSection='overview',insightSelectionPending=false,
         slashFor=null,slashMatches=types,slashSelected=0,sortable=null,saveSerial=0,listenerEpoch=0;
     let pendingWrite=Promise.resolve(),editRevision=0;
     const key=d=>[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');
@@ -54,8 +56,9 @@
     });
     function setUser(next){
       if(unsub){unsub();unsub=null;}
+      if(insightUnsub){insightUnsub();insightUnsub=null;}
       clearTimeout(saveTimer);editRevision++;
-      user=next;blocks=[];dirty=false;saveSerial++;selectedHabit=null;
+      user=next;blocks=[];dirty=false;saveSerial++;selectedHabit='all';insightSection='overview';insightSelectionPending=false;
       tab=['insights','checklist'].includes(new URLSearchParams(location.search).get('view'))?
         new URLSearchParams(location.search).get('view'):'home';
       updateNav();
@@ -76,11 +79,18 @@
           $('checklistSyncStatus').textContent='Could not sync';
         });
       }catch(error){console.error('Checklist could not initialize',error);$('checklistSyncStatus').textContent='Sync unavailable';}
+      try{
+        insightUnsub=onSnapshot(doc(db,'users',user.uid,'settings','insights'),snapshot=>{
+          if(epoch!==listenerEpoch||!user||insightSelectionPending)return;
+          const choice=snapshot.exists()?snapshot.data().habitId:null;
+          if(typeof choice==='string'&&choice){selectedHabit=choice;if(tab==='insights')renderInsights();}
+        },error=>console.warn('Insights preference sync',error));
+      }catch(error){console.warn('Insights preference unavailable',error);}
       if(tab==='insights')renderInsights();
     }
     function normalizedType(t){return types.some(x=>x.id===t)?t:'text';}
     function normalizeBlock(b,i){
-      return {id:String(b.id||uniqueId()),type:normalizedType(b.type),text:String(b.text||'').slice(0,5000),checked:!!b.checked,collapsed:!!b.collapsed,note:String(b.note||'').slice(0,10000),dueDate:/^\d{4}-\d{2}-\d{2}$/.test(b.dueDate||'')?b.dueDate:'',order:Number.isFinite(b.order)?b.order:i,createdAt:Number(b.createdAt)||Date.now()};
+      return {id:String(b.id||uniqueId()),type:normalizedType(b.type),text:String(b.text||'').slice(0,5000),checked:!!b.checked,collapsed:!!b.collapsed,note:String(b.note||'').slice(0,10000),subtasks:Array.isArray(b.subtasks)?b.subtasks.slice(0,40).filter(t=>t&&typeof t.text==='string').map(t=>({id:String(t.id||uniqueId()),text:String(t.text).slice(0,500),checked:!!t.checked})):[],dueDate:/^\d{4}-\d{2}-\d{2}$/.test(b.dueDate||'')?b.dueDate:'',order:Number.isFinite(b.order)?b.order:i,createdAt:Number(b.createdAt)||Date.now()};
     }
     function scheduleSave(soon=false){
       if(!user)return;
@@ -113,7 +123,7 @@
       await pendingWrite;
     }
     function addBlock(afterId=null,type='todo',text=''){
-      const b={id:uniqueId(),type,text,checked:false,collapsed:false,note:'',dueDate:'',order:blocks.length,createdAt:Date.now()};
+      const b={id:uniqueId(),type,text,checked:false,collapsed:false,note:'',subtasks:[],dueDate:'',order:blocks.length,createdAt:Date.now()};
       const index=afterId?blocks.findIndex(x=>x.id===afterId):-1;
       if(index>=0)blocks.splice(index+1,0,b);else blocks.push(b);
       renderChecklist(true);scheduleSave(true);
@@ -148,6 +158,7 @@
       b.type=normalizedType(type);
       b.text=b.text.replace(/^\/[a-z0-9 -]*/i,'');
       b.checked=false;
+      if(type==='todoNote'||type==='todoList')b.collapsed=false;
       closeSlash();renderChecklist(true);scheduleSave(true);
       requestAnimationFrame(()=>focusBlock(id));
     }
