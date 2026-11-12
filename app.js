@@ -202,7 +202,7 @@ function renderCalendarEditor(){
   const d=new Date(m.getFullYear(),m.getMonth(),i-first+1,12);
   const inMonth=d.getMonth()===m.getMonth(),key=dateKey(d),state=info.states.get(key);
   const done=state==='done',freeze=state==='freeze',locked=!inMonth||key>todayKey()||freeze||editorBusy;
-  const cls=[done?'done':'',freeze?'freeze':'',key===todayKey()?'today':'',!inMonth?'outside':''].filter(Boolean).join(' ');
+  const cls=[done?'done':'',freeze?'freeze':'',!inMonth?'outside':''].filter(Boolean).join(' ');
   const flame=(done||freeze)?'<svg viewBox="0 0 24 24" aria-hidden="true"><use href="#flame-'+(done?'solid':'outline')+'"></use></svg>':'';
   html+='<button type="button" class="editor-day '+cls+'" data-date="'+key+'" aria-label="'+key+': '+(freeze?'freeze locked':done?'completed':'not completed')+'" aria-pressed="'+done+'" '+(locked?'disabled':'')+'><span>'+d.getDate()+'</span>'+flame+'</button>';
  }
@@ -346,8 +346,6 @@ function renderDetail(){
   el('detailStreak').innerHTML=`<em>${data.streak}-day</em> streak`;
   el('detailSubtitle').textContent=`Complete ${h.name} to keep your streak going.`;
   el('freezeTitle').textContent=`${data.freezes} Streak Freeze${data.freezes===1?'':'s'} left`;
-  el('checkInBtn').textContent=data.doneToday?'✓ Completed today':'✓ Done today';
-  el('checkInBtn').disabled=data.doneToday || busy;
   drawCalendar(h,data);
 }
 function drawCalendar(h,data){
@@ -414,6 +412,12 @@ onAuthStateChanged(auth,u=>{
  },err=>console.error('Settings sync issue',err));
  unsubscribe=onSnapshot(habitCollection(),snapshot=>{
    habits=snapshot.docs.map(s=>normalise({id:s.id,...s.data()})).sort((a,b)=>(a.order??(1000000+a.createdAt))-(b.order??(1000000+b.createdAt))||a.name.localeCompare(b.name));
+   for(const record of snapshot.docs){
+     const raw=record.data();
+     if(!Array.isArray(raw.freezeDates) || (raw.freezeProcessedThrough && raw.freezeProcessedThrough<yesterdayKey())){
+       reconcileFreezeLedger(record.id);
+     }
+   }
    setSync(snapshot.metadata.hasPendingWrites?'Saving…':'Synced',!snapshot.metadata.hasPendingWrites);
    if(editorHabitId)renderCalendarEditor();
    if(selectedId&&habits.some(h=>h.id===selectedId)){renderDetail();display('detail');}
@@ -624,7 +628,7 @@ el('editorNextMonth').addEventListener('click',()=>{editorMonth=new Date(editorM
 el('editorCalendarDays').addEventListener('click',e=>{const b=e.target.closest('.editor-day:not(:disabled)');if(b)toggleEditorDate(b.dataset.date);});
 el('backBtn').addEventListener('click',closeHabit);
 el('detailScrim').addEventListener('click',closeHabit);
-el('checkInBtn').addEventListener('click',checkIn);
+
 el('editHabitBtn').addEventListener('click',()=>showModal(true));
 el('habitForm').addEventListener('submit',saveHabit);
 el('closeModal').addEventListener('click',hideModal);el('cancelModal').addEventListener('click',hideModal);
