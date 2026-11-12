@@ -96,13 +96,8 @@ function smallCalendar(h,info){
  }
  return '<div class="mini-calendar"><div class="mini-month">'+now.toLocaleDateString('en-US',{month:'long',year:'numeric'})+'</div><div class="mini-calendar-grid">'+days+'</div></div>';
 }
-function setEditMode(enabled){
- editMode=enabled;
- const grid=el('habitGrid');
- grid.classList.toggle('editing',editMode);
- el('habitEditToolbar').hidden=!editMode;
- el('toolbarHint').hidden=editMode;
-}
+let holdCheckinTimer=null, activeHold=null, suppressCardClicksUntil=0;
+let reorderSortable=null, stagedOrder=[];
 function renderDashboard(){
  const grid=el('habitGrid');
  grid.classList.toggle('calendar-layout',layoutMode==='calendar');
@@ -111,42 +106,74 @@ function renderDashboard(){
  el('layoutToggleBtn').setAttribute('aria-pressed',String(layoutMode==='calendar'));
  grid.innerHTML=habits.map(h=>{
    const info=evaluateHabit(h);
-   return '<div class="habit-card" data-id="'+escapeHTML(h.id)+'" role="button" tabindex="0" aria-label="Open '+escapeHTML(h.name)+' streak">'+
-     '<button class="card-delete" type="button" aria-label="Delete '+escapeHTML(h.name)+'" data-delete="'+escapeHTML(h.id)+'">×</button>'+
+   return '<div class="habit-card'+(info.doneToday?' completed-today':'')+'" data-id="'+escapeHTML(h.id)+'" data-done="'+info.doneToday+'" role="button" tabindex="0" aria-label="'+escapeHTML(h.name)+(info.doneToday?' completed today':' — hold to check in')+'">'+
+     '<span class="hold-progress" aria-hidden="true"></span>'+
      '<div class="habit-card-head"><h3>'+escapeHTML(h.name)+'</h3>'+
      (layoutMode==='calendar'?'<span class="mini-streak"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#flame-solid"></use></svg>'+info.streak+'</span>':'')+'</div>'+
      (layoutMode==='calendar'?smallCalendar(h,info):
      '<div class="card-bottom"><span class="card-streak"><svg class="card-flame" viewBox="0 0 24 24" aria-hidden="true"><use href="#flame-solid"></use></svg> '+info.streak+'</span><span class="card-arrow">↗</span></div>')+
      '</div>';
  }).join('');
- setEditMode(editMode);
  el('emptyState').hidden=habits.length!==0;
- if(!sortableInstance && window.Sortable){
-   sortableInstance=window.Sortable.create(grid,{
-      animation:250, easing:'cubic-bezier(.2,.8,.2,1)',
-      delay:280, delayOnTouchOnly:true, touchStartThreshold:4,
-      fallbackTolerance:1, forceFallback:true, fallbackOnBody:true,
-      fallbackClass:'drag-following',
-      chosenClass:'sortable-selected', ghostClass:'sortable-ghost',
-      dragClass:'sortable-dragging',
-      swapThreshold:0.66, invertSwap:false,
-      scroll:true, scrollSensitivity:60, scrollSpeed:12,
-      onChoose:()=>{clearTimeout(holdTimer);},
-      onStart:()=>{clearTimeout(holdTimer);setEditMode(true);},
-      onEnd:async()=>{
-        suppressClickUntil=Date.now()+650;
-        const ids=[...grid.querySelectorAll('.habit-card')].map(c=>c.dataset.id);
-        if(ids.length!==habits.length||ids.every((id,i)=>id===habits[i].id))return;
-        if(busy)return;
-        await withBusy(async()=>{
-           const batch=writeBatch(db);
-           ids.forEach((id,i)=>batch.update(habitDoc(id),{order:i}));
-           await batch.commit();
-           showToast('Habit order saved');
-        });
-      }
+}
+function renderReorderList(){
+ const list=el('reorderList');
+ stagedOrder=habits.map(h=>h.id);
+ list.innerHTML=habits.map(h=>
+   '<div class="reorder-item" data-id="'+escapeHTML(h.id)+'"><span class="reorder-name">'+escapeHTML(h.name)+'</span><button type="button" class="reorder-handle" aria-label="Drag '+escapeHTML(h.name)+' to change order" title="Drag to rearrange">☰</button></div>'
+ ).join('');
+ if(reorderSortable){reorderSortable.destroy();reorderSortable=null;}
+ if(window.Sortable){
+   reorderSortable=window.Sortable.create(list,{
+     animation:235,easing:'cubic-bezier(.22,.75,.25,1)',
+     handle:'.reorder-handle',forceFallback:true,fallbackOnBody:true,
+     fallbackTolerance:0,touchStartThreshold:2,
+     chosenClass:'reorder-chosen',ghostClass:'reorder-placeholder',
+     fallbackClass:'reorder-floating',scroll:true,
+     onEnd:()=>{stagedOrder=[...list.querySelectorAll('.reorder-item')].map(row=>row.dataset.id);}
    });
  }
+ list.querySelectorAll('.reorder-handle').forEach(btn=>btn.addEventListener('keydown',e=>{
+   if(e.key!=='ArrowUp'&&e.key!=='ArrowDown')return;
+   e.preventDefault();
+   const item=btn.closest('.reorder-item'),other=e.key==='ArrowUp'?item.previousElementSibling:item.nextElementSibling;
+   if(!other)return;
+   if(e.key==='ArrowUp')list.insertBefore(item,other);else list.insertBefore(other,item);
+   stagedOrder=[...list.querySelectorAll('.reorder-item')].map(row=>row.dataset.id);
+   btn.focus();
+ }));
+}
+async function saveReorderedHabits(){
+ const ids=[...el('reorderList').querySelectorAll('.reorder-item')].map(x=>x.dataset.id);
+ if(ids.length!==habits.length||new Set(ids).size!==habits.length){showToast('Habit list changed. Open rearrange again.');return;}
+ if(ids.every((id,i)=>id===habits[i].id)){showToast('Order already saved');return;}
+ await withBusy(async()=>{
+   const batch=writeBatch(db);
+   ids.forEach((id,i)=>batch.update(habitDoc(id),{order:i}));
+   await batch.commit();
+   showToast('New habit order saved');
+   if(!desktopSettings.matches)backToAccountHome();
+ });
+}
+function stopHold(){
+ clearTimeout(holdCheckinTimer);holdCheckinTimer=null;
+ if(activeHold?.element)activeHold.element.classList.remove('holding');
+ activeHold=null;
+}
+async function checkInHabit(id){
+ if(busy||!user)return;
+ const habit=habits.find(h=>h.id===id);
+ if(!habit||evaluateHabit(habit).doneToday)return;
+ await withBusy(async()=>{
+   const ref=habitDoc(id),key=todayKey();
+   await runTransaction(db,async tx=>{
+     const snapshot=await tx.get(ref);
+     if(!snapshot.exists())throw Error('Habit no longer exists');
+     const dates=Array.isArray(snapshot.data().completions)?snapshot.data().completions:[];
+     if(!dates.includes(key))tx.update(ref,{completions:[...dates,key].sort()});
+   });
+   showToast('Today completed! 🔥');
+ });
 }
 async function quickDeleteHabit(id){
   const h=habits.find(x=>x.id===id);if(!h)return;
@@ -185,11 +212,7 @@ function drawCalendar(h,data){
 }
 async function withBusy(fn){if(busy)return;busy=true;try{await fn();setSync('Synced',true);}catch(err){console.error(err);showToast(errorMessage(err));setSync('Sync issue');}finally{busy=false;if(selectedId)renderDetail();}}
 function errorMessage(err){if(err?.code==='permission-denied')return 'Database permission denied. Check Firestore rules.';if(err?.code==='auth/unauthorized-domain')return 'Add this website domain to Firebase authorized domains.';return err?.message||'Something went wrong. Please try again.';}
-async function checkIn(){const h=selectedHabit();if(!h)return;await withBusy(async()=>{
-  const ref=habitDoc(h.id);const key=todayKey();
-  await runTransaction(db,async tx=>{const snap=await tx.get(ref);if(!snap.exists())throw Error('Habit not found');const current=snap.data();const dates=Array.isArray(current.completions)?current.completions:[];if(!dates.includes(key))tx.update(ref,{completions:[...dates,key].sort()});});
-  showToast('🔥 Today completed!');
-});}
+async function checkIn(){const h=selectedHabit();if(h)await checkInHabit(h.id);}
 function showModal(edit=false){
  modalEditingId=edit?selectedId:null;
  el('modalTitle').textContent=edit?'Edit habit':'New habit';el('saveHabit').textContent=edit?'Save changes':'Create habit';
@@ -217,7 +240,7 @@ getRedirectResult(auth).catch(err=>showToast(errorMessage(err)));
 onAuthStateChanged(auth,u=>{
  if(unsubscribe){unsubscribe();unsubscribe=null;}
  user=u;habits=[];selectedId=null;
- editMode=false;
+ stopHold();
  if(unsubscribePrefs){unsubscribePrefs();unsubscribePrefs=null;}
  el('userBtn').hidden=!u;el('accountMenu').hidden=true;document.body.classList.remove('account-open');el('userBtn').setAttribute('aria-expanded','false');
  if(!u){setSync('Not signed in');display('loginPanel');return;}
@@ -242,7 +265,8 @@ el('googleLogin').addEventListener('click',signIn);
 const accountSections=[
  ['accountSettingsBtn','accountSettingsDetail','Account & settings'],
  ['accountAppearanceBtn','accountAppearanceDetail','Appearance'],
- ['accountBackupBtn','accountBackupDetail','Backup & restore']
+ ['accountBackupBtn','accountBackupDetail','Backup & restore'],
+ ['accountReorderBtn','accountReorderDetail','Rearrange habits']
 ];
 const desktopSettings=window.matchMedia('(min-width:800px)');
 function showAccountSection(which){
@@ -253,6 +277,7 @@ function showAccountSection(which){
    el(buttonId).setAttribute('aria-expanded',String(active));
    el(buttonId).classList.toggle('selected',active);
  }
+ if(selected[0]==='accountReorderBtn')renderReorderList();
  el('accountSubTitle').textContent=selected[2];
  el('accountMenu').querySelector('.account-sheet').classList.add('section-open');
  el('accountSubpage').setAttribute('aria-hidden','false');
@@ -306,31 +331,38 @@ document.addEventListener('keydown',event=>{
  }
 });
 el('layoutToggleBtn').addEventListener('click',()=>{layoutMode=layoutMode==='cards'?'calendar':'cards';renderDashboard();savePreference({layout:layoutMode});});
-el('finishEditingBtn').addEventListener('click',()=>setEditMode(false));
 const grid=el('habitGrid');
 grid.addEventListener('click',event=>{
- const deleteButton=event.target.closest('[data-delete]');
- if(deleteButton){event.stopPropagation();quickDeleteHabit(deleteButton.dataset.delete);return;}
  const card=event.target.closest('.habit-card');
- if(!card||editMode||Date.now()<suppressClickUntil)return;
+ if(!card||Date.now()<suppressCardClicksUntil)return;
  openHabit(card.dataset.id);
 });
 grid.addEventListener('keydown',event=>{
- if(event.key==='Escape'&&editMode){setEditMode(false);return;}
  if((event.key==='Enter'||event.key===' ')&&event.target.classList.contains('habit-card')){
-   event.preventDefault();if(!editMode)openHabit(event.target.dataset.id);
+   event.preventDefault();openHabit(event.target.dataset.id);
  }
 });
 grid.addEventListener('pointerdown',event=>{
- if(event.target.closest('.card-delete'))return;
- const card=event.target.closest('.habit-card');if(!card||event.pointerType==='mouse')return;
- clearTimeout(holdTimer);touchStart={x:event.clientX,y:event.clientY};
- holdTimer=setTimeout(()=>{setEditMode(true);suppressClickUntil=Date.now()+500;},530);
+ const card=event.target.closest('.habit-card');
+ if(!card||event.button>0||busy||card.dataset.done==='true')return;
+ stopHold();
+ activeHold={element:card,id:card.dataset.id,x:event.clientX,y:event.clientY,pointerId:event.pointerId};
+ card.classList.add('holding');
+ holdCheckinTimer=setTimeout(async()=>{
+   if(!activeHold||activeHold.id!==card.dataset.id)return;
+   const id=activeHold.id;stopHold();
+   suppressCardClicksUntil=Date.now()+850;
+   await checkInHabit(id);
+ },850);
 });
 grid.addEventListener('pointermove',event=>{
- if(touchStart&&(Math.abs(event.clientX-touchStart.x)>9||Math.abs(event.clientY-touchStart.y)>9))clearTimeout(holdTimer);
+ if(!activeHold||activeHold.pointerId!==event.pointerId)return;
+ if(Math.hypot(event.clientX-activeHold.x,event.clientY-activeHold.y)>13)stopHold();
 });
-for(const type of ['pointerup','pointercancel','pointerleave'])grid.addEventListener(type,()=>{clearTimeout(holdTimer);touchStart=null;});
+for(const type of ['pointerup','pointercancel','pointerleave'])grid.addEventListener(type,stopHold);
+grid.addEventListener('contextmenu',event=>{if(event.target.closest('.habit-card'))event.preventDefault();});
+el('saveReorderBtn').addEventListener('click',saveReorderedHabits);
+el('cancelReorderBtn').addEventListener('click',()=>{if(!desktopSettings.matches)backToAccountHome();else showAccountSection('accountSettingsBtn');});
 el('signOutBtn').addEventListener('click',()=>{setAccountMenu(false);signOut(auth).catch(err=>showToast(errorMessage(err)));});
 el('addHabitBtn').addEventListener('click',()=>showModal());el('emptyAdd').addEventListener('click',()=>showModal());
 function closeHabit(){selectedId=null;renderDashboard();display('dashboard');}
