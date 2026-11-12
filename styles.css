@@ -623,3 +623,104 @@ html[data-theme="light"] .reorder-handle{color:#80848c}
 html[data-theme="light"] .reorder-floating{background:#fff!important}
 /* Standalone iOS status bar background follows the sheet correctly. */
 body.detail-open{overflow:hidden}
+
+
+/* v7: actual desktop settings pages, iOS flush-top calendar, accurate hold behavior */
+.hold-progress{opacity:.86}
+.habit-card.holding .hold-progress{animation:hold-checkin 720ms linear forwards}
+.habit-card.holding{touch-action:manipulation}
+.desktop-settings-heading,.settings-home-link{display:none}
+@media(min-width:800px){
+  body.desktop-settings-route{background:#000;overflow:auto}
+  body.desktop-settings-route .shell{display:none!important}
+  body.desktop-settings-route .account-overlay{
+    display:block!important;position:relative;inset:auto;
+    background:transparent;z-index:auto;width:100%;
+    margin:0 auto;padding:0 24px 75px;
+  }
+  body.desktop-settings-route .account-scrim{display:none}
+  body.desktop-settings-route .account-sheet{
+    position:static;width:min(100%,1080px);max-width:1080px;
+    height:auto;max-height:none;overflow:visible;
+    margin:0 auto;display:grid;
+    grid-template-columns:225px minmax(0,1fr);
+    gap:55px;padding:0;background:transparent!important;
+    border:0!important;border-radius:0!important;
+    box-shadow:none!important;animation:none!important;
+  }
+  body.desktop-settings-route .account-navigation{
+    display:flex;flex-direction:column;overflow:visible;
+    border:0;padding:70px 0 0;
+  }
+  body.desktop-settings-route .desktop-settings-heading{
+    display:block;font-family:Georgia,'Times New Roman',serif;
+    font-size:clamp(29px,3vw,40px);font-weight:400;
+    white-space:nowrap;letter-spacing:-.03em;
+    margin:0 0 42px;line-height:1.1;
+  }
+  body.desktop-settings-route .settings-home-link{
+    display:block;color:#ff5a12;text-decoration:none;
+    font-size:13px;font-weight:650;margin-bottom:22px;
+  }
+  body.desktop-settings-route .account-profile,
+  body.desktop-settings-route .account-topbar{display:none}
+  body.desktop-settings-route .account-links{margin-top:0}
+  body.desktop-settings-route .account-links .account-link{
+    min-height:0;padding:12px 0;border:0;
+    background:transparent;font-size:16px;font-weight:500;
+  }
+  body.desktop-settings-route .account-link-icon,
+  body.desktop-settings-route .account-chevron{display:none}
+  body.desktop-settings-route .account-subpage{
+    width:100%;height:auto;min-height:480px;max-height:none;
+    padding:166px 0 30px;
+    overflow:visible;background:transparent!important;
+    border:0;box-shadow:none;
+  }
+  body.desktop-settings-route .account-subheader{
+    margin:0 0 30px;padding:0 0 15px;border-bottom:1px solid #414141;
+  }
+  body.desktop-settings-route .account-subheader h2{
+    font-family:Georgia,'Times New Roman',serif;
+    font-size:28px;font-weight:400;
+  }
+  body.desktop-settings-route .account-detail{max-width:630px}
+  body.desktop-settings-route .account-detail h3{
+    font-size:21px;margin:28px 0 22px;
+  }
+  body.desktop-settings-route .account-info-row{font-size:15px}
+  body.desktop-settings-route .account-sign-out{max-width:240px}
+  html[data-theme="light"] body.desktop-settings-route{background:#fff;color:#222}
+  html[data-theme="light"] body.desktop-settings-route .account-subheader{border-color:#ddd}
+}
+@media(max-width:799px){
+  #detail{top:0!important;right:0!important;bottom:0!important;left:0!important;margin:0!important;padding:0!important}
+  #detail .babbel-panel{
+    width:100vw!important;height:100dvh!important;
+    min-height:100dvh!important;max-height:100dvh!important;
+    border-radius:0!important;margin:0!important;
+    padding-top:calc(env(safe-area-inset-top,0px) + 22px)!important;
+    box-sizing:border-box!important;
+  }
+  .account-subcontent .account-detail h3{
+    font-size:clamp(24px,6vw,32px);margin:33px 0 23px;
+    font-weight:750;color:inherit;
+  }
+  .account-subcontent .account-detail h3:first-child{margin-top:45px}
+  .account-subcontent .account-info-row{
+    padding:22px 0;border-bottom:1px solid #7d7d7d;
+    border-top:0;font-size:18px;line-height:1.4;
+    color:inherit;
+  }
+  .account-subcontent .account-info-row span{color:inherit;text-align:left;max-width:100%}
+  .account-subcontent .account-sign-out{
+    margin:0;display:block;width:100%;text-align:left;
+    padding:22px 0;min-height:0;border:0;
+    border-bottom:1px solid #7d7d7d;border-radius:0;
+    background:transparent!important;color:inherit;font-size:18px;
+    font-weight:400;
+  }
+  .settings-section-heading{margin-top:70px!important}
+  html[data-theme="light"] .account-subcontent .account-info-row,
+  html[data-theme="light"] .account-subcontent .account-sign-out{border-color:#ccc}
+}
