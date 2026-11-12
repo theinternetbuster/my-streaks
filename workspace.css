@@ -362,3 +362,22 @@ html[data-theme="light"] .checklist-detail-modes button.selected{background:#ffe
 html[data-theme="light"] .checklist-subtask>input[type="text"]{color:#293447}
 html[data-theme="light"] .checklist-help kbd{background:#eef0f4;color:#586273}
 @media(max-width:799px){.checklist-subtask>input[type="text"]{font-size:16px}.checklist-subtask>button{opacity:.8}}
+
+/* The blank line is a true click target, not a permanent placeholder. */
+#checklistEmpty.checklist-hint{
+ display:block;width:100%;min-height:40px;margin:7px 0 0;
+ padding:10px 6px;border:0;border-radius:8px;background:transparent;
+ text-align:left;box-shadow:none;font:500 14px 'DM Sans',sans-serif;
+ color:transparent;cursor:text;transition:background .16s ease,color .16s ease
+}
+#checklistEmpty.checklist-hint:hover,#checklistEmpty.checklist-hint:focus-visible{
+ background:#2c2c30;color:#8d8d98
+}
+#checklistAddBottom{opacity:.45;font-size:12px;margin-top:3px}
+#checklistAddBottom:hover{opacity:1}
+html[data-theme="light"] #checklistEmpty.checklist-hint:hover,
+html[data-theme="light"] #checklistEmpty.checklist-hint:focus-visible{background:#f1f2f5;color:#6b7585}
+@media(max-width:799px){
+ #checklistEmpty.checklist-hint{min-height:46px}
+ #checklistEmpty.checklist-hint:active{color:#8d8d98}
+}
