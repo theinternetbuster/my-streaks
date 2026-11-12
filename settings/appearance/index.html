@@ -16,7 +16,7 @@
   <link rel="icon" type="image/svg+xml" href="app-icon.svg" />
   <meta name="description" content="A private streak tracker with weekly freezes and cloud sync." />
   <title>My Streaks</title>
-  <link rel="stylesheet" href="styles.css?v=20261111-v9" />
+  <link rel="stylesheet" href="styles.css?v=20261111-v10" />
 </head>
 <body>
   <svg class="svg-defs" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs>
@@ -61,11 +61,29 @@
           <div id="calendarDays" class="calendar-grid" aria-label="Habit completion and streak freeze calendar"></div>
           <div class="freeze-box"><div class="freeze-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#flame-outline"></use></svg></div><div><h3 id="freezeTitle"></h3><p>Every Monday you get 2 Streak Freezes. They protect your streak if you miss a day.</p></div></div>
           <div class="detail-actions"><button id="checkInBtn" class="primary-btn checkin">✓ Done today</button><button id="editHabitBtn" class="secondary-btn" aria-label="Edit habit">Edit habit</button></div>
-          <div class="detail-footer"><button id="historyBtn" class="text-btn">Edit check-in history</button><button id="exportBtn" class="text-btn">↓ Export backup</button></div>
+          <div class="detail-footer"><button id="historyBtn" class="text-btn">Edit check-in history</button></div>
           <div id="historyPanel" class="history-panel" hidden><h3>Adjust a check-in</h3><p class="muted small">Pick a date to mark complete or incomplete. This updates your synced history.</p><input id="historyDate" type="date" /><button id="toggleHistoryBtn" class="secondary-btn">Toggle completion</button><p id="historyHint" class="small muted"></p></div>
         </div>
       </section>
     </main>
+    <section id="calendarEditor" class="calendar-editor-overlay" role="dialog" aria-modal="true" aria-labelledby="calendarEditorTitle" hidden>
+      <div class="calendar-editor-scrim" id="calendarEditorScrim"></div>
+      <div class="calendar-editor-sheet">
+        <div class="calendar-editor-header">
+          <div><p class="calendar-editor-kicker">ACTIVITY CALENDAR</p><h2 id="calendarEditorTitle">Calendar</h2></div>
+          <button type="button" id="closeCalendarEditor" class="calendar-editor-close" aria-label="Close calendar">×</button>
+        </div>
+        <div class="calendar-editor-month">
+          <button id="editorPrevMonth" type="button" aria-label="Previous month">‹</button>
+          <h3 id="editorMonthTitle"></h3>
+          <button id="editorNextMonth" type="button" aria-label="Next month">›</button>
+        </div>
+        <div class="calendar-editor-weekdays" aria-hidden="true"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div>
+        <div id="editorCalendarDays" class="calendar-editor-days" aria-label="Tap dates to mark complete or incomplete"></div>
+        <div class="editor-legend"><span><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#flame-solid"></use></svg> Completed</span><span class="blue"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#flame-outline"></use></svg> Freeze · locked</span></div>
+        <p class="calendar-editor-note">Tap a date to switch between completed and empty. Blue freeze days cannot be changed here.</p>
+      </div>
+    </section>
     <div id="toast" role="status" aria-live="polite"></div>
     <div id="modalBackdrop" class="modal-backdrop" hidden><div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><div class="modal-header"><h2 id="modalTitle">New habit</h2><button id="closeModal" class="ghost-icon" aria-label="Close">×</button></div><form id="habitForm"><label for="habitName">Habit name</label><input id="habitName" maxlength="60" autocomplete="off" placeholder="e.g. German" required /><div class="modal-buttons"><button type="button" id="cancelModal" class="secondary-btn">Cancel</button><button type="submit" id="saveHabit" class="primary-btn">Create habit</button></div></form><div id="editOnly" hidden><button id="deleteHabit" class="danger-btn">Delete this habit</button></div></div></div>
     <div id="accountMenu" class="account-overlay" role="dialog" aria-modal="true" aria-labelledby="accountGreeting" hidden>
@@ -141,6 +159,6 @@
   })();
   </script>
   <style>.loading-recovery{max-width:330px;text-align:center;line-height:1.5;margin-top:15px}.loading-recovery button{background:#ff5a12;color:#fff;border:0;border-radius:12px;padding:13px 20px;font:700 15px system-ui;cursor:pointer}</style>
-  <script type="module" src="app.js?v=20261111-v9"></script>
+  <script type="module" src="app.js?v=20261111-v10"></script>
 </body>
 </html>
