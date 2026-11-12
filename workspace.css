@@ -243,3 +243,122 @@ html[data-theme="light"] .checklist-line .checklist-note{background:#f4f5f8;colo
 .checklist-date-pill input{position:absolute;opacity:0;cursor:pointer;inset:0;width:100%;height:100%;font-size:16px}
 html[data-theme="light"] .checklist-date-pill.has-date{background:#f1f3f7;color:#586374;border-color:#e0e3eb}
 @media(max-width:799px){.checklist-date-pill:not(.has-date){opacity:.65}.checklist-date-pill{font-size:10px;padding:5px 3px;min-width:42px}.checklist-date-pill svg{width:12px;height:12px}}
+
+
+/* Insights v3: purposeful internal navigation, crafted selection menu and achievement gallery */
+.insight-section-tabs{display:flex;align-items:center;gap:7px;width:max-content;max-width:100%;padding:5px;border:1px solid #414147;border-radius:100px;background:#202023;margin:0 0 26px}
+.insight-section-tabs button{border:0;background:transparent;color:#a5a5af;border-radius:100px;padding:11px 21px;font:750 13px 'DM Sans',sans-serif;display:inline-flex;align-items:center;gap:9px;transition:background .2s,color .2s,box-shadow .2s;white-space:nowrap}
+.insight-section-tabs button:hover{color:#efeff1}
+.insight-section-tabs button.active,.insight-section-tabs button.active:hover{background:#3c302a;color:#ff915c;box-shadow:0 1px 10px #0003}
+.insight-tab-symbol{font-size:18px;line-height:1}
+.insight-section-tabs button:focus-visible{outline:2px solid #ff884a;outline-offset:2px}
+.insight-picker-wrap{position:relative;align-items:center;flex-direction:row;gap:17px;margin:0 0 26px}
+.insight-picker-label{font-size:10px;font-weight:850;letter-spacing:.13em;color:#9999a6}
+.insight-custom-picker{position:relative;width:min(330px,100%);z-index:28}
+.insight-custom-trigger{width:100%;min-height:52px;display:flex;gap:12px;align-items:center;justify-content:flex-start;padding:8px 14px 8px 9px;border-radius:15px;border:1px solid #55545b;background:#26262a;box-shadow:0 3px 16px #0002;color:#f8f8fa;font:750 14px 'DM Sans',sans-serif;text-align:left;cursor:pointer;transition:background .18s,border-color .18s,box-shadow .18s}
+.insight-custom-trigger:hover,.insight-custom-picker.open .insight-custom-trigger{border-color:#ff8854;background:#302823;box-shadow:0 0 0 3px #ff5a1215}
+.insight-custom-trigger>span:nth-child(2){flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.insight-custom-trigger>svg{width:17px;height:17px;color:#c1c1c9;transition:transform .24s ease}
+.insight-custom-picker.open .insight-custom-trigger>svg{transform:rotate(180deg)}
+.insight-picker-avatar,.insight-option-symbol{width:34px;height:34px;border-radius:11px;background:#493025;color:#ff8550;display:grid;place-items:center;flex:none;font-size:20px}
+.insight-picker-avatar svg,.insight-option-symbol svg{width:19px;height:19px;fill:#ff5a12}
+.insight-custom-menu{position:absolute;top:calc(100% + 9px);left:0;right:0;border:1px solid #53535a;border-radius:17px;padding:8px;background:#2c2c31;box-shadow:0 22px 55px #000a;max-height:340px;overflow:auto;z-index:500;animation:picker-appear .19s cubic-bezier(.2,.8,.2,1)}
+@keyframes picker-appear{from{opacity:0;transform:translateY(-6px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
+.insight-custom-menu[hidden]{display:none!important}
+.insight-option{display:flex;gap:10px;align-items:center;border:0;border-radius:11px;background:transparent;width:100%;text-align:left;padding:10px;cursor:pointer;color:#eeeef2}
+.insight-option:hover,.insight-option:focus-visible{background:#414047}
+.insight-option.selected{background:#493329}
+.insight-option-symbol{width:32px;height:32px;background:#373137}
+.insight-option.selected .insight-option-symbol{background:#5b3828}
+.insight-option-text{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
+.insight-option-text strong{font:750 13px 'DM Sans',sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.insight-option-text small{color:#9999a7;font-size:10px}
+.insight-option-check{color:#ff8453;font-size:17px;font-weight:750}
+.insight-context-note{font-size:12px;color:#9999a5;margin:-6px 0 18px;line-height:1.5}
+.insight-shared-flame{width:30px;height:30px;fill:#ff5a12;color:#ff5a12}
+.insight-stat-icon svg{width:30px;height:30px;stroke:#ff945c;vertical-align:middle}
+.insight-stat-icon .insight-shared-flame{stroke:none;fill:#ff5a12}
+.insight-stat-icon.icy svg{stroke:#80b9ff}
+.insight-milestone .milestone-symbol svg{width:25px;height:25px;stroke:currentColor}
+.insight-milestone .milestone-symbol .insight-shared-flame{fill:#ff5a12;stroke:none}
+.insight-milestone.unlocked .milestone-symbol svg{color:#ff7e43}
+.insight-view-badges{border:1px solid #4a4240;color:#ff946a;background:#382c28;padding:9px 14px;border-radius:100px;font-size:11px;font-weight:750}
+.insight-view-badges:hover{background:#493329;color:#fff}
+.insight-view-badges span{padding-left:6px}
+.insight-achievement-intro{padding:10px 0 28px}
+.insight-achievement-intro h2{font:800 clamp(27px,3vw,38px)/1.16 'Outfit',sans-serif;letter-spacing:-.035em;color:#fafafa;margin:8px 0 10px}
+.insight-achievement-intro p{max-width:650px;font-size:14px;color:#a5a5b1;line-height:1.7;margin:0}
+.insight-achievement-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:17px}
+.achievement-card{min-width:0;position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;text-align:center;min-height:285px;border-radius:21px;border:1px solid #45434a;background:linear-gradient(150deg,#29272b,#202025);padding:19px 17px 18px;transition:transform .23s ease,border-color .23s ease,box-shadow .23s ease}
+.achievement-card.unlocked{border-color:#76513a;background:radial-gradient(ellipse at 50% 15%,#583722,#292529 65%)}
+.achievement-card.unlocked:hover{transform:translateY(-4px);border-color:#aa6d44;box-shadow:0 14px 35px #0005}
+.achievement-card.locked{opacity:.68}
+.achievement-card-top{width:100%;display:flex;justify-content:space-between;gap:6px;align-items:start;font-size:8px;letter-spacing:.1em;font-weight:800}
+.achievement-tier{color:#b4a69e;text-align:left}
+.achievement-state{color:#92909b;white-space:nowrap}
+.achievement-card.unlocked .achievement-state{color:#ff9f6b}
+.achievement-emblem{display:grid;place-items:center;width:100px;height:100px;margin:18px auto 15px;border-radius:28px;border:1px solid #504954;box-shadow:inset 0 0 16px #0005,0 8px 22px #0003;background:linear-gradient(135deg,#353138,#232127);color:#9695a0;transform:rotate(-4deg)}
+.achievement-emblem svg{height:56px;width:56px;filter:drop-shadow(0 4px 4px #0007)}
+.achievement-emblem .insight-shared-flame{height:62px;width:62px}
+.achievement-card.unlocked .achievement-emblem{background:linear-gradient(135deg,#7a4223,#342623);border-color:#ac663b;color:#ffc189;box-shadow:inset 0 1px 18px #ff954319,0 10px 26px #ff5a121a}
+.achievement-card.locked .achievement-emblem svg{opacity:.55}
+.achievement-card h3{color:#f7f7f9;font:800 17px/1.2 'Outfit',sans-serif;margin:0 0 7px}
+.achievement-card p{font-size:11px;color:#a9a9b4;line-height:1.5;margin:0 0 17px}
+.achievement-foot{margin-top:auto;width:100%;display:flex;align-items:center;gap:12px}
+.achievement-foot>span{font-size:10px;font-weight:750;color:#b3abb2;white-space:nowrap}
+.achievement-card.unlocked .achievement-foot>span{color:#ff9d69}
+.achievement-progress{height:4px;background:#48434a;border-radius:15px;overflow:hidden;flex:1}
+.achievement-progress>i{height:100%;display:block;background:#ff7430;border-radius:15px}
+@media(max-width:950px){.insight-achievement-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:799px){.insight-achievement-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.insight-custom-picker{width:100%}.insight-picker-wrap{align-items:start;flex-direction:column;gap:10px}}
+@media(max-width:430px){.achievement-card{padding:16px 11px;min-height:259px}.achievement-emblem{width:78px;height:78px;border-radius:23px}.achievement-emblem svg{width:44px;height:44px}.achievement-card h3{font-size:15px}.achievement-card-top{font-size:7px}.insight-section-tabs button{padding:10px 15px;font-size:12px}.insight-view-badges{font-size:10px;padding:8px}}
+/* Document-first Checklist: blank, unobtrusive lines and expandable detail blocks */
+.checklist-document{background:transparent!important;border:0!important;box-shadow:none!important;border-radius:0!important;padding:17px 3px 28px!important;min-height:360px}
+.checklist-document-top{border-color:#29292e;padding-bottom:17px;margin-bottom:18px}
+.checklist-line textarea[data-block-id]::placeholder{color:transparent!important;opacity:1}
+.checklist-line textarea[data-block-id]:focus::placeholder{color:#787883!important}
+.checklist-line textarea[data-block-id]:hover::placeholder{color:#65656d!important}
+.checklist-line .checklist-toggle-icon{color:#8a8a94;min-width:18px}
+.checklist-line .checklist-toggle-icon:hover{color:#ff874f}
+.checklist-details{margin:7px 0 13px;padding:11px 0 0 14px;border-left:1px solid #49454a}
+.checklist-detail-modes{display:inline-flex;align-items:center;gap:3px;padding:3px;border:1px solid #444149;border-radius:9px;background:#29282c;margin-bottom:8px}
+.checklist-detail-modes button{border:0;border-radius:6px;padding:6px 13px;font-size:11px;font-weight:700;color:#a9a8b4;background:transparent}
+.checklist-detail-modes button.selected{background:#514037;color:#ffaf7b}
+.checklist-detail-modes button:hover{color:#fff}
+.checklist-subtasks{display:flex;flex-direction:column;gap:8px;padding:5px 0}
+.checklist-subtask{display:flex;align-items:center;gap:9px;min-height:30px}
+.checklist-subtask>input[type="checkbox"]{appearance:none;width:16px;height:16px;border:1.5px solid #aaaab4;border-radius:3px;background:transparent;flex:none;cursor:pointer}
+.checklist-subtask>input[type="checkbox"]:checked{background:#ff5a12;border-color:#ff5a12}
+.checklist-subtask>input[type="checkbox"]:checked:after{content:"✓";display:block;text-align:center;color:#fff;font-size:12px;line-height:14px}
+.checklist-subtask>input[type="text"]{min-width:0;flex:1;background:transparent;border:0;outline:0;box-shadow:none;color:#e1e1e7;font:500 13px 'DM Sans',sans-serif;padding:5px}
+.checklist-subtask>input[type="text"].completed{text-decoration:line-through;color:#92929c}
+.checklist-subtask>input[type="text"]::placeholder{color:#767680}
+.checklist-subtask>button{border:0;background:transparent;color:#90909b;opacity:0;font-size:20px}
+.checklist-subtask:hover>button,.checklist-subtask:focus-within>button{opacity:1}
+.checklist-add-subtask{border:0;background:transparent;color:#a7a7b2;font-size:12px;text-align:left;padding:8px 1px}
+.checklist-add-subtask:hover{color:#ff884e}
+.checklist-hint{min-height:50px;color:transparent;padding:17px 10px;cursor:text}
+.checklist-hint:hover{color:#898994}
+.checklist-help kbd{padding:2px 6px;border-radius:4px;background:#3d3d42;color:#dddde2}
+.checklist-add-block{color:#82828d}
+html[data-theme="light"] .insight-section-tabs{background:#f4f5f8;border-color:#dfe3ea}
+html[data-theme="light"] .insight-section-tabs button{color:#596478}
+html[data-theme="light"] .insight-section-tabs button.active{background:#fff0e5;color:#be5019}
+html[data-theme="light"] .insight-custom-trigger{background:#fff;border-color:#d9dee7;color:#263347}
+html[data-theme="light"] .insight-custom-menu{background:#fff;border-color:#d9dee7;box-shadow:0 22px 50px #0002}
+html[data-theme="light"] .insight-option{color:#253348}
+html[data-theme="light"] .insight-option.selected,html[data-theme="light"] .insight-option:hover{background:#fff1e9}
+html[data-theme="light"] .insight-option-text small{color:#7c8795}
+html[data-theme="light"] .insight-achievement-intro h2{color:#263347}
+html[data-theme="light"] .achievement-card{background:#fff;border-color:#e2e4eb}
+html[data-theme="light"] .achievement-card.unlocked{background:#fff6ed;border-color:#efc4a4}
+html[data-theme="light"] .achievement-card h3{color:#263347}
+html[data-theme="light"] .achievement-card p{color:#627082}
+html[data-theme="light"] .achievement-tier{color:#786b66}
+html[data-theme="light"] .checklist-document-top{border-color:#e2e4ea}
+html[data-theme="light"] .checklist-details{border-color:#d3d6dd}
+html[data-theme="light"] .checklist-detail-modes{background:#f4f4f6;border-color:#dfe1e7}
+html[data-theme="light"] .checklist-detail-modes button.selected{background:#ffe7d6;color:#b94d15}
+html[data-theme="light"] .checklist-subtask>input[type="text"]{color:#293447}
+html[data-theme="light"] .checklist-help kbd{background:#eef0f4;color:#586273}
+@media(max-width:799px){.checklist-subtask>input[type="text"]{font-size:16px}.checklist-subtask>button{opacity:.8}}
