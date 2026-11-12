@@ -104,3 +104,59 @@ body{background:#1c1c1f;color:#f6f6f8}
 .account-menu button:hover,.import-label:hover{background:#3d3d43}
 .history-panel{background:#29292e;border-color:#48484e}
 .text-btn{color:#bbbbc4}
+
+
+/* Follow the device's light/dark appearance. Dark is the default. */
+@media (prefers-color-scheme: light) {
+  :root{color-scheme:light;color:#202638;background:#f7f8fc}
+  html,body{background:#f7f8fc;color:#202638}
+  .topbar{background:#fff;border-color:#e9ebf0}
+  .brand-icon{background:#fff1e6}
+  .brand small,.subheading,.bottom-note{color:#8991a0}
+  .sync-pill{background:#f2f5f9;color:#64748b}
+  .sync-pill.online{background:#e8f7ed;color:#277452}
+  .avatar-button,.ghost-icon{background:#fff;color:#697386;border-color:#e6e9ef}
+  .habit-card{background:#fff;border-color:#ebedf3;color:#202638;box-shadow:0 10px 28px #26354b08}
+  .habit-card:hover{background:#fff;box-shadow:0 16px 38px #26354b13}
+  .card-arrow{color:#bdc5cf}
+  .empty-state,.login-panel{background:#fff;border-color:#e9edf4;box-shadow:0 14px 42px #29394c0a}
+  .empty-state p,.login-panel p,.login-panel .small{color:#8892a1}
+  .loading-panel{color:#9ba3ae}
+  .secondary-btn{background:#fff;color:#5b6574;border-color:#dfe4ec}
+  .modal{background:#fff;color:#202638;border-color:#e5e9f0}
+  .modal input,.history-panel input{background:#fff;color:#202638;border-color:#dce1eb}
+  .modal input::placeholder{color:#8d96a5}
+  .danger-btn{background:#fff5f5;color:#bc4a46;border-color:#f7dada}
+  .account-menu{background:#fff;border-color:#e5e9f0;box-shadow:0 15px 35px #13243b17}
+  .account-menu span{color:#8991a0}
+  .account-menu button,.import-label{color:#536173}
+  .account-menu button:hover,.import-label:hover{background:#f7f8fb}
+  .history-panel{background:#fff;border-color:#e6ebf2}
+  .text-btn{color:#8490a1}
+  #toast{background:#242b39;color:#fff}
+
+  body.detail-mode{background:#fff;color:#202638}
+  body.detail-mode #detail{background:#fff}
+  .babbel-panel{color:#202638}
+  .detail-habit-label{color:#64748b}
+  .babbel-close{background:#f1f2f5;color:#283243;border-color:#d8dbe3}
+  .babbel-description{color:#677284}
+  body.detail-mode .month-nav button{color:#293445}
+  body.detail-mode .weekdays span{color:#5f6b7c}
+  body.detail-mode .calendar-day .number{color:#344053}
+  body.detail-mode .calendar-day .day-flame{color:#acb3bf}
+  body.detail-mode .calendar-day.done{background:#fff0df}
+  body.detail-mode .calendar-day.done .day-flame{color:#ef6419;fill:#ef6419}
+  body.detail-mode .calendar-day.freeze{background:#e4f0ff}
+  body.detail-mode .calendar-day.freeze .day-flame{color:#327dde;fill:none}
+  body.detail-mode .calendar-day.today{outline-color:#f4a36a}
+  body.detail-mode .freeze-box{background:#e5f0ff;color:#234b80}
+  body.detail-mode .freeze-icon{color:#327dde}
+  body.detail-mode .freeze-box h3{color:#214e8b}
+  body.detail-mode .freeze-box p{color:#41699b}
+  body.detail-mode .secondary-btn{background:#f6f7fa;color:#475467;border-color:#dae0e9}
+  body.detail-mode .text-btn{color:#697586}
+  body.detail-mode .history-panel{background:#fff;color:#263347;border-color:#e1e5ec}
+  body.detail-mode .history-panel input{background:#fff;color:#263347;border-color:#cdd4dd}
+  body.detail-mode .muted{color:#778395}
+}
