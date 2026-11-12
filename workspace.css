@@ -224,3 +224,12 @@ html[data-theme="light"] .checklist-cmd-icon{background:#f8f8fa;border-color:#e0
  .workspace-bottom-highlight{transition:none}
  .insight-week-bar{transition:none}
 }
+/* Multiline detail is a separate, editable part of a toggle block. */
+.checklist-field-group{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.checklist-field-group>textarea{width:100%}
+.checklist-line .checklist-note{display:block;margin:3px 0 5px;padding:12px 14px;min-height:49px;background:#303035;border-left:2px solid #ff793f;border-radius:0 9px 9px 0;font-size:13px;line-height:1.55;color:#bfc0c9;resize:none}
+.checklist-line .checklist-note::placeholder{color:#9999a3}
+html[data-theme="light"] .checklist-line .checklist-note{background:#f4f5f8;color:#4f5b6c}
+@media(max-width:799px){
+ .checklist-line .checklist-note{font-size:16px}
+}
