@@ -70,22 +70,38 @@
     <div id="accountMenu" class="account-overlay" role="dialog" aria-modal="true" aria-labelledby="accountGreeting" hidden>
       <div id="accountScrim" class="account-scrim" aria-hidden="true"></div>
       <section class="account-sheet">
-        <header class="account-topbar"><span class="account-handle" aria-hidden="true"></span><button type="button" id="closeAccountMenu" class="babbel-close account-dismiss" aria-label="Close account and settings">×</button></header>
-        <div class="account-profile"><h1 id="accountGreeting">My account</h1><p id="accountEmail"></p></div>
-        <nav class="account-links" aria-label="Account options">
-          <button type="button" id="accountSettingsBtn" class="account-link" aria-expanded="false"><span class="account-link-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M20 12a8 8 0 0 0-.2-1.8l2-1.5-2-3.5-2.4 1A9 9 0 0 0 14 4.3L13.7 2h-3.4L10 4.3A9 9 0 0 0 6.6 6.2l-2.4-1-2 3.5 2 1.5a8 8 0 0 0 0 3.6l-2 1.5 2 3.5 2.4-1A9 9 0 0 0 10 19.7l.3 2.3h3.4l.3-2.3a9 9 0 0 0 3.4-1.9l2.4 1 2-3.5-2-1.5A8 8 0 0 0 20 12z"/></svg></span><span>Account &amp; settings</span><span class="account-chevron">›</span></button>
-          <div id="accountSettingsDetail" class="account-detail" hidden>
-            <form id="profileForm" class="profile-form"><label for="profileName">Display name</label><div class="profile-input-row"><input id="profileName" type="text" maxlength="50" autocomplete="nickname" placeholder="Your name" required/><button type="submit">Save</button></div><small>This name is shown on your My Streaks account, not your Google account.</small></form>
-            <div class="account-info-row"><strong>Signed-in email</strong><span id="settingsEmail"></span></div>
-            <div class="account-info-row"><strong>Account type</strong><span>Personal · Free</span></div>
-            <div class="account-info-row"><strong>Streak protection</strong><span>2 freezes per week · Mondays</span></div>
-            <button type="button" id="signOutBtn" class="account-sign-out">Sign out</button>
+        <div class="account-navigation">
+          <header class="account-topbar"><span class="account-handle" aria-hidden="true"></span><button type="button" id="closeAccountMenu" class="babbel-close account-dismiss" aria-label="Close profile and settings">×</button></header>
+          <div class="account-profile"><h1 id="accountGreeting">My account</h1><p id="accountEmail"></p></div>
+          <nav class="account-links" aria-label="Profile and settings">
+            <button type="button" id="accountSettingsBtn" class="account-link" aria-expanded="false"><span class="account-link-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M20 12a8 8 0 0 0-.2-1.8l2-1.5-2-3.5-2.4 1A9 9 0 0 0 14 4.3L13.7 2h-3.4L10 4.3A9 9 0 0 0 6.6 6.2l-2.4-1-2 3.5 2 1.5a8 8 0 0 0 0 3.6l-2 1.5 2 3.5 2.4-1A9 9 0 0 0 10 19.7l.3 2.3h3.4l.3-2.3a9 9 0 0 0 3.4-1.9l2.4 1 2-3.5-2-1.5A8 8 0 0 0 20 12z"/></svg></span><span>Account &amp; settings</span><span class="account-chevron">›</span></button>
+            <button type="button" id="accountAppearanceBtn" class="account-link" aria-expanded="false"><span class="account-link-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3v18"/><path d="M12 3a9 9 0 0 1 0 18" fill="currentColor" stroke="none"/></svg></span><span>Appearance</span><span class="account-chevron">›</span></button>
+            <button type="button" id="accountBackupBtn" class="account-link" aria-expanded="false"><span class="account-link-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 17v3h16v-3"/></svg></span><span>Backup &amp; restore</span><span class="account-chevron">›</span></button>
+          </nav>
+        </div>
+        <div id="accountSubpage" class="account-subpage" aria-hidden="true">
+          <div class="account-subheader"><button type="button" id="accountSubBack" class="account-back-button" aria-label="Back to profile"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg></button><h2 id="accountSubTitle">Account &amp; settings</h2><span></span></div>
+          <div class="account-subcontent">
+            <div id="accountSettingsDetail" class="account-detail" hidden>
+              <h3>My profile</h3>
+              <form id="profileForm" class="profile-form"><label for="profileName">Display name</label><div class="profile-input-row"><input id="profileName" type="text" maxlength="50" autocomplete="nickname" placeholder="Your name" required/><button type="submit">Save</button></div><small>This changes your name in My Streaks, not in your Google account.</small></form>
+              <h3>Account information</h3>
+              <div class="account-info-row"><strong>Signed-in email</strong><span id="settingsEmail"></span></div>
+              <div class="account-info-row"><strong>Account type</strong><span>Personal · Free</span></div>
+              <div class="account-info-row"><strong>Streak protection</strong><span>2 freezes each Monday</span></div>
+              <button type="button" id="signOutBtn" class="account-sign-out">Sign out</button>
+            </div>
+            <div id="accountAppearanceDetail" class="account-detail" hidden>
+              <h3>Appearance</h3><p class="account-explanation">Choose how My Streaks looks on this device and your other signed-in devices.</p>
+              <fieldset class="theme-picker"><legend>Theme</legend><label><input type="radio" name="appearanceMode" value="system" checked/><span>Device theme</span></label><label><input type="radio" name="appearanceMode" value="light"/><span>Light</span></label><label><input type="radio" name="appearanceMode" value="dark"/><span>Dark</span></label></fieldset>
+            </div>
+            <div id="accountBackupDetail" class="account-detail account-backup-detail" hidden>
+              <h3>Backup &amp; restore</h3>
+              <p class="account-explanation">Your habits sync automatically with Firebase. You can also download a separate backup.</p>
+              <button type="button" id="accountExport">↓ Export my data</button><label class="import-label" for="importFile">↑ Import a backup<input id="importFile" type="file" accept=".json,application/json" hidden /></label>
+            </div>
           </div>
-          <button type="button" id="accountAppearanceBtn" class="account-link" aria-expanded="false"><span class="account-link-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3v18"/><path d="M12 3a9 9 0 0 1 0 18" fill="currentColor" stroke="none"/></svg></span><span>Appearance</span><span class="account-chevron">›</span></button>
-          <div id="accountAppearanceDetail" class="account-detail" hidden><fieldset class="theme-picker"><legend>Choose the appearance</legend><label><input type="radio" name="appearanceMode" value="system" checked/><span>Device theme</span></label><label><input type="radio" name="appearanceMode" value="light"/><span>Light</span></label><label><input type="radio" name="appearanceMode" value="dark"/><span>Dark</span></label></fieldset></div>
-          <button type="button" id="accountBackupBtn" class="account-link" aria-expanded="false"><span class="account-link-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 17v3h16v-3"/></svg></span><span>Backup &amp; restore</span><span class="account-chevron">›</span></button>
-          <div id="accountBackupDetail" class="account-detail account-backup-detail" hidden><button type="button" id="accountExport">↓ Export my data</button><label class="import-label" for="importFile">↑ Import a backup<input id="importFile" type="file" accept=".json,application/json" hidden /></label></div>
-        </nav>
+        </div>
       </section>
     </div>
   </div>
