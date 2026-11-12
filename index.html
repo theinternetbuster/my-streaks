@@ -16,7 +16,7 @@
   <link rel="icon" type="image/svg+xml" href="app-icon.svg" />
   <meta name="description" content="A private streak tracker with weekly freezes and cloud sync." />
   <title>My Streaks</title>
-  <link rel="stylesheet" href="styles.css?v=20261111-film20" />
+  <link rel="stylesheet" href="styles.css?v=20261111-film21" />
   <style id="critical-landing-styles">
 /* Critical inline fallback is scoped to logged-out view so signed-in themes are unchanged. */
 [hidden]{display:none!important}
@@ -619,11 +619,24 @@ body:has(#loginPanel:not([hidden])) .shell,
         <div class="landing-film" aria-label="Animated preview of My Streaks using sample habits">
           <div class="landing-film-bar"><div class="landing-film-eyebrow"><span class="landing-film-record"></span> WATCH MY STREAKS IN ACTION</div><div class="landing-film-demo">LIVE-STYLE DEMO · SAMPLE DATA</div></div>
           <div class="demo-stage" id="demoStage" aria-label="Five animated My Streaks feature scenes">
-            <div class="demo-carousel-rail" id="demoRail" aria-hidden="true"></div>
+            <div class="demo-carousel-rail" id="demoRail" aria-hidden="true">
+              <article class="demo-carousel-card is-active" data-slide="0" aria-hidden="true">
+                <div class="demo-screen">
+                  <div class="demo-ui-top"><div class="demo-ui-brand"><span class="demo-ui-logo"><svg class="demo-flame" viewBox="0 0 24 24" aria-hidden="true"><use href="#flame-solid"></use></svg></span><span>My Streaks</span></div><span class="demo-ui-account"><span class="demo-avatar">A</span> Hi, Alex</span></div>
+                  <div class="demo-ui-heading"><div><span class="demo-eyebrow">YOUR HABITS</span><h3>Keep the <em>fire</em> going<span>.</span></h3><p>One day at a time. You've got this.</p></div><div class="demo-switches"><span class="demo-mode-switch">▦</span><span class="demo-plus">+</span></div></div>
+                  <div class="demo-card-grid">
+                    <div class="demo-habit-card demo-completed"><b>German</b><span class="demo-card-bottom"><span class="demo-card-count"><svg class="demo-flame" viewBox="0 0 24 24"><use href="#flame-solid"></use></svg><strong>28</strong></span><span class="demo-arrow">↗</span></span></div>
+                    <div class="demo-habit-card"><b>Bible Reading</b><span class="demo-card-bottom"><span class="demo-card-count"><svg class="demo-flame" viewBox="0 0 24 24"><use href="#flame-solid"></use></svg><strong>16</strong></span><span class="demo-arrow">↗</span></span></div>
+                    <div class="demo-habit-card"><b>Gym</b><span class="demo-card-bottom"><span class="demo-card-count"><svg class="demo-flame" viewBox="0 0 24 24"><use href="#flame-solid"></use></svg><strong>11</strong></span><span class="demo-arrow">↗</span></span></div>
+                    <div class="demo-habit-card"><b>Morning Walk</b><span class="demo-card-bottom"><span class="demo-card-count"><svg class="demo-flame" viewBox="0 0 24 24"><use href="#flame-solid"></use></svg><strong>8</strong></span><span class="demo-arrow">↗</span></span></div>
+                  </div>
+                </div>
+              </article>
+            </div>
           </div>
           <div class="landing-film-bottom">
             <div class="demo-timeline-nav" id="demoTimelineNav" role="group" aria-label="Select demonstration scene">
-              <button class="demo-timeline-dot" type="button" data-slide="0" aria-label="Scene 1: Dashboard"></button>
+              <button class="demo-timeline-dot is-active" type="button" data-slide="0" aria-label="Scene 1: Dashboard" aria-current="step"><span class="demo-dot-fill"></span></button>
               <button class="demo-timeline-dot" type="button" data-slide="1" aria-label="Scene 2: Check-in"></button>
               <button class="demo-timeline-dot" type="button" data-slide="2" aria-label="Scene 3: Calendar overview"></button>
               <button class="demo-timeline-dot" type="button" data-slide="3" aria-label="Scene 4: Calendar editor"></button>
@@ -828,7 +841,7 @@ body:has(#loginPanel:not([hidden])) .shell,
   })();
   </script>
   <style>.loading-recovery{max-width:330px;text-align:center;line-height:1.5;margin-top:15px}.loading-recovery button{background:#ff5a12;color:#fff;border:0;border-radius:12px;padding:13px 20px;font:700 15px system-ui;cursor:pointer}</style>
-  <script defer src="landing-demo.js?v=20261111-film20"></script>
-  <script type="module" src="app.js?v=20261111-film20"></script>
+  <script defer src="landing-demo.js?v=20261111-film21"></script>
+  <script type="module" src="app.js?v=20261111-film21"></script>
 </body>
 </html>
