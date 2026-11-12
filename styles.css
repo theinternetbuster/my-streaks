@@ -1092,3 +1092,125 @@ html[data-theme="light"] .reorder-actions{border-color:#ddd}
  .reorder-actions{position:sticky;bottom:0;padding:15px 0 max(10px,env(safe-area-inset-bottom,0px));margin-top:16px;background:#000;z-index:4}
  html[data-theme="light"] .reorder-actions{background:#fff}
 }
+
+
+/* v10 — independent calendar-only editor; readable iPhone edit habit modal */
+body.calendar-editor-open{overflow:hidden}
+.calendar-editor-overlay{
+ position:fixed;inset:0;z-index:140;
+ display:flex;align-items:center;justify-content:center;
+ padding:20px;background:transparent;
+}
+.calendar-editor-scrim{position:absolute;inset:0;background:#000b}
+.calendar-editor-sheet{
+ position:relative;z-index:1;
+ width:min(560px,100%);
+ max-height:calc(100dvh - 40px);
+ overflow-y:auto;overscroll-behavior:contain;
+ background:#1c1c1f;color:#f7f7fa;
+ padding:26px clamp(18px,4vw,38px) 30px;
+ border:1px solid #454549;border-radius:25px;
+ box-shadow:0 30px 70px #0007;
+}
+.calendar-editor-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:27px}
+.calendar-editor-kicker{margin:0 0 7px;color:#ff753e;font-size:11px;font-weight:800;letter-spacing:.15em}
+.calendar-editor-header h2{margin:0;font-size:clamp(24px,4vw,34px);font-weight:750;letter-spacing:-.035em;overflow-wrap:anywhere}
+.calendar-editor-close{width:43px;height:43px;border:1px solid #505058;border-radius:50%;background:#343438;color:inherit;font-size:29px;cursor:pointer;flex:none;line-height:1}
+.calendar-editor-month{display:flex;align-items:center;justify-content:space-between;gap:15px;margin:0 0 20px}
+.calendar-editor-month h3{font-weight:750;font-size:17px;margin:0}
+.calendar-editor-month button{background:transparent;color:inherit;border:0;font-size:33px;width:45px;height:44px;cursor:pointer;line-height:1}
+.calendar-editor-month button:disabled{opacity:.23;cursor:default}
+.calendar-editor-weekdays,.calendar-editor-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:7px;max-width:470px;margin-left:auto;margin-right:auto}
+.calendar-editor-weekdays{margin-bottom:10px}
+.calendar-editor-weekdays span{text-align:center;color:#afafb7;font-size:12px;padding:5px 0}
+.editor-day{
+ aspect-ratio:.83;min-width:0;min-height:0;
+ border:1px solid transparent;border-radius:9px;
+ background:transparent;color:#f1f1f5;
+ font:inherit;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+ cursor:pointer;touch-action:manipulation;
+ transition:background .17s ease,transform .15s ease;
+}
+.editor-day span{font-size:13px;line-height:1}
+.editor-day svg{width:21px;height:21px;color:#ff5a12;fill:#ff5a12}
+.editor-day.done{background:#5c2309}
+.editor-day.freeze{background:#1c4483}
+.editor-day.freeze svg{fill:none;color:#4596f1}
+.editor-day.today{border-color:#ffa46f}
+.editor-day:disabled{cursor:default}
+.editor-day.outside{opacity:.16}
+.editor-day:not(:disabled):hover{background:#5a3626;transform:scale(1.04)}
+.editor-day.done:not(:disabled):hover{background:#74300d}
+.editor-legend{display:flex;justify-content:center;flex-wrap:wrap;gap:22px;margin:27px 0 12px;font-size:12px;color:#c6c6d0}
+.editor-legend span{display:flex;align-items:center;gap:7px}
+.editor-legend svg{width:18px;height:18px;color:#ff5a12;fill:#ff5a12}
+.editor-legend .blue svg{fill:none;color:#5098eb}
+.calendar-editor-note{margin:0 auto;max-width:380px;text-align:center;font-size:12px;line-height:1.6;color:#92929e}
+html[data-theme="light"] .calendar-editor-sheet{background:#fff;color:#202638;border-color:#e4e4eb}
+html[data-theme="light"] .calendar-editor-close{background:#f1f1f4;border-color:#d5d5de}
+html[data-theme="light"] .calendar-editor-weekdays span{color:#707a8a}
+html[data-theme="light"] .editor-day{color:#293648}
+html[data-theme="light"] .editor-day.done{background:#fff0e4}
+html[data-theme="light"] .editor-day.freeze{background:#e1edff}
+html[data-theme="light"] .editor-day:not(:disabled):hover{background:#f9e4d7}
+html[data-theme="light"] .editor-day.done:not(:disabled):hover{background:#f9d9bc}
+html[data-theme="light"] .editor-legend{color:#667184}
+html[data-theme="light"] .calendar-editor-note{color:#747d8e}
+@media(max-width:799px){
+ .calendar-editor-overlay{
+  align-items:flex-end;padding:0;
+  top:calc(-1 * env(safe-area-inset-top,0px));
+  height:calc(100dvh + env(safe-area-inset-top,0px));
+  bottom:auto;
+ }
+ .calendar-editor-sheet{
+  width:100vw;height:100%;max-height:100%;
+  margin:0;border:0;border-radius:0;
+  padding:calc(env(safe-area-inset-top,0px) * 2 + 30px) 20px
+  max(45px,env(safe-area-inset-bottom,0px) + 24px);
+  animation:calendar-editor-rise .29s cubic-bezier(.2,.8,.2,1) both;
+ }
+ .calendar-editor-overlay.closing .calendar-editor-sheet{animation:calendar-editor-dismiss .28s ease-in both}
+ .calendar-editor-header{margin-bottom:45px}
+ .calendar-editor-days,.calendar-editor-weekdays{gap:5px}
+ .editor-day{border-radius:8px;aspect-ratio:.88}
+ .editor-day span{font-size:13px}
+ .editor-day svg{height:20px;width:20px}
+ .calendar-editor-month{margin-bottom:26px}
+ .calendar-editor-month h3{font-size:20px}
+}
+@keyframes calendar-editor-rise{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes calendar-editor-dismiss{from{transform:translateY(0)}to{transform:translateY(100%)}}
+@media(prefers-reduced-motion:reduce){.calendar-editor-sheet,.calendar-editor-overlay.closing .calendar-editor-sheet{animation:none!important}}
+/* Editing the habit must appear on top of the opened streak calendar, not behind it. */
+.modal-backdrop{
+ position:fixed!important;inset:0!important;z-index:220!important;
+ display:flex!important;align-items:center!important;justify-content:center!important;
+ overflow-y:auto!important;
+ padding:max(20px,env(safe-area-inset-top,0px) + 14px) 16px
+ max(24px,env(safe-area-inset-bottom,0px) + 16px)!important;
+ background:#000b!important;
+}
+.modal-backdrop[hidden]{display:none!important}
+.modal{
+ position:relative!important;z-index:1!important;
+ width:min(440px,100%)!important;
+ max-height:calc(100dvh - 35px)!important;
+ overflow-y:auto!important;
+ background:#29292e;color:#fff;
+ border:1px solid #5b5b62;border-radius:22px;
+ box-shadow:0 22px 55px #0008;
+}
+.modal label{color:inherit}
+.modal input{display:block;min-height:49px;font-size:16px!important;line-height:1.25;color:#fff!important;background:#202024!important}
+html[data-theme="light"] .modal{background:#fff;color:#202638}
+html[data-theme="light"] .modal input{color:#202638!important;background:#fff!important}
+@media(max-width:799px){
+ .modal-backdrop{align-items:flex-start!important;padding-top:max(85px,env(safe-area-inset-top,0px) + 70px)!important}
+ .modal{margin:0 auto!important}
+}
+/* Appearance control: neutral focus indicator, no orange highlight on desktop */
+@media(min-width:800px){
+ .theme-segment label:focus-within{outline:2px solid #c5c5cc!important;outline-offset:2px}
+ .theme-segment label:has(input:checked){color:#171717!important}
+}
