@@ -262,6 +262,26 @@ body:has(#loginPanel:not([hidden])) .shell{padding-top:48px}
  .demo-hold-fill,.demo-demo-cursor,.demo-count-change,.landing-film-record{animation:none!important}
 }
 
+/* The old login-card styling must not leak into the new full-width showcase. */
+#loginPanel.landing-panel{
+  width:100%!important;
+  max-width:1080px!important;
+  margin:0 auto!important;
+  padding:24px 0 70px!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  text-align:initial!important;
+}
+#loginPanel .landing-description{color:#aaaab4!important}
+#loginPanel .landing-footnote{color:#82828c!important}
+#loginPanel .demo-ui-heading p{color:#9f9fa7!important}
+#loginPanel .demo-settings-panel p{color:#aaaab4!important}
+#loginPanel .demo-calendar-dialog p{color:#9999a2!important}
+@media(max-width:800px){#loginPanel.landing-panel{padding:5px 0 40px!important}}
+@media(max-width:550px){#loginPanel.landing-panel{padding:5px 0 30px!important}}
+
   </style>
 </head>
 <body>
