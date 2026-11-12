@@ -26,7 +26,7 @@ function applyTheme(){const resolved=themeMode==='system'?(deviceScheme.matches?
 applyTheme();
 deviceScheme.addEventListener?.('change',()=>{if(themeMode==='system')applyTheme();});
 function preferencesDoc(){return doc(db,'users',user.uid,'settings','preferences');}
-function showProfile(){const name=(profileName||user?.displayName||user?.email?.split('@')[0]||'there').trim();const first=name.split(/\s+/)[0];el('userGreeting').textContent='Hi, '+first;el('accountGreeting').textContent=name.toLowerCase();if(document.activeElement!==el('profileName'))el('profileName').value=name;el('settingsEmail').textContent=user?.email||'';}
+function showProfile(){const name=(profileName||user?.displayName||user?.email?.split('@')[0]||'there').trim();const first=name.split(/\s+/)[0];el('userGreeting').textContent='Hi, '+first;el('accountGreeting').textContent=name.toLowerCase();el('settingsEmail').textContent=user?.email||'';}
 async function savePreference(values){if(!user) return;try{await setDoc(preferencesDoc(),values,{merge:true});showToast('Settings saved');}catch(error){showToast(errorMessage(error));}}
 const dateKey = date => `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
 const todayKey = () => dateKey(new Date());
@@ -40,6 +40,7 @@ function display(view){
  el('detail').hidden=view!=='detail';
  document.body.classList.toggle('detail-mode',view==='detail');
  document.body.classList.toggle('detail-open',view==='detail');
+ if(user && view==='dashboard') syncDesktopRoute();
 }
 function escapeHTML(str){ return String(str).replace(/[&<>"']/g, ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
 function normalise(raw){ return {id:raw.id,name:String(raw.name||'Habit'),createdDate:raw.createdDate||todayKey(),createdAt:Number(raw.createdAt)||0,order:Number.isFinite(raw.order)?raw.order:null,completions:Array.isArray(raw.completions)?[...new Set(raw.completions.filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x)))].sort():[]}; }
@@ -265,7 +266,7 @@ onAuthStateChanged(auth,u=>{
  stopHold();
  if(unsubscribePrefs){unsubscribePrefs();unsubscribePrefs=null;}
  el('userBtn').hidden=!u;el('accountMenu').hidden=true;document.body.classList.remove('account-open');el('userBtn').setAttribute('aria-expanded','false');
- if(!u){setSync('Not signed in');display('loginPanel');return;}
+ if(!u){setSync('Not signed in');document.body.classList.remove('desktop-settings-route');display('loginPanel');return;}
  profileName=u.displayName||u.email?.split('@')[0]||'there';showProfile();
  el('accountEmail').textContent=u.email||'Signed in';setSync('Syncing…');display('loadingPanel');
  unsubscribePrefs=onSnapshot(preferencesDoc(),snapshot=>{
@@ -285,13 +286,13 @@ onAuthStateChanged(auth,u=>{
 });
 el('googleLogin').addEventListener('click',signIn);
 const accountSections=[
- ['accountSettingsBtn','accountSettingsDetail','Account & settings'],
+ ['accountSettingsBtn','accountSettingsDetail','Settings'],
  ['accountAppearanceBtn','accountAppearanceDetail','Appearance'],
  ['accountBackupBtn','accountBackupDetail','Backup & restore'],
  ['accountReorderBtn','accountReorderDetail','Rearrange habits']
 ];
 const desktopSettings=window.matchMedia('(min-width:800px)');
-function showAccountSection(which){
+function showAccountSection(which,navigate=true){
  const selected=accountSections.find(x=>x[0]===which)||accountSections[0];
  for(const [buttonId,detailId] of accountSections){
    const active=buttonId===selected[0];
@@ -301,11 +302,55 @@ function showAccountSection(which){
  }
  if(selected[0]==='accountReorderBtn')renderReorderList();
  el('accountSubTitle').textContent=selected[2];
+ if(desktopSettings.matches && navigate)navigateSettings(selected[0]);
  el('accountMenu').querySelector('.account-sheet').classList.add('section-open');
  el('accountSubpage').setAttribute('aria-hidden','false');
  el('accountSubpage').scrollTop=0;
  if(!desktopSettings.matches)el('accountSubBack').focus({preventScroll:true});
 }
+const settingsRoutes={
+ accountSettingsBtn:'settings',
+ accountAppearanceBtn:'settings/appearance',
+ accountReorderBtn:'settings/rearrange',
+ accountBackupBtn:'settings/backup'
+};
+function sectionFromPath(){
+ const root='/my-streaks/';
+ const p=decodeURIComponent(location.pathname);
+ const route=p.startsWith(root)?p.slice(root.length).replace(/\/$/,''):'';
+ return Object.keys(settingsRoutes).find(k=>settingsRoutes[k]===route)|| (route.startsWith('settings')?'accountSettingsBtn':null);
+}
+function navigateSettings(section){
+ const target='/my-streaks/'+settingsRoutes[section];
+ if(location.pathname!==target)history.pushState({page:'settings'},'',target);
+ syncDesktopRoute();
+ window.scrollTo(0,0);
+}
+function exitDesktopSettings(){
+ if(!desktopSettings.matches)return;
+ if(location.pathname!=='/my-streaks/')history.pushState({},'','/my-streaks/');
+ syncDesktopRoute();
+}
+function syncDesktopRoute(){
+ const active=desktopSettings.matches && !!user && !!sectionFromPath();
+ const account=el('accountMenu');
+ document.body.classList.toggle('desktop-settings-route',active);
+ if(active){
+   account.hidden=false;
+   account.setAttribute('aria-modal','false');
+   document.body.classList.remove('account-open');
+   el('userBtn').setAttribute('aria-expanded','true');
+   showAccountSection(sectionFromPath(),false);
+ }else if(desktopSettings.matches){
+   account.hidden=true;
+   account.setAttribute('aria-modal','false');
+   el('userBtn').setAttribute('aria-expanded','false');
+ }
+}
+window.addEventListener('popstate',()=>{
+ if(desktopSettings.matches)syncDesktopRoute();
+ else if(!el('accountMenu').hidden)backToAccountHome();
+});
 let accountCloseTimer=null, subpageBackTimer=null;
 function backToAccountHome(){
  if(desktopSettings.matches)return;
@@ -319,6 +364,10 @@ function backToAccountHome(){
  el('accountSettingsBtn').focus({preventScroll:true});
 }
 function setAccountMenu(open){
+ if(desktopSettings.matches){
+   if(open)navigateSettings('accountSettingsBtn');else exitDesktopSettings();
+   return;
+ }
  clearTimeout(accountCloseTimer);
  const account=el('accountMenu'),sheet=account.querySelector('.account-sheet');
  if(open){
@@ -345,12 +394,18 @@ function setAccountMenu(open){
    if(user&&!el('userBtn').hidden)el('userBtn').focus({preventScroll:true});
  }
 }
-el('userBtn').addEventListener('click',()=>setAccountMenu(el('accountMenu').hidden));
+el('userBtn').addEventListener('click',()=>desktopSettings.matches?navigateSettings('accountSettingsBtn'):setAccountMenu(el('accountMenu').hidden));
 el('closeAccountMenu').addEventListener('click',()=>setAccountMenu(false));
 el('accountScrim').addEventListener('click',()=>setAccountMenu(false));
 el('accountSubBack').addEventListener('click',backToAccountHome);
-desktopSettings.addEventListener?.('change',()=>{if(!el('accountMenu').hidden){if(desktopSettings.matches)showAccountSection('accountSettingsBtn');else backToAccountHome();}});
-el('profileForm').addEventListener('submit',event=>{event.preventDefault();const value=el('profileName').value.trim();if(!value)return;profileName=value;showProfile();savePreference({displayName:value});});
+desktopSettings.addEventListener?.('change',()=>{
+ if(desktopSettings.matches)syncDesktopRoute();
+ else if(document.body.classList.contains('desktop-settings-route')){
+   document.body.classList.remove('desktop-settings-route');
+   el('accountMenu').hidden=true;
+ }
+});
+
 document.querySelectorAll('input[name="appearanceMode"]').forEach(input=>input.addEventListener('change',()=>{if(!input.checked)return;themeMode=input.value;applyTheme();savePreference({appearance:themeMode});}));
 for(const [buttonId] of accountSections)el(buttonId).addEventListener('click',()=>showAccountSection(buttonId));
 document.addEventListener('keydown',event=>{
