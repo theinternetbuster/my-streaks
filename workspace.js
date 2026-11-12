@@ -286,6 +286,19 @@
         return;
       }
       const nested=e.target.closest('[data-subtask-text]');
+      if(nested&&!e.isComposing&&(e.key==='ArrowUp'||e.key==='ArrowDown')){
+        const at=nested.selectionStart??0;
+        if((e.key==='ArrowUp'&&at===0)||(e.key==='ArrowDown'&&at===nested.value.length)){
+          const fields=[...root.querySelectorAll('.checklist-editor,.checklist-note-editor,[data-subtask-text]')].filter(el=>el.getClientRects().length&&el.offsetParent!==null);
+          const index=fields.indexOf(nested),next=fields[index+(e.key==='ArrowDown'?1:-1)];
+          if(next){
+            e.preventDefault();
+            if(next.matches('input')){next.focus();const pos=Math.min(at,next.value.length);next.setSelectionRange(pos,pos);}
+            else focusEditableAt(next,Math.min(at,(next.innerText||next.textContent||'').length));
+            return;
+          }
+        }
+      }
       if(nested&&!e.isComposing&&e.key===' '&&/^\/(bullet|bulleted|b)$/i.test(nested.value.trim())){
         e.preventDefault();
         const b=blocks.find(x=>x.id===nested.dataset.subtaskText),sub=b?.subtasks.find(x=>x.id===nested.dataset.subtaskId);
