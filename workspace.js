@@ -104,8 +104,11 @@
           if(epoch!==listenerEpoch||!user)return;
           if(!dirty){
             const incoming=snapshot.exists()?snapshot.data().blocks:[];
-            blocks=Array.isArray(incoming)?incoming.filter(b=>b&&typeof b.text==='string').slice(0,500).map(normalizeBlock):[];
-            resetHistory();renderChecklist();
+            const nextBlocks=Array.isArray(incoming)?incoming.filter(b=>b&&typeof b.text==='string').slice(0,500).map(normalizeBlock):[];
+            const nextJson=JSON.stringify(nextBlocks.map((b,i)=>({...b,order:i})));
+            if(nextJson!==serializeBlocks()){
+              blocks=nextBlocks;resetHistory();renderChecklist();
+            }
           }
           if(!snapshot.metadata?.hasPendingWrites)$('checklistSyncStatus').textContent='Saved';
         },error=>{
