@@ -401,8 +401,10 @@
       caret.collapse(true);
       const caretRect=caret.getBoundingClientRect(),box=field.getBoundingClientRect();
       const lineHeight=parseFloat(getComputedStyle(field).lineHeight)||26;
-      const first=caretRect.top<=box.top+lineHeight*.65;
-      const last=caretRect.bottom>=box.bottom-lineHeight*.65;
+      const position=editorCaretOffset(field);
+      const length=(field.innerText||field.textContent||'').length;
+      const first=position===0||caretRect.top<=box.top+lineHeight*.65;
+      const last=position>=length||caretRect.bottom>=box.bottom-lineHeight*.65;
       if(event.key==='ArrowUp'&&!first||event.key==='ArrowDown'&&!last)return false;
       const fields=[...root.querySelectorAll('.checklist-editor,.checklist-note-editor,[data-subtask-text]')]
         .filter(el=>el.getClientRects().length&&el.offsetParent!==null);
@@ -415,6 +417,13 @@
     }
     // Strip pasted HTML, preserving clean text and preventing unexpected formatting.
     root.addEventListener('paste',event=>{
+      const note=event.target.closest('.checklist-note-editor');
+      if(note){
+        event.preventDefault();
+        const plain=(event.clipboardData?.getData('text/plain')||'').slice(0,10000);
+        document.execCommand('insertText',false,plain);
+        return;
+      }
       const field=event.target.closest('.checklist-editor');
       if(!field)return;
       event.preventDefault();
