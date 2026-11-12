@@ -616,6 +616,104 @@
     $('checklistAdd').addEventListener('click',()=>addBlock(blocks.at(-1)?.id||null,'text'));
     $('checklistAddBottom').addEventListener('click',()=>addBlock(blocks.at(-1)?.id||null,'text'));
     $('checklistEmpty').addEventListener('click',()=>addBlock(blocks.at(-1)?.id||null,'text'));
+    // Document-wide editing shortcuts. Separate editable blocks would otherwise
+    // let the browser's Select All / Undo operate on just one field.
+    function checklistText(){
+      return blocks.map(b=>{
+        const lead=b.type==='bullet'?'• ':['todo','todoNote','todoList'].includes(b.type)?(b.checked?'☑ ':'☐ '):'';
+        const note=b.type==='todoNote'&&b.note?'\n'+b.note:'';
+        const tasks=b.type==='todoList'?(b.subtasks||[]).map(t=>'\n  '+(t.type==='bullet'?'• ':t.checked?'☑ ':'☐ ')+t.text).join(''):'';
+        return lead+b.text+note+tasks;
+      }).join('\n');
+    }
+    function selectWholeChecklist(){
+      const fields=[...root.querySelectorAll('.checklist-editor,.checklist-note-editor')].filter(el=>el.getClientRects().length);
+      if(!fields.length)return;
+      const range=document.createRange();
+      range.setStart(fields[0],0);
+      range.setEnd(fields.at(-1),fields.at(-1).childNodes.length);
+      const sel=window.getSelection();
+      sel.removeAllRanges();sel.addRange(range);
+      allBlocksSelected=true;
+    }
+    document.addEventListener('keydown',event=>{
+      if(!user||tab!=='checklist'||!root.isConnected)return;
+      const inside=root.contains(document.activeElement)||root.contains(event.target);
+      if(!inside&&!allBlocksSelected)return;
+      const mod=event.ctrlKey||event.metaKey;
+      const key=event.key.toLowerCase();
+      if(mod&&!event.altKey&&key==='a'){
+        event.preventDefault();selectWholeChecklist();return;
+      }
+      if(mod&&!event.altKey&&(key==='z'||key==='y')){
+        event.preventDefault();
+        restoreHistory(key==='y'||(key==='z'&&event.shiftKey)?'redo':'undo');
+        return;
+      }
+      if(allBlocksSelected&&mod&&key==='c'){
+        event.preventDefault();
+        const value=checklistText();
+        navigator.clipboard?.writeText(value).catch(()=>{});
+        return;
+      }
+      if(allBlocksSelected&&(key==='backspace'||key==='delete')){
+        event.preventDefault();
+        blocks=[normalizeBlock({id:uniqueId(),type:'text',text:''},0)];
+        allBlocksSelected=false;
+        renderChecklist(true);scheduleSave(true);
+        requestAnimationFrame(()=>focusBlock(blocks[0].id,false));
+      }
+    },true);
+    // Cross-block range removal for selections made with mouse or Shift+arrows.
+    root.addEventListener('beforeinput',event=>{
+      if(event.inputType!=='deleteContentBackward'&&event.inputType!=='deleteContentForward'&&event.inputType!=='deleteByCut')return;
+      const selection=window.getSelection();
+      if(!selection||selection.isCollapsed||allBlocksSelected)return;
+      const nodeToField=node=>(node?.nodeType===1?node:node?.parentElement)?.closest?.('.checklist-editor');
+      const left=nodeToField(selection.anchorNode),right=nodeToField(selection.focusNode);
+      if(!left||!right||left===right)return;
+      const leftIndex=blocks.findIndex(b=>b.id===left.dataset.blockId),rightIndex=blocks.findIndex(b=>b.id===right.dataset.blockId);
+      if(leftIndex<0||rightIndex<0)return;
+      event.preventDefault();
+      const startIndex=Math.min(leftIndex,rightIndex),endIndex=Math.max(leftIndex,rightIndex);
+      const startField=leftIndex<=rightIndex?left:right;
+      const endField=leftIndex<=rightIndex?right:left;
+      const first=blocks[startIndex],last=blocks[endIndex];
+      const offsetAt=(field,node,offset)=>{
+        const range=document.createRange();range.selectNodeContents(field);range.setEnd(node,offset);
+        return range.toString().length;
+      };
+      const firstOffset=selection.anchorNode&&startField.contains(selection.anchorNode)?
+        offsetAt(startField,selection.anchorNode,selection.anchorOffset):
+        offsetAt(startField,selection.focusNode,selection.focusOffset);
+      const lastOffset=selection.focusNode&&endField.contains(selection.focusNode)?
+        offsetAt(endField,selection.focusNode,selection.focusOffset):
+        offsetAt(endField,selection.anchorNode,selection.anchorOffset);
+      first.text=first.text.slice(0,firstOffset)+last.text.slice(lastOffset);
+      blocks.splice(startIndex+1,endIndex-startIndex);
+      renderChecklist(true);scheduleSave(true);
+      requestAnimationFrame(()=>focusBlockAt(first.id,firstOffset));
+    });
+    // Drag-select between two separate text blocks with the mouse.
+    let dragStart=null;
+    root.addEventListener('pointerdown',event=>{
+      if(event.pointerType!=='mouse'||event.button!==0)return;
+      const field=event.target.closest('.checklist-editor');
+      if(!field)return;
+      const range=document.caretRangeFromPoint?.(event.clientX,event.clientY);
+      if(range)dragStart={node:range.startContainer,offset:range.startOffset,field};
+    });
+    document.addEventListener('pointermove',event=>{
+      if(!dragStart||!(event.buttons&1)||event.pointerType!=='mouse')return;
+      const target=document.elementFromPoint(event.clientX,event.clientY)?.closest?.('.checklist-editor');
+      if(!target||target===dragStart.field)return;
+      const range=document.caretRangeFromPoint?.(event.clientX,event.clientY);
+      if(!range||!target.contains(range.startContainer))return;
+      const sel=window.getSelection();
+      try{sel.setBaseAndExtent(dragStart.node,dragStart.offset,range.startContainer,range.startOffset);}
+      catch(error){/* Browser may restrict selections crossing independent edit hosts. */}
+    });
+    document.addEventListener('pointerup',()=>{dragStart=null;});
     function longestFor(h){
       const done=new Set(h.completions||[]),freeze=new Set(h.freezeDates||[]);
       const all=[...done,...freeze].sort();if(!all.length)return 0;
