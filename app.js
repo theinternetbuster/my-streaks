@@ -158,12 +158,12 @@ onAuthStateChanged(auth,u=>{
  if(unsubscribe){unsubscribe();unsubscribe=null;}
  user=u;habits=[];selectedId=null;
  manageMode=false;
- el('userBtn').hidden=!u;el('accountMenu').hidden=true;el('userBtn').setAttribute('aria-expanded','false');
+ el('userBtn').hidden=!u;el('accountMenu').hidden=true;document.body.classList.remove('account-open');el('userBtn').setAttribute('aria-expanded','false');
  if(!u){setSync('Not signed in');display('loginPanel');return;}
  const firstName=(u.displayName||u.email?.split('@')[0]||'there').trim().split(/\s+/)[0];
  const greeting=firstName.charAt(0).toUpperCase()+firstName.slice(1);
  el('userGreeting').textContent='Hi, '+greeting;
- el('accountGreeting').textContent='Hi, '+greeting;
+ el('accountGreeting').textContent=firstName.toLowerCase();
  el('accountEmail').textContent=u.email||'Signed in';setSync('Syncing…');display('loadingPanel');
  unsubscribe=onSnapshot(habitCollection(),snapshot=>{
    habits=snapshot.docs.map(s=>normalise({id:s.id,...s.data()})).sort((a,b)=>(a.order??(1000000+a.createdAt))-(b.order??(1000000+b.createdAt))||a.name.localeCompare(b.name));
@@ -173,11 +173,41 @@ onAuthStateChanged(auth,u=>{
  },err=>{console.error(err);setSync('Sync issue');display('dashboard');showToast(errorMessage(err));});
 });
 el('googleLogin').addEventListener('click',signIn);
-function setAccountMenu(open){el('accountMenu').hidden=!open;el('userBtn').setAttribute('aria-expanded',String(open));}
-el('userBtn').addEventListener('click',event=>{event.stopPropagation();setAccountMenu(el('accountMenu').hidden);});
+function setAccountMenu(open){
+  el('accountMenu').hidden=!open;
+  document.body.classList.toggle('account-open',open);
+  el('userBtn').setAttribute('aria-expanded',String(open));
+  if(open){
+    for(const [buttonId,detailId] of [['accountSettingsBtn','accountSettingsDetail'],['accountAppearanceBtn','accountAppearanceDetail'],['accountBackupBtn','accountBackupDetail']]){
+      el(detailId).hidden=true;el(buttonId).setAttribute('aria-expanded','false');
+    }
+    el('closeAccountMenu').focus({preventScroll:true});
+  }else if(user && !el('userBtn').hidden){
+    el('userBtn').focus({preventScroll:true});
+  }
+}
+el('userBtn').addEventListener('click',()=>setAccountMenu(el('accountMenu').hidden));
 el('closeAccountMenu').addEventListener('click',()=>setAccountMenu(false));
-document.addEventListener('pointerdown',event=>{if(!el('accountMenu').hidden&&!el('accountMenu').contains(event.target)&&!el('userBtn').contains(event.target))setAccountMenu(false);});
-document.addEventListener('keydown',event=>{if(event.key==='Escape'){setAccountMenu(false);if(!el('modalBackdrop').hidden)hideModal();}});
+el('accountScrim').addEventListener('click',()=>setAccountMenu(false));
+for(const [buttonId,detailId] of [['accountSettingsBtn','accountSettingsDetail'],['accountAppearanceBtn','accountAppearanceDetail'],['accountBackupBtn','accountBackupDetail']]){
+  el(buttonId).addEventListener('click',()=>{
+    const opened=el(detailId).hidden;
+    el(detailId).hidden=!opened;el(buttonId).setAttribute('aria-expanded',String(opened));
+  });
+}
+document.addEventListener('keydown',event=>{
+  if(event.key==='Escape'){
+    if(!el('accountMenu').hidden)setAccountMenu(false);
+    else if(!el('modalBackdrop').hidden)hideModal();
+  }
+  if(event.key==='Tab'&&!el('accountMenu').hidden){
+    const controls=[...el('accountMenu').querySelectorAll('button:not([disabled]),input:not([disabled]),label[for]')].filter(e=>e.offsetParent!==null);
+    if(!controls.length)return;
+    const first=controls[0],last=controls[controls.length-1];
+    if(event.shiftKey && document.activeElement===first){event.preventDefault();last.focus();}
+    if(!event.shiftKey && document.activeElement===last){event.preventDefault();first.focus();}
+  }
+});
 el('manageHabitsBtn').addEventListener('click',()=>{manageMode=!manageMode;renderDashboard();});
 el('signOutBtn').addEventListener('click',()=>{setAccountMenu(false);signOut(auth).catch(err=>showToast(errorMessage(err)));});
 el('addHabitBtn').addEventListener('click',()=>showModal());el('emptyAdd').addEventListener('click',()=>showModal());
