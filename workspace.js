@@ -242,8 +242,6 @@
     };
     const dateLabel=date=>{
       if(!date)return '';
-      if(date===localDay())return 'Today';
-      if(date===localDay(1))return 'Tomorrow';
       return new Date(date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});
     };
     function closeDateMenu(){
