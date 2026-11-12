@@ -682,3 +682,39 @@ html[data-theme="light"] .insight-custom-picker .insight-option:hover{
 .insight-section-tabs button:not(.active){color:#a5a5af}
 html[data-theme="light"] .insight-section-tabs button:not(.active){color:#596478}
 html[data-theme="light"] .insight-section-tabs button.active{color:#be5019}
+
+/* Babbel-inspired uncompleted days: neutral outlined flame, never confused with freezes. */
+body.detail-mode .calendar-day.empty:not(.outside) .day-flame,
+body.detail-open .calendar-day.empty:not(.outside) .day-flame {
+ color:#888a90!important;
+ fill:none!important;
+ stroke:currentColor;
+ filter:none!important;
+}
+html[data-theme="light"] body.detail-mode .calendar-day.empty:not(.outside) .day-flame,
+html[data-theme="light"] body.detail-open .calendar-day.empty:not(.outside) .day-flame{
+ color:#9b9b96!important;
+}
+html[data-theme="dark"] body.detail-mode .calendar-day.empty:not(.outside) .day-flame{
+ color:#85878e!important;
+}
+.calendar-day.empty:not(.outside) .day-flame{
+ color:#9b9ea6!important;fill:none!important;filter:none!important;
+}
+.editor-day.empty:not(.outside) svg{
+ color:#85878b!important;
+ fill:none!important;
+ stroke:currentColor;
+ opacity:.85;
+}
+html[data-theme="light"] .editor-day.empty:not(.outside) svg{
+ color:#9a9b98!important;
+}
+.mini-day.empty svg{
+ color:#858992!important;
+ fill:none!important;
+ opacity:.8;
+}
+html[data-theme="light"] .mini-day.empty svg{
+ color:#9aa0ab!important;
+}
