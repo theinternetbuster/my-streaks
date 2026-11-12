@@ -724,3 +724,230 @@ body.detail-open{overflow:hidden}
   html[data-theme="light"] .account-subcontent .account-info-row,
   html[data-theme="light"] .account-subcontent .account-sign-out{border-color:#ccc}
 }
+
+
+/* v8 final presentation — flush iPhone sheet and Babbel-like responsive settings */
+@media (max-width:799px) {
+  body.detail-mode #detail, #detail {
+    position:fixed!important;
+    top:calc(-1 * env(safe-area-inset-top,0px))!important;
+    left:0!important;right:0!important;bottom:auto!important;
+    width:100vw!important;
+    height:calc(100dvh + env(safe-area-inset-top,0px))!important;
+    min-height:calc(100dvh + env(safe-area-inset-top,0px))!important;
+    max-height:none!important;
+    margin:0!important;padding:0!important;
+    overflow:hidden!important;
+    background:#1c1c1f!important;
+  }
+  #detail .babbel-panel {
+    position:relative!important;
+    width:100%!important;height:100%!important;
+    min-height:100%!important;max-height:100%!important;
+    margin:0!important;padding-left:20px!important;padding-right:20px!important;
+    padding-top:calc(env(safe-area-inset-top,0px) * 2 + 22px)!important;
+    border:0!important;border-radius:0!important;
+    background:#1c1c1f!important;
+    box-sizing:border-box!important;
+    -webkit-overflow-scrolling:touch;
+  }
+  html[data-theme="light"] #detail,
+  html[data-theme="light"] #detail .babbel-panel {
+    background:#f6f6f8!important;
+  }
+  html[data-theme="dark"] #detail,
+  html[data-theme="dark"] #detail .babbel-panel {
+    background:#1c1c1f!important;
+  }
+  .account-links .account-link .account-chevron,
+  .account-links .account-link[aria-expanded="true"] .account-chevron,
+  .account-links .account-link.selected .account-chevron{
+    transform:none!important;color:inherit!important;
+  }
+  html[data-theme="dark"] .account-links .account-link,
+  html[data-theme="dark"] .account-links .account-link.selected{
+    color:#fff!important;
+  }
+  html[data-theme="dark"] .account-links .account-link .account-chevron,
+  html[data-theme="dark"] .account-links .account-link.selected .account-chevron{
+    color:#fff!important;
+  }
+  html[data-theme="dark"] .account-subpage,
+  html[data-theme="dark"] .account-subcontent,
+  html[data-theme="dark"] .account-subcontent .account-detail,
+  html[data-theme="dark"] .account-subcontent h3,
+  html[data-theme="dark"] .account-subcontent .account-info-row,
+  html[data-theme="dark"] .account-subcontent .account-info-row span,
+  html[data-theme="dark"] .account-subcontent .account-sign-out{
+    color:#fff!important;
+  }
+  html[data-theme="dark"] .account-subpage .account-info-row,
+  html[data-theme="dark"] .account-subpage .account-sign-out{
+    border-bottom:1px solid #e4e4e4!important;
+  }
+  html[data-theme="dark"] .account-subheader,
+  html[data-theme="dark"] .account-subpage .account-detail {
+    border-color:#ddd!important;
+  }
+  .account-subcontent .account-sign-out{
+    display:block!important;
+    text-align:left!important;
+    border-radius:0!important;
+    font-weight:400!important;
+    box-shadow:none!important;
+  }
+  .account-sheet.section-open .account-subpage{
+    box-shadow:none!important;
+  }
+}
+@media (min-width:800px) {
+  body.desktop-settings-route .account-sheet{
+    position:relative!important;
+    width:min(100%,1040px)!important;
+    max-width:1040px!important;
+    grid-template-columns:220px minmax(0,1fr)!important;
+    gap:42px!important;
+    overflow:visible!important;
+    padding:0!important;
+    min-height:650px;
+  }
+  body.desktop-settings-route .account-navigation {
+    padding:192px 0 20px!important;
+    overflow:visible!important;
+  }
+  body.desktop-settings-route .desktop-settings-heading{
+    position:absolute!important;
+    top:65px!important;left:0!important;
+    width:100%!important;
+    padding-bottom:18px!important;
+    border-bottom:1px solid #454545!important;
+    line-height:1.25!important;
+    margin:0!important;
+    z-index:1!important;
+    font-family:Georgia,'Times New Roman',serif!important;
+    font-weight:400!important;
+    font-size:37px!important;
+    letter-spacing:-.025em!important;
+  }
+  body.desktop-settings-route .account-subpage{
+    padding:178px 0 45px!important;
+    margin:0!important;
+    height:auto!important;
+    width:100%!important;
+  }
+  body.desktop-settings-route .account-subheader{
+    display:none!important;
+  }
+  body.desktop-settings-route .account-detail h3:first-child{
+    margin-top:0!important;
+  }
+  body.desktop-settings-route .account-links .account-link{
+    font-size:16px!important;
+    min-height:0!important;
+    padding:13px 0!important;
+    text-align:left!important;
+    background:transparent!important;
+    color:inherit!important;
+  }
+  body.desktop-settings-route .account-links .account-link.selected{
+    color:#ff5a12!important;
+  }
+  body.desktop-settings-route .account-links .account-link:hover{
+    color:#ff8755!important;
+  }
+  body.desktop-settings-route .account-links .account-chevron,
+  body.desktop-settings-route .account-links .account-link-icon{
+    display:none!important;
+  }
+  body.desktop-settings-route .account-sheet,body.desktop-settings-route .account-navigation,
+  body.desktop-settings-route .account-subpage{box-shadow:none!important;border:0!important;}
+  body.desktop-settings-route .account-profile,body.desktop-settings-route .account-topbar,
+  body.desktop-settings-route .settings-home-link{display:none!important;}
+  html[data-theme="light"] body.desktop-settings-route{
+    background:#fff!important;color:#171717!important;
+  }
+  html[data-theme="light"] body.desktop-settings-route .desktop-settings-heading{
+    border-color:#dedede!important;
+  }
+}
+/* Segmented system / light / dark picker with a sliding high-contrast thumb */
+.theme-picker{
+  margin:0 auto!important;
+  padding:0!important;
+  border:0!important;
+  max-width:510px;
+}
+.theme-picker legend{
+  display:block;
+  width:100%;
+  margin:0 0 18px!important;
+  font-size:16px!important;
+  font-weight:700!important;
+  text-align:center;
+}
+.theme-segment{
+  position:relative;
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  align-items:stretch;
+  padding:5px;
+  border:1px solid #4c4c50;
+  border-radius:999px;
+  background:#242427;
+  overflow:hidden;
+  isolation:isolate;
+}
+.theme-segment .theme-thumb{
+  position:absolute;
+  top:5px;bottom:5px;left:5px;
+  width:calc((100% - 10px) / 3);
+  border-radius:999px;
+  background:#fff;
+  box-shadow:0 1px 6px #0004;
+  transform:translateX(100%);
+  transition:transform .28s cubic-bezier(.2,.85,.25,1);
+  pointer-events:none;z-index:0;
+}
+.theme-segment:has(input[value="light"]:checked) .theme-thumb{transform:translateX(0)}
+.theme-segment:has(input[value="system"]:checked) .theme-thumb{transform:translateX(100%)}
+.theme-segment:has(input[value="dark"]:checked) .theme-thumb{transform:translateX(200%)}
+.theme-segment label{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  position:relative;
+  margin:0!important;padding:13px 6px!important;
+  font-size:14px!important;font-weight:700!important;
+  text-align:center;
+  cursor:pointer;z-index:1;
+  color:#d4d4d8!important;
+  border-radius:999px;
+  -webkit-tap-highlight-color:transparent;
+}
+.theme-segment label:has(input:checked){color:#18181b!important}
+.theme-segment label input{
+  position:absolute;
+  inset:0;
+  width:100%;height:100%;
+  margin:0!important;
+  opacity:0;
+  cursor:pointer;
+}
+.theme-segment label:focus-within{outline:2px solid #ff5a12;outline-offset:2px}
+.theme-description{
+  font-size:13px!important;color:#a6a6ad!important;
+  margin:17px 0 0!important;line-height:1.5!important;
+  text-align:center!important;
+}
+html[data-theme="light"] .theme-segment{
+  background:#eeeeef;border-color:#d4d4d8;
+}
+html[data-theme="light"] .theme-segment .theme-thumb{
+  background:#fff;box-shadow:0 2px 7px #0002;
+}
+html[data-theme="light"] .theme-segment label{color:#62626a!important}
+html[data-theme="light"] .theme-segment label:has(input:checked){color:#171717!important}
+html[data-theme="light"] .theme-description{color:#6c6c76!important}
+@media(prefers-reduced-motion:reduce){
+  .theme-segment .theme-thumb{transition:none!important}
+}
