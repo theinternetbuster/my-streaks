@@ -90,6 +90,30 @@
     </div>
   </div>
   <script defer src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
+<script>
+  (function(){
+    let recovered=false;
+    function showRecovery(){
+      if(recovered)return;
+      const loading=document.getElementById('loadingPanel');
+      if(!loading || loading.hidden)return;
+      recovered=true;
+      const message=document.createElement('div');
+      message.className='loading-recovery';
+      message.innerHTML='<p>My Streaks could not finish loading. Your saved habits are safe in Firebase.</p><button type="button" id="retryApp">Reload app</button>';
+      loading.appendChild(message);
+      message.querySelector('button').addEventListener('click',()=>{
+        const u=new URL(location.href);
+        u.searchParams.set('refresh',String(Date.now()));
+        location.replace(u.toString());
+      });
+    }
+    window.addEventListener('error',event=>{console.error('Startup error',event.error||event.message);showRecovery();});
+    window.addEventListener('unhandledrejection',event=>{console.error('Startup rejection',event.reason);showRecovery();});
+    setTimeout(showRecovery,12000);
+  })();
+  </script>
+  <style>.loading-recovery{max-width:330px;text-align:center;line-height:1.5;margin-top:15px}.loading-recovery button{background:#ff5a12;color:#fff;border:0;border-radius:12px;padding:13px 20px;font:700 15px system-ui;cursor:pointer}</style>
   <script type="module" src="app.js?v=20261111-fix1"></script>
 </body>
 </html>
