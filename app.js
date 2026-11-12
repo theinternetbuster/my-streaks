@@ -371,7 +371,7 @@ function stopHold(cancelClick=false){
  holdDelayTimer=null;holdCheckinTimer=null;
  const held=activeHold;
  if(held?.element)held.element.classList.remove('holding');
- if(held && (cancelClick || held.progressStarted || performance.now()-held.startedAt>190)){
+ if(held && (cancelClick || held.progressStarted)){
    suppressCardClicksUntil=Date.now()+750;
  }
  activeHold=null;
