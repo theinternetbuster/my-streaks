@@ -1,6 +1,6 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js';
-import { getFirestore, collection, doc, onSnapshot, addDoc, runTransaction, deleteDoc, writeBatch } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
+import { getFirestore, collection, doc, onSnapshot, addDoc, runTransaction, deleteDoc, writeBatch, setDoc } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
 
 const firebaseConfig = {
   apiKey: 'AIzaSyBuTBTsa-kimaBMbppZcWSQ8P_bpG9DyRQ',
@@ -18,8 +18,16 @@ const provider = new GoogleAuthProvider();
 provider.setCustomParameters({ prompt: 'select_account' });
 const el = id => document.getElementById(id);
 let user = null, unsubscribe = null, habits = [], selectedId = null, shownMonth = null, modalEditingId = null;
-let manageMode = false;
+let editMode = false, layoutMode = 'cards', themeMode = 'system', profileName = '', unsubscribePrefs = null;
+let sortableInstance = null, holdTimer = null, touchStart = null, suppressClickUntil = 0;
 let busy = false;
+const deviceScheme=window.matchMedia('(prefers-color-scheme: dark)');
+function applyTheme(){const resolved=themeMode==='system'?(deviceScheme.matches?'dark':'light'):themeMode;document.documentElement.dataset.theme=resolved;document.documentElement.style.colorScheme=resolved;}
+applyTheme();
+deviceScheme.addEventListener?.('change',()=>{if(themeMode==='system')applyTheme();});
+function preferencesDoc(){return doc(db,'users',user.uid,'settings','preferences');}
+function showProfile(){const name=(profileName||user?.displayName||user?.email?.split('@')[0]||'there').trim();const first=name.split(/\s+/)[0];el('userGreeting').textContent='Hi, '+first;el('accountGreeting').textContent=name.toLowerCase();if(document.activeElement!==el('profileName'))el('profileName').value=name;el('settingsEmail').textContent=user?.email||'';}
+async function savePreference(values){if(!user) return;try{await setDoc(preferencesDoc(),values,{merge:true});showToast('Settings saved');}catch(error){showToast(errorMessage(error));}}
 const dateKey = date => `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
 const todayKey = () => dateKey(new Date());
 const parseKey = key => { const [y,m,d] = key.split('-').map(Number); return new Date(y,m-1,d,12); };
@@ -27,7 +35,12 @@ const addDays = (key, n) => { const d = parseKey(key); d.setDate(d.getDate()+n);
 const weekStart = key => { const d=parseKey(key); const dow=(d.getDay()+6)%7; return addDays(key,-dow); };
 function showToast(message){ const t=el('toast');t.textContent=message;t.classList.add('shown');clearTimeout(showToast.timer);showToast.timer=setTimeout(()=>t.classList.remove('shown'),3400); }
 function setSync(message, online=false){ el('syncState').textContent=message; el('syncState').classList.toggle('online',online); }
-function display(view){ ['loginPanel','loadingPanel','dashboard','detail'].forEach(id=>el(id).hidden=id!==view); document.body.classList.toggle('detail-mode',view==='detail'); }
+function display(view){
+ ['loginPanel','loadingPanel','dashboard'].forEach(id=>el(id).hidden=(id!==view && !(view==='detail' && id==='dashboard')));
+ el('detail').hidden=view!=='detail';
+ document.body.classList.toggle('detail-mode',view==='detail');
+ document.body.classList.toggle('detail-open',view==='detail');
+}
 function escapeHTML(str){ return String(str).replace(/[&<>"']/g, ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
 function normalise(raw){ return {id:raw.id,name:String(raw.name||'Habit'),createdDate:raw.createdDate||todayKey(),createdAt:Number(raw.createdAt)||0,order:Number.isFinite(raw.order)?raw.order:null,completions:Array.isArray(raw.completions)?[...new Set(raw.completions.filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x)))].sort():[]}; }
 
@@ -68,32 +81,75 @@ function evaluateHabit(habit, asOf=todayKey()) {
 function habitCollection(){ return collection(db,'users',user.uid,'habits'); }
 function habitDoc(id){ return doc(db,'users',user.uid,'habits',id); }
 function selectedHabit(){ return habits.find(h=>h.id===selectedId); }
-function renderDashboard(){
-  const grid=el('habitGrid');
-  el('manageHabitsBtn').textContent=manageMode?'Done editing':'Edit habits';
-  el('manageHabitsBtn').setAttribute('aria-pressed',String(manageMode));
-  grid.innerHTML=habits.map((h,i)=>{
-    const info=evaluateHabit(h);
-    if(manageMode) return `<div class="habit-card managing"><h3>${escapeHTML(h.name)}</h3><div class="manage-actions"><button data-move="-1" data-id="${escapeHTML(h.id)}" aria-label="Move ${escapeHTML(h.name)} up" ${i===0?'disabled':''}>↑</button><button data-move="1" data-id="${escapeHTML(h.id)}" aria-label="Move ${escapeHTML(h.name)} down" ${i===habits.length-1?'disabled':''}>↓</button><button class="manage-delete" data-delete="${escapeHTML(h.id)}" aria-label="Delete ${escapeHTML(h.name)}">×</button></div></div>`;
-    return `<button class="habit-card" data-id="${escapeHTML(h.id)}"><h3>${escapeHTML(h.name)}</h3><div class="card-bottom"><span class="card-streak"><svg class="card-flame" viewBox="0 0 24 24" aria-hidden="true"><use href="#flame-solid"></use></svg> ${info.streak}</span><span class="card-arrow">↗</span></div></button>`;
-  }).join('');
-  grid.querySelectorAll('button.habit-card').forEach(btn=>btn.addEventListener('click',()=>openHabit(btn.dataset.id)));
-  grid.querySelectorAll('[data-move]').forEach(btn=>btn.addEventListener('click',()=>moveHabit(btn.dataset.id,Number(btn.dataset.move))));
-  grid.querySelectorAll('[data-delete]').forEach(btn=>btn.addEventListener('click',()=>quickDeleteHabit(btn.dataset.delete)));
-  el('emptyState').hidden=habits.length!==0;
+
+function smallCalendar(h,info){
+ const now=new Date(),year=now.getFullYear(),month=now.getMonth();
+ const first=(new Date(year,month,1).getDay()+6)%7;
+ const num=new Date(year,month+1,0).getDate();
+ let days='<div class="mini-weekdays">M</div><div class="mini-weekdays">T</div><div class="mini-weekdays">W</div><div class="mini-weekdays">T</div><div class="mini-weekdays">F</div><div class="mini-weekdays">S</div><div class="mini-weekdays">S</div>';
+ for(let i=0;i<first;i++)days+='<span class="mini-day blank"></span>';
+ for(let n=1;n<=num;n++){
+   const key=dateKey(new Date(year,month,n,12)),status=info.states.get(key);
+   const cls=status==='done'?'done':status==='freeze'?'freeze':'';
+   const flame=status==='done'||status==='freeze'?'<svg viewBox="0 0 24 24" class="mini-flame" aria-hidden="true"><use href="#flame-'+(status==='done'?'solid':'outline')+'"></use></svg>':'';
+   days+='<span class="mini-day '+cls+'" title="'+key+'"><small>'+n+'</small>'+flame+'</span>';
+ }
+ return '<div class="mini-calendar"><div class="mini-month">'+now.toLocaleDateString('en-US',{month:'long',year:'numeric'})+'</div><div class="mini-calendar-grid">'+days+'</div></div>';
 }
-async function moveHabit(id,direction){
-  const index=habits.findIndex(h=>h.id===id),dest=index+direction;
-  if(index<0||dest<0||dest>=habits.length||busy)return;
-  const reordered=[...habits];[reordered[index],reordered[dest]]=[reordered[dest],reordered[index]];
-  await withBusy(async()=>{const batch=writeBatch(db);reordered.forEach((h,i)=>batch.update(habitDoc(h.id),{order:i}));await batch.commit();showToast('Order updated');});
+function setEditMode(enabled){
+ editMode=enabled;
+ const grid=el('habitGrid');
+ grid.classList.toggle('editing',editMode);
+ el('habitEditToolbar').hidden=!editMode;
+ el('toolbarHint').hidden=editMode;
+}
+function renderDashboard(){
+ const grid=el('habitGrid');
+ grid.classList.toggle('calendar-layout',layoutMode==='calendar');
+ el('layoutToggleBtn').setAttribute('aria-label',layoutMode==='calendar'?'Switch to compact cards':'Switch to calendar cards');
+ el('layoutToggleBtn').title=layoutMode==='calendar'?'Compact cards':'Calendar cards';
+ el('layoutToggleBtn').setAttribute('aria-pressed',String(layoutMode==='calendar'));
+ grid.innerHTML=habits.map(h=>{
+   const info=evaluateHabit(h);
+   return '<div class="habit-card" data-id="'+escapeHTML(h.id)+'" role="button" tabindex="0" aria-label="Open '+escapeHTML(h.name)+' streak">'+
+     '<button class="card-delete" type="button" aria-label="Delete '+escapeHTML(h.name)+'" data-delete="'+escapeHTML(h.id)+'">×</button>'+
+     '<div class="habit-card-head"><h3>'+escapeHTML(h.name)+'</h3>'+
+     (layoutMode==='calendar'?'<span class="mini-streak"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#flame-solid"></use></svg>'+info.streak+'</span>':'')+'</div>'+
+     (layoutMode==='calendar'?smallCalendar(h,info):
+     '<div class="card-bottom"><span class="card-streak"><svg class="card-flame" viewBox="0 0 24 24" aria-hidden="true"><use href="#flame-solid"></use></svg> '+info.streak+'</span><span class="card-arrow">↗</span></div>')+
+     '</div>';
+ }).join('');
+ setEditMode(editMode);
+ el('emptyState').hidden=habits.length!==0;
+ if(!sortableInstance && window.Sortable){
+   sortableInstance=window.Sortable.create(grid,{
+      animation:220, easing:'cubic-bezier(.2,.8,.2,1)',
+      delay:330, delayOnTouchOnly:true, touchStartThreshold:5,
+      fallbackTolerance:6, forceFallback:true, fallbackOnBody:true,
+      chosenClass:'sortable-selected',ghostClass:'sortable-ghost',
+      dragClass:'sortable-dragging',
+      onStart:()=>{clearTimeout(holdTimer);setEditMode(true);},
+      onEnd:async()=>{
+        suppressClickUntil=Date.now()+550;
+        const ids=[...grid.querySelectorAll('.habit-card')].map(c=>c.dataset.id);
+        if(ids.length!==habits.length || ids.every((id,i)=>id===habits[i].id))return;
+        if(busy)return;
+        await withBusy(async()=>{
+           const batch=writeBatch(db);
+           ids.forEach((id,i)=>batch.update(habitDoc(id),{order:i}));
+           await batch.commit();
+           showToast('Habit order saved');
+        });
+      }
+   });
+ }
 }
 async function quickDeleteHabit(id){
   const h=habits.find(x=>x.id===id);if(!h)return;
   if(!confirm(`Delete “${h.name}” and its streak history? This cannot be undone.`))return;
   await withBusy(async()=>{await deleteDoc(habitDoc(id));showToast('Habit deleted');});
 }
-function openHabit(id){selectedId=id;shownMonth=new Date(new Date().getFullYear(),new Date().getMonth(),1);renderDetail();display('detail');window.scrollTo(0,0);}
+function openHabit(id){selectedId=id;shownMonth=new Date(new Date().getFullYear(),new Date().getMonth(),1);renderDetail();display('detail');el('detail').scrollTop=0;}
 function renderDetail(){
   const h=selectedHabit();if(!h){selectedId=null;display('dashboard');return;}
   const data=evaluateHabit(h);
@@ -157,14 +213,20 @@ getRedirectResult(auth).catch(err=>showToast(errorMessage(err)));
 onAuthStateChanged(auth,u=>{
  if(unsubscribe){unsubscribe();unsubscribe=null;}
  user=u;habits=[];selectedId=null;
- manageMode=false;
+ editMode=false;
+ if(unsubscribePrefs){unsubscribePrefs();unsubscribePrefs=null;}
  el('userBtn').hidden=!u;el('accountMenu').hidden=true;document.body.classList.remove('account-open');el('userBtn').setAttribute('aria-expanded','false');
  if(!u){setSync('Not signed in');display('loginPanel');return;}
- const firstName=(u.displayName||u.email?.split('@')[0]||'there').trim().split(/\s+/)[0];
- const greeting=firstName.charAt(0).toUpperCase()+firstName.slice(1);
- el('userGreeting').textContent='Hi, '+greeting;
- el('accountGreeting').textContent=firstName.toLowerCase();
+ profileName=u.displayName||u.email?.split('@')[0]||'there';showProfile();
  el('accountEmail').textContent=u.email||'Signed in';setSync('Syncing…');display('loadingPanel');
+ unsubscribePrefs=onSnapshot(preferencesDoc(),snapshot=>{
+    const prefs=snapshot.exists()?snapshot.data():{};
+    profileName=prefs.displayName||u.displayName||u.email?.split('@')[0]||'there';
+    themeMode=['light','dark','system'].includes(prefs.appearance)?prefs.appearance:'system';
+    layoutMode=prefs.layout==='calendar'?'calendar':'cards';
+    document.querySelectorAll('input[name="appearanceMode"]').forEach(input=>input.checked=input.value===themeMode);
+    applyTheme();showProfile();if(!el('dashboard').hidden)renderDashboard();
+ },err=>console.error('Settings sync issue',err));
  unsubscribe=onSnapshot(habitCollection(),snapshot=>{
    habits=snapshot.docs.map(s=>normalise({id:s.id,...s.data()})).sort((a,b)=>(a.order??(1000000+a.createdAt))-(b.order??(1000000+b.createdAt))||a.name.localeCompare(b.name));
    setSync(snapshot.metadata.hasPendingWrites?'Saving…':'Synced',!snapshot.metadata.hasPendingWrites);
@@ -189,6 +251,8 @@ function setAccountMenu(open){
 el('userBtn').addEventListener('click',()=>setAccountMenu(el('accountMenu').hidden));
 el('closeAccountMenu').addEventListener('click',()=>setAccountMenu(false));
 el('accountScrim').addEventListener('click',()=>setAccountMenu(false));
+el('profileForm').addEventListener('submit',event=>{event.preventDefault();const value=el('profileName').value.trim();if(!value)return;profileName=value;showProfile();savePreference({displayName:value});});
+document.querySelectorAll('input[name="appearanceMode"]').forEach(input=>input.addEventListener('change',()=>{if(!input.checked)return;themeMode=input.value;applyTheme();savePreference({appearance:themeMode});}));
 for(const [buttonId,detailId] of [['accountSettingsBtn','accountSettingsDetail'],['accountAppearanceBtn','accountAppearanceDetail'],['accountBackupBtn','accountBackupDetail']]){
   el(buttonId).addEventListener('click',()=>{
     const opened=el(detailId).hidden;
@@ -208,10 +272,37 @@ document.addEventListener('keydown',event=>{
     if(!event.shiftKey && document.activeElement===last){event.preventDefault();first.focus();}
   }
 });
-el('manageHabitsBtn').addEventListener('click',()=>{manageMode=!manageMode;renderDashboard();});
+el('layoutToggleBtn').addEventListener('click',()=>{layoutMode=layoutMode==='cards'?'calendar':'cards';renderDashboard();savePreference({layout:layoutMode});});
+el('finishEditingBtn').addEventListener('click',()=>setEditMode(false));
+const grid=el('habitGrid');
+grid.addEventListener('click',event=>{
+ const deleteButton=event.target.closest('[data-delete]');
+ if(deleteButton){event.stopPropagation();quickDeleteHabit(deleteButton.dataset.delete);return;}
+ const card=event.target.closest('.habit-card');
+ if(!card||editMode||Date.now()<suppressClickUntil)return;
+ openHabit(card.dataset.id);
+});
+grid.addEventListener('keydown',event=>{
+ if(event.key==='Escape'&&editMode){setEditMode(false);return;}
+ if((event.key==='Enter'||event.key===' ')&&event.target.classList.contains('habit-card')){
+   event.preventDefault();if(!editMode)openHabit(event.target.dataset.id);
+ }
+});
+grid.addEventListener('pointerdown',event=>{
+ if(event.target.closest('.card-delete'))return;
+ const card=event.target.closest('.habit-card');if(!card||event.pointerType==='mouse')return;
+ clearTimeout(holdTimer);touchStart={x:event.clientX,y:event.clientY};
+ holdTimer=setTimeout(()=>{setEditMode(true);suppressClickUntil=Date.now()+500;},530);
+});
+grid.addEventListener('pointermove',event=>{
+ if(touchStart&&(Math.abs(event.clientX-touchStart.x)>9||Math.abs(event.clientY-touchStart.y)>9))clearTimeout(holdTimer);
+});
+for(const type of ['pointerup','pointercancel','pointerleave'])grid.addEventListener(type,()=>{clearTimeout(holdTimer);touchStart=null;});
 el('signOutBtn').addEventListener('click',()=>{setAccountMenu(false);signOut(auth).catch(err=>showToast(errorMessage(err)));});
 el('addHabitBtn').addEventListener('click',()=>showModal());el('emptyAdd').addEventListener('click',()=>showModal());
-el('backBtn').addEventListener('click',()=>{selectedId=null;renderDashboard();display('dashboard');});
+function closeHabit(){selectedId=null;renderDashboard();display('dashboard');}
+el('backBtn').addEventListener('click',closeHabit);
+el('detailScrim').addEventListener('click',closeHabit);
 el('checkInBtn').addEventListener('click',checkIn);
 el('editHabitBtn').addEventListener('click',()=>showModal(true));
 el('habitForm').addEventListener('submit',saveHabit);
