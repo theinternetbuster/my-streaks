@@ -613,3 +613,72 @@ html[data-theme="light"] .checklist-subtask .subtask-bullet-dot{color:#2c3546}
  .checklist-subtask>button[data-subtask-kind]{opacity:.7}
  .checklist-nested-actions{gap:12px}
 }
+
+/* iOS refinement: identical calendar completion tint in detail and edit views.
+   Editor uses #fff0e4 in light theme and #5c2309 in dark theme. */
+html[data-theme="light"] body.detail-mode .calendar-day.done,
+html[data-theme="light"] body.detail-open .calendar-day.done{
+  background:#fff0e4!important;
+  border-color:transparent!important;
+}
+html[data-theme="dark"] body.detail-mode .calendar-day.done,
+html[data-theme="dark"] body.detail-open .calendar-day.done{
+  background:#5c2309!important;
+  border-color:transparent!important;
+}
+html[data-theme="light"] body.detail-mode .calendar-day.done .number{color:#8f4b27}
+html[data-theme="dark"] body.detail-mode .calendar-day.done .number{color:#f3bb9a}
+
+/* iPhone: the open habit-picker must remain a light surface in light mode. */
+html[data-theme="light"] #insightHabitTrigger.insight-custom-trigger,
+html[data-theme="light"] .insight-custom-picker.open #insightHabitTrigger.insight-custom-trigger,
+html[data-theme="light"] #insightHabitTrigger.insight-custom-trigger:hover,
+html[data-theme="light"] #insightHabitTrigger.insight-custom-trigger:focus,
+html[data-theme="light"] #insightHabitTrigger.insight-custom-trigger:active{
+  background:#ffffff!important;
+  color:#263347!important;
+  border-color:#d9dee7!important;
+  box-shadow:0 3px 16px #202a4012!important;
+  -webkit-tap-highlight-color:transparent;
+}
+html[data-theme="light"] #insightHabitTrigger .insight-picker-avatar{background:#fff0e6;color:#c45a28}
+html[data-theme="light"] #insightHabitTrigger>svg{color:#8b94a2}
+html[data-theme="light"] #insightHabitLabel{color:#263347!important}
+html[data-theme="light"] .insight-custom-picker.open .insight-custom-menu{
+  background:#fff!important;color:#253348!important;border-color:#d9dee7!important;
+}
+html[data-theme="light"] .insight-custom-picker .insight-option{
+ color:#253348!important;background:transparent;
+}
+html[data-theme="light"] .insight-custom-picker .insight-option.selected,
+html[data-theme="light"] .insight-custom-picker .insight-option:hover{
+ background:#fff1e9!important;
+}
+
+/* iOS touch feedback was painting an extra gray pill before the sliding thumb.
+   The animated thumb is the sole selection fill. */
+.insight-section-tabs{isolation:isolate;overflow:hidden}
+.insight-section-tabs::before{z-index:0}
+.insight-section-tabs button,
+.insight-section-tabs button:hover,
+.insight-section-tabs button:active,
+.insight-section-tabs button:focus,
+.insight-section-tabs button:focus-visible,
+.insight-section-tabs button.active{
+  background:transparent!important;
+  background-color:transparent!important;
+  background-image:none!important;
+  box-shadow:none!important;
+  -webkit-tap-highlight-color:transparent!important;
+  outline:none;
+  appearance:none;
+  -webkit-appearance:none;
+}
+.insight-section-tabs button{z-index:1;touch-action:manipulation}
+.insight-section-tabs button:focus-visible{
+  outline:2px solid #ff914f!important;
+  outline-offset:-5px!important;
+}
+.insight-section-tabs button:not(.active){color:#a5a5af}
+html[data-theme="light"] .insight-section-tabs button:not(.active){color:#596478}
+html[data-theme="light"] .insight-section-tabs button.active{color:#be5019}
