@@ -656,6 +656,16 @@
         navigator.clipboard?.writeText(value).catch(()=>{});
         return;
       }
+      if(!allBlocksSelected&&(key==='backspace'||key==='delete')&&!mod){
+        const sel=window.getSelection();
+        const fieldFor=node=>(node?.nodeType===1?node:node?.parentElement)?.closest?.('.checklist-editor');
+        const first=fieldFor(sel?.anchorNode),last=fieldFor(sel?.focusNode);
+        if(sel&&!sel.isCollapsed&&first&&last&&first!==last){
+          event.preventDefault();
+          root.dispatchEvent(new InputEvent('beforeinput',{bubbles:true,cancelable:true,inputType:'deleteContentBackward'}));
+          return;
+        }
+      }
       if(allBlocksSelected&&(key==='backspace'||key==='delete'||(!mod&&!event.altKey&&key.length===1))){
         event.preventDefault();
         blocks=[normalizeBlock({id:uniqueId(),type:'text',text:key.length===1?event.key:''},0)];
