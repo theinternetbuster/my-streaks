@@ -535,9 +535,20 @@
         const lines=parsePastedLines(raw);
         const formatted=lines.map(x=>x.type==='bullet'?'• '+x.text:x.type==='todo'?(x.checked?'☑ ':'☐ ')+x.text:x.text).join('\n');
         const selection=window.getSelection();
-        const start=editorCaretOffset(note);
-        const selected=selection&&!selection.isCollapsed&&note.contains(selection.anchorNode)?selection.toString().length:0;
-        block.note=block.note.slice(0,start)+formatted+block.note.slice(start+selected);
+        let start=editorCaretOffset(note),end=start;
+        if(selection?.rangeCount){
+          const range=selection.getRangeAt(0);
+          if(note.contains(range.startContainer)&&note.contains(range.endContainer)){
+            const pos=(node,offset)=>{
+              const part=document.createRange();part.selectNodeContents(note);part.setEnd(node,offset);
+              return part.toString().length;
+            };
+            start=pos(range.startContainer,range.startOffset);
+            end=pos(range.endContainer,range.endOffset);
+          }
+        }
+        pendingUndoFocus={id:'note:'+block.id,offset:start};
+        block.note=block.note.slice(0,start)+formatted+block.note.slice(end);
         note.textContent=block.note;
         focusEditableAt(note,start+formatted.length);
         scheduleSave(true);
@@ -677,6 +688,16 @@
       const mod=event.ctrlKey||event.metaKey;
       const key=event.key.toLowerCase();
       if(mod&&!event.altKey&&key==='a'){
+        const note=event.target.closest?.('.checklist-note-editor');
+        if(note){
+          event.preventDefault();
+          clearDocumentSelection();
+          const range=document.createRange();
+          range.selectNodeContents(note);
+          const selection=window.getSelection();
+          selection.removeAllRanges();selection.addRange(range);
+          return;
+        }
         event.preventDefault();selectWholeChecklist();return;
       }
       if(mod&&!event.altKey&&(key==='z'||key==='y')){
@@ -690,6 +711,8 @@
         navigator.clipboard?.writeText(value).catch(()=>{});
         return;
       }
+      // Native note selection always wins over the whole-document selection.
+      if(event.target.closest?.('.checklist-note-editor')&&documentRange)clearDocumentSelection();
       if(documentRange&&!mod&&!event.altKey&&(key==='backspace'||key==='delete'||key.length===1)){
         event.preventDefault();
         if(allBlocksSelected){
