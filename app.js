@@ -124,32 +124,52 @@ function renderDashboard(){
 function renderReorderList(){
  const list=el('reorderList');
  stagedOrder=habits.map(h=>h.id);
- list.innerHTML=habits.map(h=>
-   '<div class="reorder-item" data-id="'+escapeHTML(h.id)+'"><span class="reorder-name">'+escapeHTML(h.name)+'</span><button type="button" class="reorder-handle" aria-label="Drag '+escapeHTML(h.name)+' to change order" title="Drag to rearrange">☰</button></div>'
- ).join('');
+ list.innerHTML=habits.map(h=>{
+   const info=evaluateHabit(h);
+   return '<div class="reorder-card" data-id="'+escapeHTML(h.id)+'" tabindex="0" aria-label="Rearrange '+escapeHTML(h.name)+'">'+
+     '<button type="button" class="reorder-delete" data-delete="'+escapeHTML(h.id)+'" aria-label="Delete '+escapeHTML(h.name)+'">×</button>'+
+     '<div class="reorder-card-name">'+escapeHTML(h.name)+'</div>'+
+     '<div class="reorder-card-foot"><span class="reorder-card-streak"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#flame-solid"></use></svg>'+info.streak+'</span><span class="reorder-grip" aria-hidden="true">⠿</span></div></div>';
+ }).join('');
  if(reorderSortable){reorderSortable.destroy();reorderSortable=null;}
  if(window.Sortable){
    reorderSortable=window.Sortable.create(list,{
-     animation:235,easing:'cubic-bezier(.22,.75,.25,1)',
-     handle:'.reorder-handle',forceFallback:true,fallbackOnBody:true,
-     fallbackTolerance:0,touchStartThreshold:2,
+     animation:240, easing:'cubic-bezier(.2,.8,.2,1)',
+     draggable:'.reorder-card',
+     filter:'.reorder-delete',
+     preventOnFilter:false,
+     forceFallback:true,fallbackOnBody:true,fallbackTolerance:2,
+     delay:175,delayOnTouchOnly:true,touchStartThreshold:5,
      chosenClass:'reorder-chosen',ghostClass:'reorder-placeholder',
-     fallbackClass:'reorder-floating',scroll:true,
-     onEnd:()=>{stagedOrder=[...list.querySelectorAll('.reorder-item')].map(row=>row.dataset.id);}
+     fallbackClass:'reorder-floating',
+     swapThreshold:.62,scroll:true,scrollSensitivity:60,
+     onEnd:()=>{stagedOrder=[...list.querySelectorAll('.reorder-card')].map(row=>row.dataset.id);}
    });
  }
- list.querySelectorAll('.reorder-handle').forEach(btn=>btn.addEventListener('keydown',e=>{
-   if(e.key!=='ArrowUp'&&e.key!=='ArrowDown')return;
+ list.querySelectorAll('.reorder-delete').forEach(button=>button.addEventListener('click',async event=>{
+   event.stopPropagation();
+   const id=button.dataset.delete;
+   const habit=habits.find(h=>h.id===id);
+   if(!habit||!confirm('Delete “'+habit.name+'” and all its history? This cannot be undone.'))return;
+   await withBusy(async()=>{
+     await deleteDoc(habitDoc(id));
+     showToast('Habit deleted');
+     // Firebase subscription will refresh this grid, excluding the deleted habit.
+   });
+ }));
+ list.querySelectorAll('.reorder-card').forEach(card=>card.addEventListener('keydown',e=>{
+   if(e.target!==card||(e.key!=='ArrowUp'&&e.key!=='ArrowDown'&&e.key!=='ArrowLeft'&&e.key!=='ArrowRight'))return;
    e.preventDefault();
-   const item=btn.closest('.reorder-item'),other=e.key==='ArrowUp'?item.previousElementSibling:item.nextElementSibling;
-   if(!other)return;
-   if(e.key==='ArrowUp')list.insertBefore(item,other);else list.insertBefore(other,item);
-   stagedOrder=[...list.querySelectorAll('.reorder-item')].map(row=>row.dataset.id);
-   btn.focus();
+   const items=[...list.querySelectorAll('.reorder-card')];
+   const index=items.indexOf(card),direction=(e.key==='ArrowUp'||e.key==='ArrowLeft')?-1:1;
+   const other=items[index+direction];if(!other)return;
+   if(direction<0)list.insertBefore(card,other);else list.insertBefore(other,card);
+   stagedOrder=[...list.querySelectorAll('.reorder-card')].map(row=>row.dataset.id);
+   card.focus();
  }));
 }
 async function saveReorderedHabits(){
- const ids=[...el('reorderList').querySelectorAll('.reorder-item')].map(x=>x.dataset.id);
+ const ids=[...el('reorderList').querySelectorAll('.reorder-card')].map(x=>x.dataset.id);
  if(ids.length!==habits.length||new Set(ids).size!==habits.length){showToast('Habit list changed. Open rearrange again.');return;}
  if(ids.every((id,i)=>id===habits[i].id)){showToast('Order already saved');return;}
  await withBusy(async()=>{
