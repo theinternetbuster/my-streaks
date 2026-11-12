@@ -48,8 +48,9 @@
       to.push(serializeBlocks());
       restoringHistory=true;
       blocks=JSON.parse(previous).map(normalizeBlock);
+      closeSlash();renderChecklist(true);
       historyPresent=serializeBlocks();lastHistoryAt=0;lastHistoryField='';
-      closeSlash();renderChecklist(true);restoringHistory=false;scheduleSave(true);
+      restoringHistory=false;scheduleSave(true);
       const target=focusId&&blocks.some(b=>b.id===focusId)?focusId:blocks.at(-1)?.id;
       if(target)requestAnimationFrame(()=>focusBlockAt(target,position??blocks.find(b=>b.id===target)?.text.length??0));
     }
