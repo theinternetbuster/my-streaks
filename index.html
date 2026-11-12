@@ -16,7 +16,7 @@
   <link rel="icon" type="image/svg+xml" href="app-icon.svg" />
   <meta name="description" content="A private streak tracker with weekly freezes and cloud sync." />
   <title>My Streaks</title>
-  <link rel="stylesheet" href="styles.css?v=20261111-v8" />
+  <link rel="stylesheet" href="styles.css?v=20261111-v9" />
 </head>
 <body>
   <svg class="svg-defs" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs>
@@ -25,7 +25,7 @@
   </defs></svg>
   <div id="app">
     <header class="topbar">
-      <div class="brand"><div class="brand-icon"><svg class="brand-flame" viewBox="0 0 24 24" aria-hidden="true"><use href="#flame-solid"></use></svg></div><div><strong>My Streaks</strong><small>Stay consistent, your way.</small></div></div>
+      <a class="brand brand-home" href="/my-streaks/" aria-label="My Streaks — Home"><div class="brand-icon"><svg class="brand-flame" viewBox="0 0 24 24" aria-hidden="true"><use href="#flame-solid"></use></svg></div><div><strong>My Streaks</strong><small>Stay consistent, your way.</small></div></a>
       <div class="top-actions"><span id="syncState" class="sr-only" aria-live="polite">Connecting…</span><button id="userBtn" class="avatar-button account-trigger" aria-label="Open account and settings" aria-expanded="false" hidden><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.1 3.2-7 8-7s8 2.9 8 7"/></svg><span id="userGreeting">Hi!</span></button></div>
     </header>
     <main class="shell">
@@ -37,7 +37,7 @@
       </section>
       <section id="loadingPanel" class="loading-panel"><div class="spinner"></div><p>Getting your streaks ready…</p></section>
       <section id="dashboard" hidden>
-        <div class="page-heading"><div><div class="eyebrow">YOUR HABITS</div><h1>Keep the <em>fire</em> going<span class="dot">.</span></h1><p class="subheading">One day at a time. You've got this.</p></div></div><div class="dashboard-toolbar"><span class="toolbar-hint" id="toolbarHint">Hold a habit to check in · Tap to view its calendar</span><div class="toolbar-actions"><button class="layout-switch" type="button" id="layoutToggleBtn" aria-label="Switch to calendar cards" title="Change layout"><svg viewBox="0 0 24 24" aria-hidden="true" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 10h18M8 4v5M16 4v5"/></svg></button><button class="primary-btn add-icon-btn" id="addHabitBtn" aria-label="Add a new habit" title="Add habit">＋</button></div></div>
+        <div class="page-heading"><div><div class="eyebrow">YOUR HABITS</div><h1>Keep the <em>fire</em> going<span class="dot">.</span></h1><p class="subheading">One day at a time. You've got this.</p></div></div><div class="dashboard-toolbar"><span class="toolbar-hint" id="toolbarHint" hidden></span><div class="toolbar-actions"><button class="layout-switch" type="button" id="layoutToggleBtn" aria-label="Switch to calendar cards" title="Change layout"><svg viewBox="0 0 24 24" aria-hidden="true" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 10h18M8 4v5M16 4v5"/></svg></button><button class="primary-btn add-icon-btn" id="addHabitBtn" aria-label="Add a new habit" title="Add habit">＋</button></div></div>
         <div id="habitEditToolbar" class="habit-edit-toolbar" hidden></div>
         <div id="habitGrid" class="habit-grid"></div>
         <div id="emptyState" class="empty-state" hidden><div>🌱</div><h2>Your first streak starts here.</h2><p>Add a habit, then check in when you've completed it.</p><button id="emptyAdd" class="primary-btn">＋ Add a habit</button></div>
@@ -102,9 +102,8 @@
               <fieldset class="theme-picker"><legend>Theme</legend><div class="theme-segment" role="radiogroup" aria-label="Appearance"><span class="theme-thumb" aria-hidden="true"></span><label><input type="radio" name="appearanceMode" value="light"/><span>Light</span></label><label><input type="radio" name="appearanceMode" value="system" checked/><span>Device</span></label><label><input type="radio" name="appearanceMode" value="dark"/><span>Dark</span></label></div><p class="theme-description">Device uses your phone or computer's appearance settings.</p></fieldset>
             </div>
             <div id="accountReorderDetail" class="account-detail account-reorder-detail" hidden>
-              <h3>Rearrange habits</h3>
-              <p class="account-explanation">Drag the handles to place habits in your preferred order. Tap Save to sync the arrangement.</p>
-              <div id="reorderList" class="reorder-list" aria-label="Drag to reorder habits"></div>
+              <div class="reorder-heading"><h3>Rearrange habits</h3><p>Drag and drop to arrange your dashboard. Changes are saved when you press Save.</p></div>
+              <div id="reorderList" class="reorder-grid" aria-label="Habit arrangement grid"></div>
               <div class="reorder-actions"><button type="button" id="cancelReorderBtn" class="secondary-btn">Cancel</button><button type="button" id="saveReorderBtn" class="primary-btn">Save order</button></div>
             </div>
             <div id="accountBackupDetail" class="account-detail account-backup-detail" hidden>
@@ -142,6 +141,6 @@
   })();
   </script>
   <style>.loading-recovery{max-width:330px;text-align:center;line-height:1.5;margin-top:15px}.loading-recovery button{background:#ff5a12;color:#fff;border:0;border-radius:12px;padding:13px 20px;font:700 15px system-ui;cursor:pointer}</style>
-  <script type="module" src="app.js?v=20261111-v8"></script>
+  <script type="module" src="app.js?v=20261111-v9"></script>
 </body>
 </html>
