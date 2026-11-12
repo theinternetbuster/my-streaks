@@ -289,7 +289,8 @@
         const q=query.toLowerCase().replace(/\s/g,'');
         let count=0;
         dateMenu.querySelectorAll('[data-date-quick]').forEach(button=>{
-          const match=button.dataset.dateQuick.replace(/\s/g,'').startsWith(q)&&button.dataset.dateQuick!=='clear';
+          const keyword=button.dataset.dateQuick==='week'?'nextweek':button.dataset.dateQuick;
+          const match=keyword.startsWith(q)&&button.dataset.dateQuick!=='clear';
           button.hidden=!match;if(match)count++;
         });
         if(!count&&q!=='custom'){closeDateMenu();return;}
@@ -549,7 +550,7 @@
         if(e.key==='Enter'||e.key==='Tab'){
           e.preventDefault();
           const q=(b.text.slice(0,editorCaretOffset(field)).match(/@([a-z ]*)$/i)?.[1]||'').trim().toLowerCase().replace(/\s/g,'');
-          const option=[...dateMenu.querySelectorAll('[data-date-quick]:not([hidden])')].find(x=>x.dataset.dateQuick.replace(/\s/g,'').startsWith(q));
+          const option=[...dateMenu.querySelectorAll('[data-date-quick]:not([hidden])')].find(x=>(x.dataset.dateQuick==='week'?'nextweek':x.dataset.dateQuick).startsWith(q));
           const value=option?.dataset.dateQuick||'today';
           applyDueDate(id,value==='tomorrow'?localDay(1):value==='week'?localDay(7):localDay(),true);
           return;
@@ -578,7 +579,7 @@
         requestAnimationFrame(()=>focusBlock(newBlock.id,false));
         return;
       }
-      if(e.key==='Backspace'&&!e.isComposing&&editorCaretOffset(field)===0&&window.getSelection()?.isCollapsed&&blocks.length>1){
+      if(e.key==='Backspace'&&!e.ctrlKey&&!e.metaKey&&!e.isComposing&&editorCaretOffset(field)===0&&window.getSelection()?.isCollapsed&&blocks.length>1){
         e.preventDefault();
         const index=blocks.findIndex(x=>x.id===id);
         pendingUndoFocus={id,offset:0};
