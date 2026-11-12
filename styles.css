@@ -1214,3 +1214,75 @@ html[data-theme="light"] .modal input{color:#202638!important;background:#fff!im
  .theme-segment label:focus-within{outline:2px solid #c5c5cc!important;outline-offset:2px}
  .theme-segment label:has(input:checked){color:#171717!important}
 }
+
+
+/* v11 — bottom-anchored useful footer, clear date toggle states, no mouse selection */
+.shell{min-height:calc(100dvh - 76px);display:flex;flex-direction:column;padding-bottom:0!important}
+#dashboard:not([hidden]){display:flex;flex-direction:column;flex:1;min-height:0}
+.site-footer{
+ position:relative;
+ margin-top:auto;
+ padding:25px 0 29px;
+ border-top:1px solid #3c3c41;
+ color:#aaaab3;
+}
+.site-footer:before{
+ content:"";position:absolute;left:50%;top:-1px;
+ width:100vw;border-top:1px solid #3c3c41;
+ transform:translateX(-50%);
+ pointer-events:none;
+}
+.site-footer-inner{display:flex;justify-content:space-between;align-items:center;gap:24px}
+.footer-brand{display:inline-flex;align-items:center;gap:9px;font-weight:750;font-size:14px;color:#ececf0;white-space:nowrap}
+.footer-brand svg{width:20px;height:20px;fill:#ff5a12;color:#ff5a12}
+.footer-progress{width:min(300px,100%);display:flex;flex-direction:column;gap:9px}
+.footer-progress-label{display:flex;justify-content:space-between;align-items:center;gap:15px;font-size:12px;color:#a9a9b2}
+.footer-progress-label strong{font-weight:750;color:#eeeeef;white-space:nowrap}
+.footer-progress-track{height:5px;background:#38383e;border-radius:20px;overflow:hidden}
+.footer-progress-track span{height:100%;width:0;display:block;background:#ff5a12;border-radius:20px;transition:width .34s ease}
+.footer-message{font-size:12px;color:#9999a2;white-space:nowrap}
+html[data-theme="light"] .site-footer,
+html[data-theme="light"] .site-footer:before{border-color:#dedfe5}
+html[data-theme="light"] .footer-brand,html[data-theme="light"] .footer-progress-label strong{color:#252b37}
+html[data-theme="light"] .footer-progress-track{background:#e2e5eb}
+html[data-theme="light"] .footer-progress-label,html[data-theme="light"] .footer-message{color:#707a89}
+@media(max-width:700px){
+ .shell{min-height:calc(100dvh - 76px)}
+ .site-footer{padding:21px 0 max(28px,env(safe-area-inset-bottom,0px) + 12px)}
+ .site-footer-inner{flex-wrap:wrap;gap:15px 14px;justify-content:space-between}
+ .footer-progress{order:3;width:100%;max-width:none}
+ .footer-message{font-size:11px}
+}
+/* The calendar editor's visible state is solely data-driven, not lingering mouse focus. */
+.editor-day:focus,.editor-day:active{
+ outline:none!important;box-shadow:none!important;
+ -webkit-tap-highlight-color:transparent;
+}
+.editor-day:focus-visible{
+ outline:2px solid #bdbdc4!important;outline-offset:1px!important;
+}
+.editor-day:not(:disabled):hover{background:transparent!important;transform:none!important}
+.editor-day.done:not(:disabled):hover{background:#5c2309!important}
+html[data-theme="light"] .editor-day.done:not(:disabled):hover{background:#fff0e4!important}
+html[data-theme="light"] .editor-day:not(.done):not(:disabled):hover{background:transparent!important}
+.calendar-layout .habit-card,.calendar-layout .habit-card *,
+.habit-grid .habit-card,.habit-grid .habit-card *{
+ -webkit-user-select:none!important;user-select:none!important;
+ -webkit-touch-callout:none;
+}
+.calendar-layout .habit-card{cursor:pointer}
+@media(min-width:800px){
+ .theme-segment label:focus-within{
+  outline:none!important;box-shadow:none!important;
+ }
+ .theme-segment label:active,.theme-segment label:hover{
+  color:#d4d4d8!important;
+  background:transparent!important;
+ }
+ .theme-segment label:has(input:checked),
+ .theme-segment label:has(input:checked):hover,
+ .theme-segment label:has(input:checked):active{
+  color:#18181b!important;
+ }
+ html[data-theme="light"] .theme-segment label:not(:has(input:checked)):hover{color:#62626a!important}
+}
