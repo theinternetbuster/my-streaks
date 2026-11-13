@@ -456,7 +456,58 @@
         }
       });
     }
+    // Native iOS keyboards commonly produce beforeinput(insertParagraph) without
+    // a keydown. Both desktop Enter and the virtual Return key must share the
+    // exact same block transition, rather than letting WebKit add <div><br>.
+    function insertChecklistParagraph(field){
+      const id=field?.dataset?.blockId;
+      const b=blocks.find(item=>item.id===id);
+      if(!b)return false;
+      closeSlash();
+      closeDateMenu();
+      const isTask=['todo','todoNote','todoList'].includes(b.type);
+      if((isTask||b.type==='bullet')&&!b.text.trim()){
+        pendingUndoFocus={id,offset:0};
+        b.type='text';
+        b.text='';
+        b.checked=false;
+        b.collapsed=false;
+        b.detailsOpen=false;
+        b.detailsMode='notes';
+        b.subtasks=[];
+        b.note='';
+        b.dueDate='';
+        renderChecklist(true);
+        scheduleSave(true);
+        requestAnimationFrame(()=>focusBlockAt(id,0));
+        return true;
+      }
+      const offset=Math.max(0,Math.min(editorCaretOffset(field),b.text.length));
+      const before=b.text.slice(0,offset);
+      const after=b.text.slice(offset);
+      b.text=before;
+      const nextType=isTask?'todo':b.type==='bullet'?'bullet':'text';
+      const newBlock=addBlock(id,nextType,after);
+      requestAnimationFrame(()=>focusBlockAt(newBlock.id,0));
+      return true;
+    }
     root.addEventListener('beforeinput',event=>{
+      const editor=event.target.closest?.('.checklist-editor[data-block-id]');
+      if(editor&&!event.isComposing&&
+         (event.inputType==='insertParagraph'||
+          (event.inputType==='insertLineBreak'&&window.matchMedia('(pointer:coarse)').matches))){
+        // Safari's software keyboard uses this event instead of keydown.
+        event.preventDefault();
+        if(slashFor===editor.dataset.blockId&&!$('checklistSlashMenu').hidden){
+          if(slashMatches[slashSelected])applyCommand(slashMatches[slashSelected].id);
+        }else if(dateSuggestionId===editor.dataset.blockId&&!dateMenu.hidden){
+          const first=dateMenu.querySelector('[data-date-quick]:not([hidden])');
+          const date=first?.dataset.dateQuick==='tomorrow'?localDay(1):
+            first?.dataset.dateQuick==='week'?localDay(7):localDay();
+          applyDueDate(editor.dataset.blockId,date,true);
+        }else insertChecklistParagraph(editor);
+        return;
+      }
       const field=event.target.closest?.('.checklist-editor,.checklist-note-editor');
       if(!field||restoringHistory)return;
       if(event.inputType?.startsWith('delete')&&!event.inputType.includes('ByCut')){
@@ -619,23 +670,8 @@
       }
       if(handleChecklistArrow(e,field))return;
       if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){
-        e.preventDefault();closeSlash();
-        const offset=editorCaretOffset(field);
-        const before=b.text.slice(0,offset),after=b.text.slice(offset);
-        // A second Enter on an empty task exits checklist mode IN PLACE.
-        // It does not leave another empty paragraph underneath.
-        if(!b.text.trim()&&['todo','todoNote','todoList','bullet'].includes(b.type)){
-          b.type='text';b.checked=false;b.detailsOpen=false;
-          b.detailsMode='notes';b.subtasks=[];b.note='';b.dueDate='';
-          b.text='';
-          renderChecklist(true);scheduleSave(true);
-          requestAnimationFrame(()=>focusBlockAt(id,0));
-          return;
-        }
-        b.text=before;
-        const nextType=['todo','todoNote','todoList'].includes(b.type)?'todo':b.type==='bullet'?'bullet':'text';
-        const newBlock=addBlock(id,nextType,after);
-        requestAnimationFrame(()=>focusBlockAt(newBlock.id,0));
+        e.preventDefault();
+        insertChecklistParagraph(field);
         return;
       }
       if(e.key==='Backspace'&&!e.ctrlKey&&!e.metaKey&&!e.isComposing&&editorCaretOffset(field)===0&&window.getSelection()?.isCollapsed&&blocks.length>1){
