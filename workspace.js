@@ -1511,19 +1511,43 @@
       return range.toString().length;
     }
     function focusBlockAt(id,offset){
-      const field=[...root.querySelectorAll('.checklist-editor')].find(x=>x.dataset.blockId===id);
+      const field=root.querySelector('.checklist-editor[data-block-id="'+id+'"]');
       if(!field)return;
-      field.focus();
-      const walker=document.createTreeWalker(field,NodeFilter.SHOW_TEXT);
-      let node,remaining=offset;
-      while((node=walker.nextNode())){
-        if(remaining<=node.textContent.length)break;
-        remaining-=node.textContent.length;
+      const block=blocks.find(b=>b.id===id);
+      const mention=block?.dueDate?findDateMention(block.text):null;
+      let remaining=Math.max(0,Math.min(offset,block?.text.length??offset));
+      // Contenteditable=false date mentions are atomic. Put the caret at
+      // their parent boundary, never inside the mention's text node.
+      let point={node:field,offset:field.childNodes.length};
+      function locate(parent){
+        for(let i=0;i<parent.childNodes.length;i++){
+          const node=parent.childNodes[i];
+          if(node.nodeType===1&&node.matches?.('[data-date-mention]')){
+            const length=mention?mention.end-mention.start:node.textContent.length;
+            if(remaining<=length){
+              point={node:parent,offset:remaining===0?i:i+1};
+              return true;
+            }
+            remaining-=length;
+          }else if(node.nodeType===3){
+            const length=node.textContent.length;
+            if(remaining<=length){
+              point={node,offset:remaining};
+              return true;
+            }
+            remaining-=length;
+          }else if(node.nodeType===1&&locate(node)){
+            return true;
+          }
+        }
+        return false;
       }
+      locate(field);
+      field.focus();
       const range=document.createRange(),sel=window.getSelection();
-      if(node)range.setStart(node,Math.max(0,remaining));
-      else range.selectNodeContents(field);
-      range.collapse(true);sel.removeAllRanges();sel.addRange(range);
+      range.setStart(point.node,point.offset);
+      range.collapse(true);
+      sel.removeAllRanges();sel.addRange(range);
     }
     // Preserve the caret's relative text position when moving across Notion-like blocks.
     function focusEditableAt(field,offset){
