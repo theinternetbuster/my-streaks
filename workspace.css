@@ -1615,3 +1615,54 @@ html[data-theme="light"] .checklist-block-menu .block-color-menu-header{
   grid-template-columns:1fr;
  }
 }
+
+/* nestedblocks35: one expandable to-do, regular indented document blocks. */
+.workspace-top-nav .workspace-link,
+.workspace-top-nav .workspace-link:link,
+.workspace-top-nav .workspace-link:visited,
+.workspace-top-nav .workspace-link:hover,
+.workspace-top-nav .workspace-link:focus,
+.workspace-top-nav .workspace-link.active{
+ text-decoration:none!important;
+ text-decoration-line:none!important;
+}
+.checklist-page .checklist-line.checklist-child{
+ width:calc(100% - (var(--nest-level,1) * 34px));
+ margin-left:calc(var(--nest-level,1) * 34px)!important;
+}
+.checklist-page .checklist-line.checklist-child-hidden{
+ display:none!important;
+}
+.checklist-page .checklist-line.checklist-child .checklist-line-tools{
+ margin-left:-55px;
+}
+/* No left-hand guide, colored note panel or dedicated mini-task chrome. */
+.checklist-page .checklist-details{
+ border-left:0!important;
+ padding-left:0!important;
+ margin-left:0!important;
+ background:transparent!important;
+}
+.checklist-page .checklist-note-editor{
+ border-left:0!important;
+ border-radius:6px!important;
+ background:transparent!important;
+ padding:5px 0!important;
+ color:inherit;
+}
+.checklist-page .checklist-note-editor:focus{
+ background:transparent!important;border-left:0!important;
+}
+@media(max-width:799px){
+ .checklist-page .checklist-line.checklist-child{
+  width:calc(100% - (var(--nest-level,1) * 25px));
+  margin-left:calc(var(--nest-level,1) * 25px)!important;
+ }
+ .checklist-page .checklist-line.checklist-child .checklist-line-tools{
+  margin-left:-24px;
+ }
+}
+/* Keep individual children visually distinct during selection/hover. */
+.checklist-page .checklist-line.checklist-child.block-is-selected{
+ background:rgba(48,113,197,.33)!important;
+}
