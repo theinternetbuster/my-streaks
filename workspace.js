@@ -757,6 +757,20 @@
       const b=blocks.find(x=>x.id===input.dataset.toggleCheck);if(!b)return;
       b.checked=input.checked;input.closest('.checklist-line').classList.toggle('is-done',b.checked);scheduleSave(true);
     });
+    // On iOS a tap on the contextual + blurs the editor and hides its own
+    // button before click fires. Insert on pointerdown for touch/pen instead.
+    // Desktop mouse keeps the normal click path.
+    let touchInsertTime=0;
+    root.addEventListener('pointerdown',event=>{
+      const insert=event.target.closest?.('[data-insert]');
+      if(!insert||event.pointerType==='mouse')return;
+      event.preventDefault();
+      event.stopPropagation();
+      const before=blocks.find(b=>b.id===insert.dataset.insert);
+      if(!before)return;
+      touchInsertTime=Date.now();
+      addBlock(before.id,'text','');
+    },true);
     root.addEventListener('click',e=>{
       const target=e.target;
       const remove=target.closest('[data-subtask-remove]');
@@ -779,10 +793,10 @@
           if(tokens.some(t=>pos>=t.index&&pos<=t.index+t[0].length))openDateMenu(block.id,editor);
         }
       }else if(insert){
+        // Avoid a second insertion from Safari's synthetic click after touch.
+        if(Date.now()-touchInsertTime<650)return;
         const before=blocks.find(b=>b.id===insert.dataset.insert);
-        if(before){
-          addBlock(before.id,'text','');
-        }
+        if(before)addBlock(before.id,'text','');
       }else if(bullet){
         const block=blocks.find(x=>x.id===bullet.dataset.subtaskBullet);
         if(block&&block.subtasks.length<40){
