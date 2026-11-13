@@ -372,10 +372,10 @@
       '<button type="button" data-format="italic" title="Italic (Ctrl+I)"><i>I</i></button>'+
       '<button type="button" data-format="underline" title="Underline (Ctrl+U)"><u>U</u></button>'+
       '<button type="button" data-format="strike" title="Strikethrough"><s>S</s></button>'+
-      '<button type="button" data-format-menu="colors" title="Text and background color">A<span class="fmt-color-dot"></span> ▾</button>'+
+      '<button type="button" data-format-menu="colors" class="fmt-highlight-button" title="Text and highlight color" aria-label="Text and highlight color"><span class="fmt-highlight-symbol">A</span></button>'+
       '<div class="fmt-dropdown" hidden></div>';
     document.body.appendChild(formatToolbar);
-    let activeFormatId=null,formatRange=null;
+    let activeFormatId=null,formatRange=null,formatApplying=false;
     function currentEditorSelection(){
       const sel=window.getSelection();
       if(!sel?.rangeCount)return null;
@@ -406,9 +406,16 @@
     }
     function placeFormatToolbar(){
       const s=currentEditorSelection();
-      if(s){formatRange=s;activeFormatId=s.id;}
-      const field=activeFormatId?root.querySelector('.checklist-editor[data-block-id="'+activeFormatId+'"]'):null;
-      if(!field||!root.contains(field)||!['checklist'].includes(tab)){
+      // A toolbar is only useful when real text is highlighted, not when
+      // merely typing or tapping into an empty block.
+      if(!formatApplying&&s&&s.end>s.start){formatRange=s;activeFormatId=s.id;}
+      if(!formatRange||formatRange.end<=formatRange.start||tab!=='checklist'){
+        formatToolbar.hidden=true;
+        formatToolbar.querySelector('.fmt-dropdown').hidden=true;
+        return;
+      }
+      const field=root.querySelector('.checklist-editor[data-block-id="'+formatRange.id+'"]');
+      if(!field||!root.contains(field)){
         formatToolbar.hidden=true;return;
       }
       const rect=field.getBoundingClientRect();
@@ -421,7 +428,8 @@
       formatToolbar.querySelector('.fmt-type').textContent=(types.find(t=>t.id===b?.type)?.title||'Text')+' ▾';
     }
     function applyFormat(kind,value=true){
-      const selection=formatRange||currentEditorSelection();
+      const current=currentEditorSelection();
+      const selection=(current&&current.end>current.start?current:formatRange);
       const b=blocks.find(x=>x.id===(selection?.id||activeFormatId));
       if(!b)return;
       const s=selection?.start??0,e=selection?.end??s;
@@ -436,8 +444,15 @@
           return pieces;
         });
         if(!exact&&value!=='default')b.marks.push({start:s,end:e,kind,value:typeof value==='string'?value:''});
+        formatApplying=true;
         renderChecklist(true);scheduleSave(true);
-        requestAnimationFrame(()=>{selectFormatRange(b.id,s,e);placeFormatToolbar()});
+        requestAnimationFrame(()=>{
+          selectFormatRange(b.id,s,e);
+          formatRange={id:b.id,start:s,end:e};
+          activeFormatId=b.id;
+          formatApplying=false;
+          placeFormatToolbar();
+        });
       }else{
         const pending={...(pendingTextStyle.get(b.id)||{})};
         if(kind==='color'||kind==='background')pending[kind]=value;
@@ -469,7 +484,13 @@
           swatches.map(x=>'<button type="button" data-format-background="'+x+'" title="'+x+'" style="background:'+(backgroundPalette[x]||'transparent')+'"></button>').join('')+'</div>';
       }
     }
-    formatToolbar.addEventListener('pointerdown',event=>event.preventDefault());
+    formatToolbar.addEventListener('pointerdown',event=>{
+      const selection=currentEditorSelection();
+      if(selection&&selection.end>selection.start){
+        formatRange=selection;activeFormatId=selection.id;
+      }
+      event.preventDefault();
+    });
     formatToolbar.addEventListener('click',event=>{
       const button=event.target.closest('button');if(!button)return;
       if(button.dataset.format){applyFormat(button.dataset.format);return;}
@@ -489,13 +510,26 @@
     root.addEventListener('focusin',event=>{
       const field=event.target.closest('.checklist-editor[data-block-id]');
       if(!field)return;
-      activeFormatId=field.dataset.blockId;
-      formatRange={id:activeFormatId,start:editorCaretOffset(field),end:editorCaretOffset(field)};
-      placeFormatToolbar();
+      // Focus alone must not show the toolbar.
+      if(!currentEditorSelection()||currentEditorSelection().end===currentEditorSelection().start){
+        formatToolbar.hidden=true;
+      }
     });
     document.addEventListener('selectionchange',()=>{
+      if(formatApplying)return;
       const selection=currentEditorSelection();
-      if(selection){formatRange=selection;activeFormatId=selection.id;placeFormatToolbar();}
+      if(selection&&selection.end>selection.start){
+        formatRange=selection;activeFormatId=selection.id;
+        placeFormatToolbar();
+      }else{
+        // Hide on a collapsed caret or selection outside the editor.
+        // Retain a selected range only while interacting with the toolbar.
+        if(!formatToolbar.contains(document.activeElement)){
+          formatToolbar.hidden=true;
+          formatToolbar.querySelector('.fmt-dropdown').hidden=true;
+          formatRange=null;activeFormatId=null;
+        }
+      }
     });
     document.addEventListener('pointerdown',event=>{
       if(!formatToolbar.contains(event.target)&&!root.contains(event.target)){
@@ -507,7 +541,9 @@
       if(!(event.ctrlKey||event.metaKey)||event.altKey||event.shiftKey)return;
       const kind=event.key.toLowerCase()==='b'?'bold':event.key.toLowerCase()==='i'?'italic':event.key.toLowerCase()==='u'?'underline':null;
       if(kind&&event.target.closest('.checklist-editor[data-block-id]')){
-        event.preventDefault();formatRange=currentEditorSelection();applyFormat(kind);
+        event.preventDefault();
+        const selected=currentEditorSelection();
+        if(selected&&selected.end>selected.start){formatRange=selected;activeFormatId=selected.id;applyFormat(kind);}
       }
     },true);
     function inlineDateText(b){
