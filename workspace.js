@@ -909,6 +909,113 @@
       if(slashFor&&!e.target.closest('#checklistSlashMenu')&&!e.target.closest('#checklistBlocks'))closeSlash();
     });
     window.addEventListener('scroll',()=>{if(slashFor)closeSlash();},{passive:true});
+    // The six-dot grip is both a drag handle and a click-triggered
+    // block menu. A real drag is still owned by Sortable.
+    const blockMenu=document.createElement('div');
+    blockMenu.className='checklist-block-menu';
+    blockMenu.hidden=true;
+    document.body.appendChild(blockMenu);
+    let blockMenuId=null,blockMenuMode='main',blockMenuSearch='';
+    const blockColors=['default','gray','brown','orange','yellow','green','blue','purple','pink','red'];
+    function closeBlockMenu(){
+      blockMenu.hidden=true;blockMenuId=null;blockMenuMode='main';
+      root.querySelectorAll('.block-menu-active').forEach(el=>el.classList.remove('block-menu-active'));
+    }
+    function renderBlockMenu(){
+      const b=blocks.find(x=>x.id===blockMenuId);
+      if(!b){closeBlockMenu();return;}
+      const button=(action,text,shortcut='')=>
+        '<button type="button" data-block-action="'+action+'"><span>'+text+'</span><small>'+shortcut+'</small></button>';
+      if(blockMenuMode==='colors'){
+        blockMenu.innerHTML='<div class="block-menu-subheading"><button type="button" data-block-action="back">‹</button><strong>Color</strong></div>'+
+          '<div class="block-menu-label">TEXT COLOR</div>'+
+          blockColors.map(color=>button('text:'+color,'<span class="block-color-swatch text" style="color:'+(markPalette[color]||'inherit')+'">A</span> '+color[0].toUpperCase()+color.slice(1)+' text')).join('')+
+          '<div class="block-menu-label">BACKGROUND COLOR</div>'+
+          blockColors.map(color=>button('background:'+color,'<span class="block-color-swatch" style="background:'+(backgroundPalette[color]||'transparent')+'"></span> '+color[0].toUpperCase()+color.slice(1)+' background')).join('');
+      }else if(blockMenuMode==='turn'){
+        blockMenu.innerHTML='<div class="block-menu-subheading"><button type="button" data-block-action="back">‹</button><strong>Turn into</strong></div>'+
+          types.map(t=>button('type:'+t.id,safe(t.symbol)+'　'+safe(t.title))).join('');
+      }else{
+        blockMenu.innerHTML='<input class="block-menu-search" placeholder="Search actions…" aria-label="Search block actions" value="'+safe(blockMenuSearch)+'" />'+
+          '<div class="block-menu-label">'+safe(types.find(t=>t.id===b.type)?.title||'Text')+'</div>'+
+          button('turn','⇄　Turn into','›')+
+          button('colors','▤　Color','›')+
+          '<div class="block-menu-separator"></div>'+
+          button('duplicate','▢　Duplicate','Ctrl+D')+
+          button('move-up','↑　Move up','')+
+          button('move-down','↓　Move down','')+
+          button('delete','♧　Delete','Del')+
+          '<div class="block-menu-label">BLOCK</div>'+
+          '<div class="block-menu-info">'+safe(b.text.trim()||'Empty block')+'</div>';
+      }
+    }
+    function openBlockMenu(id,handle){
+      if(blockMenuId===id&&!blockMenu.hidden){closeBlockMenu();return;}
+      closeBlockMenu();blockMenuId=id;blockMenuMode='main';blockMenuSearch='';
+      renderBlockMenu();blockMenu.hidden=false;
+      handle.closest('.checklist-line')?.classList.add('block-menu-active');
+      const rect=handle.getBoundingClientRect();
+      const w=268;
+      blockMenu.style.left=Math.min(innerWidth-w-12,Math.max(12,rect.right+9))+'px';
+      blockMenu.style.top=Math.max(8,Math.min(rect.top,innerHeight-Math.min(blockMenu.scrollHeight,490)-12))+'px';
+    }
+    function deleteChecklistBlock(id){
+      const index=blocks.findIndex(b=>b.id===id);
+      if(index<0)return;
+      const next=blocks[index+1]?.id||blocks[index-1]?.id||null;
+      pendingUndoFocus={id:next||id,offset:0};
+      blocks.splice(index,1);closeBlockMenu();
+      renderChecklist(true);scheduleSave(true);
+      if(next)requestAnimationFrame(()=>focusBlockAt(next,0));
+    }
+    blockMenu.addEventListener('click',event=>{
+      const button=event.target.closest('[data-block-action]');if(!button)return;
+      const action=button.dataset.blockAction;
+      const b=blocks.find(x=>x.id===blockMenuId);
+      if(!b)return;
+      if(action==='back'){blockMenuMode='main';renderBlockMenu();return;}
+      if(action==='colors'||action==='turn'){
+        blockMenuMode=action;renderBlockMenu();return;
+      }
+      if(action==='delete'){deleteChecklistBlock(b.id);return;}
+      if(action==='duplicate'){
+        const clone=normalizeBlock({...b,id:uniqueId(),createdAt:Date.now()},blocks.length);
+        const index=blocks.findIndex(x=>x.id===b.id);
+        blocks.splice(index+1,0,clone);
+        closeBlockMenu();renderChecklist(true);scheduleSave(true);
+        requestAnimationFrame(()=>focusBlockAt(clone.id,clone.text.length));
+        return;
+      }
+      if(action.startsWith('type:')){
+        pendingUndoFocus={id:b.id,offset:0};
+        b.type=normalizedType(action.slice(5));b.checked=false;
+        b.detailsOpen=['todoList','todoNote'].includes(b.type);
+        b.detailsMode=b.type==='todoList'?'tasks':'notes';
+      }else if(action.startsWith('text:')||action.startsWith('background:')){
+        pendingUndoFocus={id:b.id,offset:0};
+        const [which,color]=action.split(':');
+        if(!blockColors.includes(color))return;
+        if(which==='text')b.blockColor=color;
+        else b.blockBackground=color;
+      }else if(action==='move-up'||action==='move-down'){
+        const index=blocks.findIndex(x=>x.id===b.id);
+        const next=index+(action==='move-up'?-1:1);
+        if(next<0||next>=blocks.length)return;
+        [blocks[index],blocks[next]]=[blocks[next],blocks[index]];
+        pendingUndoFocus={id:b.id,offset:0};
+      }else return;
+      closeBlockMenu();renderChecklist(true);scheduleSave(true);
+    });
+    blockMenu.addEventListener('input',event=>{
+      if(!event.target.matches('.block-menu-search'))return;
+      const query=event.target.value.trim().toLowerCase();
+      blockMenu.querySelectorAll('[data-block-action]').forEach(item=>{
+        item.hidden=!item.textContent.toLowerCase().includes(query);
+      });
+    });
+    document.addEventListener('pointerdown',event=>{
+      if(!blockMenu.hidden&&!blockMenu.contains(event.target)&&!event.target.closest('.checklist-handle'))closeBlockMenu();
+    });
     function renderChecklist(force=false){
       if(!root)return;
       // A blank document opens with a real editable paragraph, not a button.
@@ -1394,6 +1501,12 @@
       const collapse=target.closest('[data-collapse]');
       const insert=target.closest('[data-insert]');
       const dateBadge=target.closest('[data-date-badge]');
+      const handle=target.closest('.checklist-handle');
+      if(handle){
+        const line=handle.closest('.checklist-line');
+        if(line)openBlockMenu(line.dataset.id,handle);
+        return;
+      }
       if(target.closest('[data-date-mention]')){
         // Pointer and keyboard capture already opened the picker; don't reopen on click.
         return;
@@ -1433,7 +1546,7 @@
         const block=blocks.find(x=>x.id===mode.dataset.id);
         if(block){block.detailsMode=mode.dataset.detailsMode;renderChecklist(true);scheduleSave(true);}
       }else if(deletion){
-        blocks=blocks.filter(x=>x.id!==deletion.dataset.delete);renderChecklist(true);scheduleSave(true);
+        deleteChecklistBlock(deletion.dataset.delete);
       }else if(collapse){
         const block=blocks.find(x=>x.id===collapse.dataset.collapse);
         if(block){
@@ -1478,7 +1591,11 @@
     document.addEventListener('keydown',event=>{
       if(!user||tab!=='checklist'||!root.isConnected)return;
       const inside=root.contains(document.activeElement)||root.contains(event.target);
-      if(!inside&&!allBlocksSelected)return;
+      // Block menu deletion leaves focus on the menu: Undo must still work
+      // when the checklist itself does not currently own keyboard focus.
+      const undoKey=(event.ctrlKey||event.metaKey)&&!event.altKey&&
+        ['z','y'].includes(event.key.toLowerCase());
+      if(!inside&&!allBlocksSelected&&!undoKey)return;
       const mod=event.ctrlKey||event.metaKey;
       const key=event.key.toLowerCase();
       if(mod&&!event.altKey&&key==='a'){
