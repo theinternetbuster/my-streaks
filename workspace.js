@@ -175,7 +175,7 @@
       const index=afterId?blocks.findIndex(x=>x.id===afterId):-1;
       if(index>=0)blocks.splice(index+1,0,b);else blocks.push(b);
       renderChecklist(true);scheduleSave(true);
-      requestAnimationFrame(()=>focusBlock(b.id));
+      if(fromSuggestion)requestAnimationFrame(()=>focusBlockAt(b.id,b.text.length));
       return b;
     }
     function focusBlock(id,atEnd=true){
@@ -231,6 +231,10 @@
     // Due dates are explicit: users type @today/@tomorrow or choose a date.
     // Nothing is displayed on a plain task until a date has been assigned.
     let dateTargetId=null,dateSuggestionId=null,dateViewMonth=null;
+    const dateScrim=document.createElement('div');
+    dateScrim.className='checklist-date-scrim';dateScrim.hidden=true;
+    document.body.appendChild(dateScrim);
+    const isMobileDate=()=>window.matchMedia('(max-width:799px)').matches;
     const dateMenu=document.createElement('div');
     dateMenu.className='checklist-date-menu';
     dateMenu.setAttribute('role','dialog');
@@ -240,12 +244,20 @@
     const localDay=(delta=0)=>{
       const d=new Date();d.setHours(12,0,0,0);d.setDate(d.getDate()+delta);return key(d);
     };
+    const nextWeekday=day=>{
+      const current=new Date();current.setHours(12,0,0,0);
+      let gap=(day-current.getDay()+7)%7;
+      if(gap===0)gap=7;
+      return localDay(gap);
+    };
+    const weekdayNames=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
     const dateLabel=date=>{
       if(!date)return '';
       return new Date(date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});
     };
     function closeDateMenu(){
-      dateMenu.hidden=true;dateTargetId=null;dateSuggestionId=null;
+      dateMenu.hidden=true;dateScrim.hidden=true;dateMenu.classList.remove('is-sheet','is-suggestion');
+      dateTargetId=null;dateSuggestionId=null;
     }
     function renderDateCalendar(){
       if(!dateViewMonth)return '';
@@ -275,21 +287,28 @@
         const selected=b.dueDate?new Date(b.dueDate+'T12:00:00'):new Date();
         dateViewMonth=new Date(selected.getFullYear(),selected.getMonth(),1);
       }
-      dateMenu.innerHTML='<div class="checklist-date-menu-title">'+(query?'ADD A DATE':'DUE DATE')+'</div>'+
+      const suggestion=!!query||dateSuggestionId===id;
+      dateMenu.classList.toggle('is-suggestion',suggestion);
+      dateMenu.classList.toggle('is-sheet',isMobileDate()&&!suggestion);
+      dateMenu.innerHTML='<div class="checklist-date-sheet-handle"></div><div class="checklist-date-menu-title">'+(query?'ADD A DATE':'Date')+
+        '<button type="button" class="checklist-date-close" aria-label="Close date picker">×</button></div>'+
         '<div class="checklist-date-quick">'+
         '<button type="button" data-date-quick="today">Today <span>'+dateLabel(localDay())+'</span></button>'+
         '<button type="button" data-date-quick="tomorrow">Tomorrow <span>'+dateLabel(localDay(1))+'</span></button>'+
-        '<button type="button" data-date-quick="week">Next week <span>'+dateLabel(localDay(7))+'</span></button>'+
+        '<button type="button" data-date-quick="week">Next week <span>'+dateLabel(localDay(7))+'</span></button>'+ 
+        weekdayNames.map((day,i)=>'<button type="button" data-date-quick="day'+i+'">'+day+' <span>'+dateLabel(nextWeekday(i))+'</span></button>').join('')+
         (b.dueDate?'<button type="button" data-date-quick="clear">Clear date</button>':'')+
         '</div><div class="checklist-date-custom">'+renderDateCalendar()+
         '<label for="checklistCustomDate">Or enter a date</label>'+
         '<input id="checklistCustomDate" type="date" value="'+safe(b.dueDate||localDay())+'" aria-label="Custom due date"/></div>';
       dateMenu.hidden=false;
+      dateScrim.hidden=!(isMobileDate()&&!suggestion);
       if(query){
         const q=query.toLowerCase().replace(/\s/g,'');
         let count=0;
         dateMenu.querySelectorAll('[data-date-quick]').forEach(button=>{
-          const keyword=button.dataset.dateQuick==='week'?'nextweek':button.dataset.dateQuick;
+          const keyword=button.dataset.dateQuick==='week'?'nextweek':
+            button.dataset.dateQuick.startsWith('day')?weekdayNames[Number(button.dataset.dateQuick.slice(3))].toLowerCase():button.dataset.dateQuick;
           const match=keyword.startsWith(q)&&button.dataset.dateQuick!=='clear';
           button.hidden=!match;if(match)count++;
         });
@@ -302,9 +321,15 @@
         const range=sel.getRangeAt(0).cloneRange();range.collapse(true);
         rect=range.getClientRects()[0]||rect;
       }
-      const width=285,height=450;
-      dateMenu.style.left=Math.max(12,Math.min(rect?.left||12,innerWidth-width-12))+'px';
-      dateMenu.style.top=Math.max(12,Math.min((rect?.bottom||80)+7,innerHeight-height-12))+'px';
+      if(isMobileDate()&&!suggestion){
+        document.activeElement?.closest?.('.checklist-editor')?.blur();
+        dateMenu.style.left='0';dateMenu.style.top='auto';dateMenu.style.maxHeight='';
+      }else{
+        const width=285,height=suggestion?250:450;
+        dateMenu.style.left=Math.max(12,Math.min(rect?.left||12,innerWidth-width-12))+'px';
+        dateMenu.style.top=Math.max(12,Math.min((rect?.bottom||80)+7,innerHeight-height-12))+'px';
+        dateMenu.style.maxHeight='';
+      }
     }
     function suggestDate(field,b){
       const caret=editorCaretOffset(field);
@@ -316,20 +341,27 @@
     }
     function applyDueDate(id,date,fromSuggestion=false){
       const b=blocks.find(x=>x.id===id);if(!b)return;
-      const token=date?('@'+(date===localDay()?'Today':date===localDay(1)?'Tomorrow':dateLabel(date))):'';
+      const existing=b.text.match(/@(Today|Tomorrow|[A-Z][a-z]+|[A-Z][a-z]{2} \d{1,2})/i);
+      const oldDay=existing?.[1]||'';
+      const sameWeekday=weekdayNames.some(day=>day.toLowerCase()===oldDay.toLowerCase())&&
+        date===nextWeekday(weekdayNames.findIndex(day=>day.toLowerCase()===oldDay.toLowerCase()));
+      const token=date?('@'+(date===localDay()?'Today':date===localDay(1)?'Tomorrow':
+        sameWeekday?oldDay:dateLabel(date))):'';
       if(fromSuggestion){
         b.text=b.text.replace(/@[a-z ]*$/i,token);
-      }else if(/@(Today|Tomorrow|[A-Z][a-z]{2} \d{1,2})/i.test(b.text)){
-        b.text=b.text.replace(/@(Today|Tomorrow|[A-Z][a-z]{2} \d{1,2})/i,token);
+      }else if(/@(Today|Tomorrow|[A-Z][a-z]+|[A-Z][a-z]{2} \d{1,2})/i.test(b.text)){
+        b.text=b.text.replace(/@(Today|Tomorrow|[A-Z][a-z]+|[A-Z][a-z]{2} \d{1,2})/i,token);
       }
       b.dueDate=date||'';
       closeDateMenu();renderChecklist(true);scheduleSave(true);
       requestAnimationFrame(()=>focusBlock(b.id));
     }
+    dateScrim.addEventListener('click',closeDateMenu);
     dateMenu.addEventListener('pointerdown',e=>{
       if(e.target.closest('[data-date-quick]'))e.preventDefault();
     });
     dateMenu.addEventListener('click',e=>{
+      if(e.target.closest('.checklist-date-close')){closeDateMenu();return;}
       const day=e.target.closest('[data-date-day]');
       if(day&&dateTargetId){
         applyDueDate(dateTargetId,day.dataset.dateDay,!!dateSuggestionId);return;
@@ -345,7 +377,8 @@
       const button=e.target.closest('[data-date-quick]');
       if(!button||!dateTargetId)return;
       const value=button.dataset.dateQuick;
-      const date=value==='today'?localDay():value==='tomorrow'?localDay(1):value==='week'?localDay(7):'';
+      const date=value==='today'?localDay():value==='tomorrow'?localDay(1):value==='week'?localDay(7):
+        value.startsWith('day')?nextWeekday(Number(value.slice(3))):'';
       applyDueDate(dateTargetId,date,!!dateSuggestionId);
     });
     dateMenu.addEventListener('change',e=>{
@@ -353,7 +386,7 @@
         applyDueDate(dateTargetId,e.target.value,!!dateSuggestionId);
     });
     document.addEventListener('pointerdown',e=>{
-      if(!dateMenu.hidden&&!dateMenu.contains(e.target)&&!e.target.closest('[data-date-badge]'))closeDateMenu();
+      if(!dateMenu.hidden&&!dateMenu.contains(e.target)&&!e.target.closest('[data-date-mention]'))closeDateMenu();
     });
     function applyCommand(type){
       const id=slashFor;
