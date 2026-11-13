@@ -347,10 +347,17 @@ function renderReorderList(){
    const id=button.dataset.delete;
    const habit=habits.find(h=>h.id===id);
    if(!habit||!confirm('Delete “'+habit.name+'” and all its history? This cannot be undone.'))return;
+   // Remove the card from the current rearrange view as soon as the
+   // database confirms deletion; do not require the screen to be reloaded.
    await withBusy(async()=>{
      await deleteDoc(habitDoc(id));
+     habits=habits.filter(h=>h.id!==id);
+     stagedOrder=stagedOrder.filter(entry=>entry!==id);
+     if(selectedId===id)selectedId=null;
+     renderReorderList();
+     renderDashboard();
+     workspace?.onHabitsChange();
      showToast('Habit deleted');
-     // Firebase subscription will refresh this grid, excluding the deleted habit.
    });
  }));
  list.querySelectorAll('.reorder-card').forEach(card=>card.addEventListener('keydown',e=>{
