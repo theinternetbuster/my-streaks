@@ -579,6 +579,14 @@
       if(formatApplying||formatInteracting)return;
       const selection=currentEditorSelection();
       if(selection&&selection.end>selection.start){
+        const changed=!formatRange||selection.id!==formatRange.id||
+          selection.start!==formatRange.start||selection.end!==formatRange.end;
+        if(changed){
+          // A new highlight starts at the main toolbar, never inside a
+          // previously open color or block-type submenu.
+          formatToolbar.querySelector('.fmt-dropdown').hidden=true;
+          formatToolbar.querySelector('.fmt-dropdown').dataset.mode='';
+        }
         formatRange=selection;activeFormatId=selection.id;
         placeFormatToolbar();
       }else{
@@ -598,7 +606,23 @@
       }
     });
     root.addEventListener('keydown',event=>{
-      if(!(event.ctrlKey||event.metaKey)||event.altKey||event.shiftKey)return;
+      // Notion-style keyboard shortcut to remove all formatting in selection.
+      if((event.ctrlKey||event.metaKey)&&event.altKey&&event.key==='\\'){
+        const selection=currentEditorSelection();
+        if(selection&&selection.end>selection.start){
+          event.preventDefault();formatRange=selection;activeFormatId=selection.id;clearSelectedFormat();
+        }
+        return;
+      }
+      if((event.ctrlKey||event.metaKey)&&event.shiftKey&&event.key.toLowerCase()==='h'){
+        const selection=currentEditorSelection();
+        if(selection&&selection.end>selection.start){
+          event.preventDefault();formatRange=selection;activeFormatId=selection.id;
+          placeFormatToolbar();showFormatDropdown('colors');
+        }
+        return;
+      }
+      if(!(event.ctrlKey||event.metaKey)||event.altKey)return;
       const key=event.key.toLowerCase();
       const kind=!event.shiftKey&&key==='b'?'bold':!event.shiftKey&&key==='i'?'italic':
         !event.shiftKey&&key==='u'?'underline':event.shiftKey&&key==='s'?'strike':null;
@@ -1363,22 +1387,9 @@
       }else if(dateBadge){
         openDateMenu(dateBadge.dataset.dateBadge,dateBadge);
       }else if(target.closest('.checklist-editor[data-block-id]')){
-        const editor=target.closest('.checklist-editor');
-        const block=blocks.find(b=>b.id===editor.dataset.blockId);
-        if(block?.dueDate){
-          let pos=editorCaretOffset(editor);
-          // On iOS, the click can precede the browser updating the caret.
-          // Use the finger position for an accurate tap on @Today.
-          const hit=document.caretRangeFromPoint?.(e.clientX,e.clientY);
-          if(hit&&editor.contains(hit.startContainer)){
-            const range=document.createRange();
-            range.selectNodeContents(editor);
-            range.setEnd(hit.startContainer,hit.startOffset);
-            pos=range.toString().length;
-          }
-          const tokens=[...block.text.matchAll(/@(Today|Tomorrow|Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|[A-Z][a-z]{2} \d{1,2})/gi)];
-          if(tokens.some(t=>pos>=t.index&&pos<=t.index+t[0].length))openDateMenu(block.id,editor);
-        }
+        // Clicks adjacent to an @date must edit text normally. Only tapping
+        // the actual [data-date-mention] control opens the date picker.
+        return;
       }else if(insert){
         // Avoid a second insertion from Safari's synthetic click after touch.
         if(Date.now()-touchInsertTime<650)return;
