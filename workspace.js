@@ -251,6 +251,18 @@
       return localDay(gap);
     };
     const weekdayNames=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    const relativeWeekday=(day,shift)=>{
+      const today=new Date(localDay()+'T12:00:00');
+      const monday=(today.getDay()+6)%7;
+      return localDay(-monday+shift*7+(day+6)%7);
+    };
+    const dateFromChoice=value=>value==='today'?localDay():value==='yesterday'?localDay(-1):value==='tomorrow'?localDay(1):value==='week'?localDay(7):
+      value.startsWith('last')?relativeWeekday(Number(value.slice(4)),-1):
+      value.startsWith('next')?relativeWeekday(Number(value.slice(4)),1):
+      value.startsWith('day')?nextWeekday(Number(value.slice(3))):'';
+    const choiceName=value=>value==='week'?'nextweek':value.startsWith('last')?'last'+weekdayNames[Number(value.slice(4))].toLowerCase():
+      value.startsWith('next')?'next'+weekdayNames[Number(value.slice(4))].toLowerCase():
+      value.startsWith('day')?weekdayNames[Number(value.slice(3))].toLowerCase():value;
     const relativeDateMention=date=>{
       if(!date)return '';
       const base=new Date(localDay()+'T12:00:00');
@@ -562,10 +574,13 @@
         '<div class="checklist-date-sheet-handle"></div><div class="checklist-date-menu-title">'+(query?'ADD A DATE':'Date')+
         '<button type="button" class="checklist-date-close" aria-label="Close date picker">×</button></div>'+
         '<div class="checklist-date-quick">'+
-        '<button type="button" data-date-quick="today">Today <span>'+dateLabel(localDay())+'</span></button>'+
+        '<button type="button" data-date-quick="today">Today <span>'+dateLabel(localDay())+'</span></button>'+ 
+        '<button type="button" data-date-quick="yesterday">Yesterday <span>'+dateLabel(localDay(-1))+'</span></button>'+
         '<button type="button" data-date-quick="tomorrow">Tomorrow <span>'+dateLabel(localDay(1))+'</span></button>'+
         '<button type="button" data-date-quick="week">Next week <span>'+dateLabel(localDay(7))+'</span></button>'+ 
         weekdayNames.map((day,i)=>'<button type="button" data-date-quick="day'+i+'">'+day+' <span>'+dateLabel(nextWeekday(i))+'</span></button>').join('')+
+        weekdayNames.map((day,i)=>'<button type="button" data-date-quick="last'+i+'">Last '+day+' <span>'+dateLabel(relativeWeekday(i,-1))+'</span></button>').join('')+
+        weekdayNames.map((day,i)=>'<button type="button" data-date-quick="next'+i+'">Next '+day+' <span>'+dateLabel(relativeWeekday(i,1))+'</span></button>').join('')+
         (b.dueDate?'<button type="button" data-date-quick="clear">Clear date</button>':'')+
         '</div><div class="checklist-date-custom">'+renderDateCalendar()+
         '<label for="checklistCustomDate">Or enter a date</label>'+
@@ -577,8 +592,7 @@
         const q=query.toLowerCase().replace(/\s/g,'');
         let count=0;
         dateMenu.querySelectorAll('[data-date-quick]').forEach(button=>{
-          const keyword=button.dataset.dateQuick==='week'?'nextweek':
-            button.dataset.dateQuick.startsWith('day')?weekdayNames[Number(button.dataset.dateQuick.slice(3))].toLowerCase():button.dataset.dateQuick;
+          const keyword=choiceName(button.dataset.dateQuick);
           const match=keyword.startsWith(q)&&button.dataset.dateQuick!=='clear';
           button.hidden=!match;if(match)count++;
         });
@@ -672,8 +686,7 @@
       const button=e.target.closest('[data-date-quick]');
       if(!button||!dateTargetId)return;
       const value=button.dataset.dateQuick;
-      const date=value==='today'?localDay():value==='tomorrow'?localDay(1):value==='week'?localDay(7):
-        value.startsWith('day')?nextWeekday(Number(value.slice(3))):'';
+      const date=dateFromChoice(value);
       if(value.startsWith('day'))dateMenu.dataset.chosenWeekday=weekdayNames[Number(value.slice(3))];
       applyDueDate(dateTargetId,date,!!dateSuggestionId);
     });
@@ -850,8 +863,7 @@
         }else if(dateSuggestionId===editor.dataset.blockId&&!dateMenu.hidden){
           const first=dateMenu.querySelector('[data-date-quick]:not([hidden])');
           const choice=first?.dataset.dateQuick||'today';
-          const date=choice==='tomorrow'?localDay(1):choice==='week'?localDay(7):
-            choice.startsWith('day')?nextWeekday(Number(choice.slice(3))):localDay();
+          const date=dateFromChoice(choice)||localDay();
           if(choice.startsWith('day'))dateMenu.dataset.chosenWeekday=weekdayNames[Number(choice.slice(3))];
           applyDueDate(editor.dataset.blockId,date,true);
         }else insertChecklistParagraph(editor);
@@ -1003,12 +1015,11 @@
           const q=(b.text.slice(0,editorCaretOffset(field)).match(/@([a-z ]*)$/i)?.[1]||'').trim().toLowerCase().replace(/\s/g,'');
           const option=[...dateMenu.querySelectorAll('[data-date-quick]:not([hidden])')].find(x=>{
             const value=x.dataset.dateQuick;
-            const name=value==='week'?'nextweek':value.startsWith('day')?weekdayNames[Number(value.slice(3))].toLowerCase():value;
+            const name=choiceName(value);
             return name.startsWith(q);
           });
           const value=option?.dataset.dateQuick||'today';
-          const date=value==='tomorrow'?localDay(1):value==='week'?localDay(7):
-            value.startsWith('day')?nextWeekday(Number(value.slice(3))):localDay();
+          const date=dateFromChoice(value)||localDay();
           if(value.startsWith('day'))dateMenu.dataset.chosenWeekday=weekdayNames[Number(value.slice(3))];
           applyDueDate(id,date,true);
           return;
