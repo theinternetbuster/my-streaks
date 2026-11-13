@@ -1757,6 +1757,18 @@
       touchInsertTime=Date.now();
       addBlock(before.id,'text','');
     },true);
+    // The space immediately AFTER a date is for typing, not opening the
+    // calendar. Explicitly focus this editable landing point on iPhone.
+    root.addEventListener('pointerdown',event=>{
+      if(event.pointerType!=='touch')return;
+      const caret=event.target.closest?.('[data-date-caret]');
+      if(!caret)return;
+      const b=blocks.find(x=>x.id===caret.dataset.dateCaret);
+      if(!b)return;
+      event.preventDefault();
+      event.stopPropagation();
+      focusBlockAt(b.id,b.text.length);
+    },true);
     // Date mentions are atomic inline controls; tapping never starts text editing.
     root.addEventListener('pointerdown',event=>{
       const token=event.target.closest?.('[data-date-mention]');
