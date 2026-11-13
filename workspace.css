@@ -1666,3 +1666,14 @@ html[data-theme="light"] .checklist-block-menu .block-color-menu-header{
 .checklist-page .checklist-line.checklist-child.block-is-selected{
  background:rgba(48,113,197,.33)!important;
 }
+
+/* datehover36: a chosen block background never disappears on hover/focus.
+   Blue explicit block selection remains the higher-priority state. */
+.checklist-page .checklist-line:not(.block-is-selected):hover,
+.checklist-page .checklist-line:not(.block-is-selected):focus-within,
+.checklist-page .checklist-line:not(.block-is-selected).block-menu-active{
+ background:var(--checklist-block-bg,transparent)!important;
+}
+.checklist-page .checklist-line:not(.block-is-selected) .checklist-editor{
+ color:var(--checklist-block-color,inherit);
+}
