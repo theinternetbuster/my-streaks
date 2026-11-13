@@ -934,7 +934,8 @@
       const insert=target.closest('[data-insert]');
       const dateBadge=target.closest('[data-date-badge]');
       if(target.closest('[data-date-mention]')){
-        openDateMenu(target.closest('[data-date-mention]').dataset.dateMention,target.closest('[data-date-mention]'));
+        // Pointer and keyboard capture already opened the picker; don't reopen on click.
+        return;
       }else if(dateBadge){
         openDateMenu(dateBadge.dataset.dateBadge,dateBadge);
       }else if(target.closest('.checklist-editor[data-block-id]')){
