@@ -175,12 +175,7 @@
       const index=afterId?blocks.findIndex(x=>x.id===afterId):-1;
       if(index>=0)blocks.splice(index+1,0,b);else blocks.push(b);
       renderChecklist(true);scheduleSave(true);
-      if(fromSuggestion)requestAnimationFrame(()=>{
-        const field=root.querySelector('.checklist-editor[data-block-id="'+b.id+'"]');
-        if(!field)return;
-        field.focus();const sel=window.getSelection(),range=document.createRange();
-        range.selectNodeContents(field);range.collapse(false);sel.removeAllRanges();sel.addRange(range);
-      });
+      requestAnimationFrame(()=>focusBlockAt(b.id,b.text.length));
       return b;
     }
     function focusBlock(id,atEnd=true){
@@ -271,6 +266,7 @@
     }
     function closeDateMenu(){
       dateMenu.hidden=true;dateScrim.hidden=true;dateMenu.classList.remove('is-sheet','is-suggestion');
+      document.body.classList.remove('checklist-date-sheet-open');
       dateTargetId=null;dateSuggestionId=null;
     }
     function renderDateCalendar(){
@@ -293,6 +289,33 @@
         '<div class="checklist-date-weekdays">'+['S','M','T','W','T','F','S'].map(x=>'<span>'+x+'</span>').join('')+'</div>'+
         '<div class="checklist-date-grid">'+cells+'</div>';
     }
+    function renderMobileDateSheet(b){
+      const current=b.dueDate||localDay();
+      return '<div class="checklist-date-sheet-handle" aria-hidden="true"></div>'+
+        '<div class="checklist-date-sheet-top">'+
+          '<button type="button" class="checklist-date-help" aria-label="Date help" title="Select a date or clear it">?</button>'+
+          '<h2 id="checklistDateSheetHeading">Date</h2>'+
+          '<button type="button" class="checklist-date-close" aria-label="Close date picker">×</button>'+
+        '</div>'+
+        '<div class="checklist-date-sheet-scroll">'+
+          '<div class="checklist-date-sheet-card checklist-date-input-card">'+
+            '<input id="checklistCustomDate" type="date" value="'+safe(current)+'" aria-label="Due date"/>'+
+          '</div>'+
+          '<section class="checklist-date-sheet-card checklist-date-calendar-slot" aria-label="Choose date">'+renderDateCalendar()+'</section>'+
+          '<div class="checklist-date-sheet-card checklist-date-option-card">'+
+            '<label class="checklist-date-option-row">End date <input type="checkbox" data-date-end-toggle '+(b.endDate?'checked':'')+' /></label>'+
+            (b.endDate?'<label class="checklist-date-option-row">End on <input type="date" data-date-end-value value="'+safe(b.endDate)+'" min="'+safe(current)+'" /></label>':'')+
+            '<button type="button" class="checklist-date-option-row" data-date-format-toggle>Date format <span>'+
+              (b.dateFormat==='absolute'?'Absolute':'Relative')+' ›</span></button>'+
+            '<label class="checklist-date-option-row">Include time <input type="checkbox" data-date-time-toggle '+(b.includeTime?'checked':'')+' /></label>'+
+            (b.includeTime?'<label class="checklist-date-option-row">Time <input type="time" data-date-time-value value="'+safe(b.dueTime||'09:00')+'" /></label>':'')+
+            '<div class="checklist-date-option-row checklist-date-remind-disabled" title="Reminders require notification support">Remind <span>Not available on web</span></div>'+
+          '</div>'+
+          '<div class="checklist-date-sheet-card checklist-date-clear-card">'+
+            '<button type="button" data-date-quick="clear">Clear</button>'+
+          '</div>'+
+        '</div>';
+    }
     function openDateMenu(id,anchorEl=null,query=''){
       const b=blocks.find(x=>x.id===id);
       if(!b)return;
@@ -304,7 +327,9 @@
       const suggestion=!!query||dateSuggestionId===id;
       dateMenu.classList.toggle('is-suggestion',suggestion);
       dateMenu.classList.toggle('is-sheet',isMobileDate()&&!suggestion);
-      dateMenu.innerHTML='<div class="checklist-date-sheet-handle"></div><div class="checklist-date-menu-title">'+(query?'ADD A DATE':'Date')+
+      const mobileSheet=isMobileDate()&&!suggestion;
+      dateMenu.innerHTML=mobileSheet?renderMobileDateSheet(b):
+        '<div class="checklist-date-sheet-handle"></div><div class="checklist-date-menu-title">'+(query?'ADD A DATE':'Date')+
         '<button type="button" class="checklist-date-close" aria-label="Close date picker">×</button></div>'+
         '<div class="checklist-date-quick">'+
         '<button type="button" data-date-quick="today">Today <span>'+dateLabel(localDay())+'</span></button>'+
@@ -316,7 +341,8 @@
         '<label for="checklistCustomDate">Or enter a date</label>'+
         '<input id="checklistCustomDate" type="date" value="'+safe(b.dueDate||localDay())+'" aria-label="Custom due date"/></div>';
       dateMenu.hidden=false;
-      dateScrim.hidden=!(isMobileDate()&&!suggestion);
+      dateScrim.hidden=!mobileSheet;
+      document.body.classList.toggle('checklist-date-sheet-open',mobileSheet);
       if(query){
         const q=query.toLowerCase().replace(/\s/g,'');
         let count=0;
@@ -385,9 +411,9 @@
       const navigation=e.target.closest('[data-date-shift]');
       if(navigation&&dateTargetId){
         dateViewMonth.setMonth(dateViewMonth.getMonth()+Number(navigation.dataset.dateShift));
-        const grid=dateMenu.querySelector('.checklist-date-custom');
-        if(grid)grid.innerHTML=renderDateCalendar()+
-          '<label for="checklistCustomDate">Or enter a date</label><input id="checklistCustomDate" type="date" value="'+safe(blocks.find(b=>b.id===dateTargetId)?.dueDate||localDay())+'" aria-label="Custom due date"/>';
+        const grid=dateMenu.querySelector('.checklist-date-calendar-slot')||dateMenu.querySelector('.checklist-date-custom');
+        if(grid)grid.innerHTML=renderDateCalendar()+(grid.classList.contains('checklist-date-custom')?
+          '<label for="checklistCustomDate">Or enter a date</label><input id="checklistCustomDate" type="date" value="'+safe(blocks.find(b=>b.id===dateTargetId)?.dueDate||localDay())+'" aria-label="Custom due date"/>':'');
         return;
       }
       const button=e.target.closest('[data-date-quick]');
