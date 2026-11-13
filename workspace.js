@@ -359,6 +359,7 @@
       dateMenu.classList.toggle('is-suggestion',suggestion);
       dateMenu.classList.toggle('is-sheet',isMobileDate()&&!suggestion);
       const mobileSheet=isMobileDate()&&!suggestion;
+      dateMenu.classList.toggle('calendar-only',!mobileSheet&&!suggestion);
       dateMenu.innerHTML=mobileSheet?renderMobileDateSheet(b):
         '<div class="checklist-date-sheet-handle"></div><div class="checklist-date-menu-title">'+(query?'ADD A DATE':'Date')+
         '<button type="button" class="checklist-date-close" aria-label="Close date picker">×</button></div>'+
