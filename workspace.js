@@ -137,7 +137,7 @@
     }
     function normalizedType(t){return types.some(x=>x.id===t)?t:'text';}
     function normalizeBlock(b,i){
-      return {id:String(b.id||uniqueId()),type:normalizedType(b.type),text:String(b.text||'').slice(0,5000),checked:!!b.checked,collapsed:!!b.collapsed,detailsOpen:b.type==='todo'?false:(typeof b.detailsOpen==='boolean'?b.detailsOpen:(b.type==='todoNote'||b.type==='todoList')&&!b.collapsed),note:String(b.note||'').slice(0,10000),detailsMode:b.type==='todoList'?'tasks':'notes',subtasks:Array.isArray(b.subtasks)?b.subtasks.slice(0,40).filter(t=>t&&typeof t.text==='string').map(t=>({id:String(t.id||uniqueId()),text:String(t.text).slice(0,500),checked:!!t.checked,type:t.type==='bullet'?'bullet':'todo'})):[],dueDate:/^\d{4}-\d{2}-\d{2}$/.test(b.dueDate||'')?b.dueDate:'',endDate:/^\d{4}-\d{2}-\d{2}$/.test(b.endDate||'')?b.endDate:'',dateFormat:b.dateFormat==='absolute'?'absolute':'relative',includeTime:!!b.includeTime,dueTime:/^([01]\d|2[0-3]):[0-5]\d$/.test(b.dueTime||'')?b.dueTime:'09:00',order:Number.isFinite(b.order)?b.order:i,createdAt:Number(b.createdAt)||Date.now()};
+      return {id:String(b.id||uniqueId()),type:normalizedType(b.type),text:String(b.text||'').slice(0,5000),checked:!!b.checked,collapsed:!!b.collapsed,detailsOpen:b.type==='todo'?false:(typeof b.detailsOpen==='boolean'?b.detailsOpen:(b.type==='todoNote'||b.type==='todoList')&&!b.collapsed),note:String(b.note||'').slice(0,10000),detailsMode:b.type==='todoList'?'tasks':'notes',subtasks:Array.isArray(b.subtasks)?b.subtasks.slice(0,40).filter(t=>t&&typeof t.text==='string').map(t=>({id:String(t.id||uniqueId()),text:String(t.text).slice(0,500),checked:!!t.checked,type:t.type==='bullet'?'bullet':'todo'})):[],dueDate:/^\d{4}-\d{2}-\d{2}$/.test(b.dueDate||'')?b.dueDate:'',endDate:/^\d{4}-\d{2}-\d{2}$/.test(b.endDate||'')?b.endDate:'',dateFormat:b.dateFormat==='absolute'?'absolute':'relative',includeTime:!!b.includeTime,dueTime:/^([01]\d|2[0-3]):[0-5]\d$/.test(b.dueTime||'')?b.dueTime:'09:00',marks:Array.isArray(b.marks)?b.marks.slice(0,100).filter(m=>m&&Number.isInteger(m.start)&&Number.isInteger(m.end)&&m.start>=0&&m.end>m.start&&m.end<=String(b.text||'').length&&['bold','italic','underline','strike','color','background'].includes(m.kind)&&(!m.value||/^[a-z0-9-]{1,24}$/i.test(m.value))).map(m=>({start:m.start,end:m.end,kind:m.kind,value:m.value||''})):[],order:Number.isFinite(b.order)?b.order:i,createdAt:Number(b.createdAt)||Date.now()};
     }
     function scheduleSave(soon=false){
       if(!user)return;
@@ -285,6 +285,69 @@
       const residue=text.slice(end).match(/^(?:\s+\d{1,2})+(?=\s*$)/);
       if(residue)end+=residue[0].length;
       return {start:match.index,end,text:match[0]};
+    }
+    const markPalette={
+      default:'',gray:'#9a9a9f',brown:'#b68a72',orange:'#ee8755',yellow:'#e9b857',
+      green:'#73c494',blue:'#7eaeed',purple:'#be9df5',pink:'#e6a0be',red:'#e28b8b'
+    };
+    const backgroundPalette={
+      default:'',gray:'rgba(150,150,155,.22)',brown:'rgba(150,100,65,.27)',
+      orange:'rgba(244,112,47,.24)',yellow:'rgba(240,184,52,.25)',
+      green:'rgba(77,181,118,.23)',blue:'rgba(67,144,233,.25)',
+      purple:'rgba(152,104,222,.25)',pink:'rgba(221,99,153,.24)',red:'rgba(231,89,89,.25)'
+    };
+    const pendingTextStyle=new Map();
+    function htmlWithMarks(b){
+      const text=b.text||'',marks=b.marks||[];
+      const mention=b.dueDate?findDateMention(text):null;
+      if(!marks.length)return inlineDateText(b);
+      let html='',index=0;
+      while(index<text.length){
+        if(mention&&index===mention.start){
+          html+='<span class="checklist-date-mention" data-date-mention="'+safe(b.id)+'" contenteditable="false" role="button" tabindex="0">'+safe('@'+relativeDateMention(b.dueDate))+'</span>';
+          index=mention.end;continue;
+        }
+        if(mention&&index>mention.start&&index<mention.end){index=mention.end;continue;}
+        const active=marks.filter(m=>m.start<=index&&m.end>index);
+        const classes=active.filter(m=>['bold','italic','underline','strike'].includes(m.kind)).map(m=>'fmt-'+m.kind).join(' ');
+        const color=active.filter(m=>m.kind==='color').at(-1)?.value||'default';
+        const bg=active.filter(m=>m.kind==='background').at(-1)?.value||'default';
+        let end=index+1;
+        const sameAt=k=>{
+          const ms=marks.filter(m=>m.start<=k&&m.end>k);
+          return classes===ms.filter(m=>['bold','italic','underline','strike'].includes(m.kind)).map(m=>'fmt-'+m.kind).join(' ')&&
+            color===(ms.filter(m=>m.kind==='color').at(-1)?.value||'default')&&
+            bg===(ms.filter(m=>m.kind==='background').at(-1)?.value||'default');
+        };
+        while(end<text.length&&(!mention||end<mention.start||end>=mention.end)&&sameAt(end))end++;
+        const style=(markPalette[color]?'color:'+markPalette[color]+';':'')+
+          (backgroundPalette[bg]?'background-color:'+backgroundPalette[bg]+';':'');
+        html+=active.length?'<span class="'+safe(classes)+'" style="'+style+'">'+safe(text.slice(index,end))+'</span>':safe(text.slice(index,end));
+        index=end;
+      }
+      return html;
+    }
+    function updateMarksForEdit(b,newText){
+      const old=b.text||'',marks=b.marks||[];
+      if(old===newText)return;
+      let prefix=0;
+      while(prefix<old.length&&prefix<newText.length&&old[prefix]===newText[prefix])prefix++;
+      let tail=0;
+      while(tail<old.length-prefix&&tail<newText.length-prefix&&old[old.length-tail-1]===newText[newText.length-tail-1])tail++;
+      const oldEnd=old.length-tail,newEnd=newText.length-tail;
+      const delta=newEnd-oldEnd;
+      b.marks=marks.map(m=>{
+        if(m.end<=prefix)return m;
+        if(m.start>=oldEnd)return {...m,start:m.start+delta,end:m.end+delta};
+        // Any style overlapping newly typed text expands over the insertion.
+        return {...m,start:Math.min(m.start,prefix),end:Math.max(prefix,m.end+delta)};
+      }).filter(m=>m.start>=0&&m.end>m.start&&m.end<=newText.length);
+      const pending=pendingTextStyle.get(b.id);
+      if(pending&&newEnd>prefix){
+        for(const [kind,value] of Object.entries(pending)){
+          if(value&&value!=='default')b.marks.push({start:prefix,end:newEnd,kind,value:value===true?'':value});
+        }
+      }
     }
     function inlineDateText(b){
       const text=b.text||'';
@@ -579,7 +642,7 @@
         return '<div class="checklist-line checklist-type-'+b.type+(b.checked?' is-done':'')+(b.collapsed?' is-collapsed':'')+'" data-id="'+safe(b.id)+'">'+
           '<div class="checklist-line-tools"><button type="button" class="checklist-insert" data-insert="'+safe(b.id)+'" aria-label="Insert block">+</button><button type="button" class="checklist-handle" aria-label="Drag to rearrange">⠿</button></div>'+
           '<div class="checklist-line-inner">'+icon+
-          '<div class="checklist-field-group"><div class="checklist-editor" contenteditable="true" role="textbox" aria-multiline="true" data-block-id="'+safe(b.id)+'" data-placeholder="'+safe(placeholder)+'" spellcheck="true">'+inlineDateText(b)+'</div>'+
+          '<div class="checklist-field-group"><div class="checklist-editor" contenteditable="true" role="textbox" aria-multiline="true" data-block-id="'+safe(b.id)+'" data-placeholder="'+safe(placeholder)+'" spellcheck="true">'+htmlWithMarks(b)+'</div>'+
           (details?'<div class="checklist-details">'+details+'</div>':'')+'</div></div>'+
           (b.dueDate?'<span class="checklist-date-label" aria-label="Due '+safe(dateLabel(b.dueDate))+'"><span class="checklist-date-label-short">'+safe(dateLabel(b.dueDate))+'</span><span class="checklist-date-label-long">'+safe(new Date(b.dueDate+'T12:00:00').toLocaleDateString('en-US',{month:'long',day:'numeric'}))+'</span></span>':'')+
           '<button type="button" class="checklist-delete" data-delete="'+safe(b.id)+'" aria-label="Delete block">×</button></div>';
@@ -691,7 +754,9 @@
         insertChecklistParagraph(field,Math.max(0,editorCaretOffset(field)-1));
         return;
       }
-      b.text=(field.innerText||field.textContent||'').replace(/\n$/,'').slice(0,5000);
+      const nextText=(field.innerText||field.textContent||'').replace(/\n$/,'').slice(0,5000);
+      updateMarksForEdit(b,nextText);
+      b.text=nextText;
       scheduleSave();
       // Slash commands can precede existing text; inspect only the text
       // BEFORE the caret, and preserve any content after it.
