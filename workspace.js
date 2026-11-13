@@ -175,7 +175,12 @@
       const index=afterId?blocks.findIndex(x=>x.id===afterId):-1;
       if(index>=0)blocks.splice(index+1,0,b);else blocks.push(b);
       renderChecklist(true);scheduleSave(true);
-      if(fromSuggestion)requestAnimationFrame(()=>focusBlockAt(b.id,b.text.length));
+      if(fromSuggestion)requestAnimationFrame(()=>{
+        const field=root.querySelector('.checklist-editor[data-block-id="'+b.id+'"]');
+        if(!field)return;
+        field.focus();const sel=window.getSelection(),range=document.createRange();
+        range.selectNodeContents(field);range.collapse(false);sel.removeAllRanges();sel.addRange(range);
+      });
       return b;
     }
     function focusBlock(id,atEnd=true){
@@ -255,6 +260,15 @@
       if(!date)return '';
       return new Date(date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});
     };
+    function inlineDateText(b){
+      const text=b.text||'';
+      if(!b.dueDate)return safe(text);
+      const match=text.match(/@(Today|Tomorrow|Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|[A-Za-z]{3} \d{1,2})\b/i);
+      if(!match)return safe(text);
+      return safe(text.slice(0,match.index))+
+        '<span class="checklist-date-mention" data-date-mention="'+safe(b.id)+'" contenteditable="false" role="button" tabindex="0" aria-label="Edit due date '+safe(dateLabel(b.dueDate))+'">'+safe(match[0])+'</span>'+
+        safe(text.slice(match.index+match[0].length));
+    }
     function closeDateMenu(){
       dateMenu.hidden=true;dateScrim.hidden=true;dateMenu.classList.remove('is-sheet','is-suggestion');
       dateTargetId=null;dateSuggestionId=null;
@@ -345,8 +359,10 @@
       const oldDay=existing?.[1]||'';
       const sameWeekday=weekdayNames.some(day=>day.toLowerCase()===oldDay.toLowerCase())&&
         date===nextWeekday(weekdayNames.findIndex(day=>day.toLowerCase()===oldDay.toLowerCase()));
+      const dayChoice=dateMenu.dataset.chosenWeekday||'';
       const token=date?('@'+(date===localDay()?'Today':date===localDay(1)?'Tomorrow':
-        sameWeekday?oldDay:dateLabel(date))):'';
+        dayChoice|| (sameWeekday?oldDay:dateLabel(date)))):'';
+      delete dateMenu.dataset.chosenWeekday;
       if(fromSuggestion){
         b.text=b.text.replace(/@[a-z ]*$/i,token);
       }else if(/@(Today|Tomorrow|[A-Z][a-z]+|[A-Z][a-z]{2} \d{1,2})/i.test(b.text)){
@@ -379,6 +395,7 @@
       const value=button.dataset.dateQuick;
       const date=value==='today'?localDay():value==='tomorrow'?localDay(1):value==='week'?localDay(7):
         value.startsWith('day')?nextWeekday(Number(value.slice(3))):'';
+      if(value.startsWith('day'))dateMenu.dataset.chosenWeekday=weekdayNames[Number(value.slice(3))];
       applyDueDate(dateTargetId,date,!!dateSuggestionId);
     });
     dateMenu.addEventListener('change',e=>{
@@ -463,9 +480,9 @@
         return '<div class="checklist-line checklist-type-'+b.type+(b.checked?' is-done':'')+(b.collapsed?' is-collapsed':'')+'" data-id="'+safe(b.id)+'">'+
           '<div class="checklist-line-tools"><button type="button" class="checklist-insert" data-insert="'+safe(b.id)+'" aria-label="Insert block">+</button><button type="button" class="checklist-handle" aria-label="Drag to rearrange">⠿</button></div>'+
           '<div class="checklist-line-inner">'+icon+
-          '<div class="checklist-field-group"><div class="checklist-editor" contenteditable="true" role="textbox" aria-multiline="true" data-block-id="'+safe(b.id)+'" data-placeholder="'+safe(placeholder)+'" spellcheck="true">'+safe(b.text)+'</div>'+
+          '<div class="checklist-field-group"><div class="checklist-editor" contenteditable="true" role="textbox" aria-multiline="true" data-block-id="'+safe(b.id)+'" data-placeholder="'+safe(placeholder)+'" spellcheck="true">'+inlineDateText(b)+'</div>'+
           (details?'<div class="checklist-details">'+details+'</div>':'')+'</div></div>'+
-          ''+
+          (b.dueDate?'<span class="checklist-date-label" aria-label="Due '+safe(dateLabel(b.dueDate))+'">'+safe(dateLabel(b.dueDate))+'</span>':'')+
           '<button type="button" class="checklist-delete" data-delete="'+safe(b.id)+'" aria-label="Delete block">×</button></div>';
       }).join('');
       $('checklistEmpty').hidden=true;
@@ -883,6 +900,19 @@
       touchInsertTime=Date.now();
       addBlock(before.id,'text','');
     },true);
+    // Date mentions are atomic inline controls; tapping never starts text editing.
+    root.addEventListener('pointerdown',event=>{
+      const token=event.target.closest?.('[data-date-mention]');
+      if(!token)return;
+      event.preventDefault();event.stopPropagation();
+      openDateMenu(token.dataset.dateMention,token);
+    },true);
+    root.addEventListener('keydown',event=>{
+      const token=event.target.closest?.('[data-date-mention]');
+      if(token&&(event.key==='Enter'||event.key===' ')){
+        event.preventDefault();openDateMenu(token.dataset.dateMention,token);
+      }
+    },true);
     root.addEventListener('click',e=>{
       const target=e.target;
       const remove=target.closest('[data-subtask-remove]');
@@ -894,7 +924,9 @@
       const collapse=target.closest('[data-collapse]');
       const insert=target.closest('[data-insert]');
       const dateBadge=target.closest('[data-date-badge]');
-      if(dateBadge){
+      if(target.closest('[data-date-mention]')){
+        openDateMenu(target.closest('[data-date-mention]').dataset.dateMention,target.closest('[data-date-mention]'));
+      }else if(dateBadge){
         openDateMenu(dateBadge.dataset.dateBadge,dateBadge);
       }else if(target.closest('.checklist-editor[data-block-id]')){
         const editor=target.closest('.checklist-editor');
@@ -910,7 +942,7 @@
             range.setEnd(hit.startContainer,hit.startOffset);
             pos=range.toString().length;
           }
-          const tokens=[...block.text.matchAll(/@(Today|Tomorrow|[A-Z][a-z]{2} \d{1,2})/gi)];
+          const tokens=[...block.text.matchAll(/@(Today|Tomorrow|Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|[A-Z][a-z]{2} \d{1,2})/gi)];
           if(tokens.some(t=>pos>=t.index&&pos<=t.index+t[0].length))openDateMenu(block.id,editor);
         }
       }else if(insert){
