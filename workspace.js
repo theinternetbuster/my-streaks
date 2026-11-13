@@ -1198,13 +1198,23 @@
         onMove:event=>{
           const dragged=blocks.find(b=>b.id===event.dragged?.dataset.id);
           const target=blocks.find(b=>b.id===event.related?.dataset.id);
-          return !!dragged&&!!target&&dragged.parentId===target.parentId&&
-            !blocks.some(x=>x.parentId===dragged.id);
+          return !!dragged&&!!target&&dragged.parentId===target.parentId;
         },
         onEnd:()=>{
           const ids=[...root.querySelectorAll('.checklist-line')].map(x=>x.dataset.id);
-          blocks.sort((a,b)=>ids.indexOf(a.id)-ids.indexOf(b.id));
-          scheduleSave(true);
+          const index=new Map(ids.map((id,i)=>[id,i]));
+          const byOrder=(a,b)=>(index.get(a.id)??Infinity)-(index.get(b.id)??Infinity);
+          const seen=new Set(),ordered=[];
+          const append=block=>{
+            if(seen.has(block.id))return;
+            seen.add(block.id);ordered.push(block);
+            blocks.filter(b=>b.parentId===block.id).sort(byOrder).forEach(append);
+          };
+          blocks.filter(b=>!b.parentId||!blocks.some(x=>x.id===b.parentId))
+            .sort(byOrder).forEach(append);
+          blocks.forEach(append);
+          blocks=ordered;
+          renderChecklist(true);scheduleSave(true);
         }
       });
     }
