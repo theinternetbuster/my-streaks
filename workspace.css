@@ -1293,3 +1293,93 @@ html[data-theme="light"] .checklist-page .checklist-date-label{color:#8d94a2}
  html[data-theme="light"] .checklist-date-option-row input[type=time]{color-scheme:light}
  html[data-theme="light"] .checklist-date-clear-card button{color:#272727}
 }
+
+/* Refined typography: nested tasks and notes read at the same size as tasks. */
+.checklist-page .checklist-subtask>input[type="text"],
+.checklist-page .checklist-subtask>input[type="text"].completed{
+ font:450 16px/1.65 'DM Sans',sans-serif!important;
+ letter-spacing:-.005em;
+ padding:4px 5px;
+}
+.checklist-page .checklist-note-editor{
+ font-size:16px!important;line-height:1.65!important;
+}
+/* Desktop: date popover is the calendar itself, not a list of every weekday. */
+@media(min-width:800px){
+ .checklist-date-menu.calendar-only{width:302px;max-width:calc(100vw - 24px)}
+ .checklist-date-menu.calendar-only .checklist-date-quick{display:none!important}
+ .checklist-date-menu.calendar-only .checklist-date-custom{
+  margin-top:4px;padding-top:5px;border:0;
+ }
+ .checklist-date-menu.calendar-only .checklist-date-grid .checklist-date-day{
+  min-height:35px;font-size:13px!important;
+ }
+ .checklist-date-label-long{display:none!important}
+ .checklist-date-label-short{display:inline!important}
+}
+/* Date selection follows the orange My Streaks color rather than Notion blue. */
+.checklist-date-menu .checklist-date-grid .checklist-date-day.selected,
+.checklist-date-menu.is-sheet .checklist-date-grid .checklist-date-day.selected,
+html[data-theme="light"] .checklist-date-menu.is-sheet .checklist-date-grid .checklist-date-day.selected{
+ background:#ff682b!important;border-color:#ff682b!important;
+ color:#fff!important;
+}
+.checklist-date-menu.is-sheet .checklist-date-grid .checklist-date-day.today:not(.selected){
+ color:#ff682b!important;border-color:#ff682b!important;
+}
+.checklist-date-menu.is-sheet .checklist-date-option-row input[type=checkbox]:checked{background:#ff682b!important}
+/* Persistent rich text styling */
+.checklist-editor .fmt-bold{font-weight:800!important}
+.checklist-editor .fmt-italic{font-style:italic!important}
+.checklist-editor .fmt-underline{text-decoration:underline!important}
+.checklist-editor .fmt-strike{text-decoration:line-through!important}
+.checklist-format-toolbar[hidden],.checklist-format-toolbar .fmt-dropdown[hidden]{display:none!important}
+.checklist-format-toolbar{
+ position:fixed;z-index:780;
+ display:flex;align-items:center;gap:2px;padding:5px;
+ max-width:calc(100vw - 24px);
+ background:#29292c;border:1px solid #48484c;
+ color:#f1f1f4;border-radius:12px;
+ box-shadow:0 14px 40px rgba(0,0,0,.35);
+ font:500 13px 'DM Sans',sans-serif;
+}
+.checklist-format-toolbar>button{
+ flex:none;display:flex;align-items:center;justify-content:center;gap:3px;
+ min-width:32px;height:33px;padding:0 8px;
+ border:0;border-radius:7px;background:transparent;color:inherit;
+ font-size:14px;cursor:pointer;
+}
+.checklist-format-toolbar>button:hover{background:#434347}
+.checklist-format-toolbar>button.fmt-type{
+ min-width:100px;max-width:125px;overflow:hidden;font-size:12px;
+}
+.fmt-color-dot{width:9px;height:3px;background:#ff682b;display:inline-block;align-self:flex-end;margin-bottom:6px}
+.checklist-format-toolbar .fmt-dropdown{
+ position:absolute;top:calc(100% + 7px);left:0;
+ width:min(292px,calc(100vw - 24px));max-height:320px;
+ overflow-y:auto;padding:10px;border-radius:13px;
+ border:1px solid #4b4b4e;background:#29292c;
+ box-shadow:0 18px 42px #0008;z-index:2;
+}
+.fmt-menu-label{font:700 10px/1.5 'DM Sans',sans-serif;letter-spacing:.09em;color:#aaaab2;margin:5px 6px 9px}
+.fmt-dropdown>button{width:100%;padding:9px;text-align:left;color:inherit;background:transparent;border:0;border-radius:8px;cursor:pointer;font:inherit}
+.fmt-dropdown>button:hover{background:#424247}
+.fmt-swatches{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;margin:0 4px 16px}
+.fmt-swatches button{
+ display:grid;place-items:center;min-width:0;height:31px;border-radius:6px;
+ border:1px solid #64646b;background:#343439;color:#fff;
+ font-size:15px;font-weight:750;cursor:pointer;
+}
+.fmt-swatches button:hover{outline:2px solid #ff915a;outline-offset:1px}
+html[data-theme="light"] .checklist-format-toolbar,
+html[data-theme="light"] .checklist-format-toolbar .fmt-dropdown{
+ background:#fff;color:#242936;border-color:#dedfe5;box-shadow:0 15px 39px #18203726
+}
+html[data-theme="light"] .checklist-format-toolbar>button:hover,
+html[data-theme="light"] .fmt-dropdown>button:hover{background:#f2f2f5}
+html[data-theme="light"] .fmt-swatches button{background:#f8f8fa;border-color:#d9dce4;color:#222}
+@media(max-width:799px){
+ .checklist-format-toolbar{max-width:calc(100vw - 20px);gap:0;padding:3px}
+ .checklist-format-toolbar>button.fmt-type{min-width:79px;font-size:11px}
+ .checklist-format-toolbar>button{min-width:30px;padding:0 5px}
+}
