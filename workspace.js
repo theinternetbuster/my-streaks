@@ -1275,7 +1275,16 @@
       const after=b.text.slice(offset);
       b.text=before;
       const nextType=isTask?'todo':b.type==='bullet'?'bullet':'text';
-      const newBlock=addBlock(id,nextType,after,b.type==='todoList'?b.id:null);
+      // Enter on an expandable to-do creates a separate sibling task,
+      // NOT an indented child inside its dropdown. Keep the existing
+      // children attached and insert the new line after that whole family.
+      let insertAfterId=id;
+      if(b.type==='todoList'){
+        const family=descendantIds(b.id);
+        const lastFamilyBlock=blocks.filter(x=>family.has(x.id)).at(-1);
+        insertAfterId=lastFamilyBlock?.id||id;
+      }
+      const newBlock=addBlock(insertAfterId,nextType,after,b.parentId||'');
       requestAnimationFrame(()=>focusBlockAt(newBlock.id,0));
       return true;
     }
