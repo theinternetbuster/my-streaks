@@ -276,7 +276,7 @@
     function renderDateCalendar(){
       if(!dateViewMonth)return '';
       const first=new Date(dateViewMonth.getFullYear(),dateViewMonth.getMonth(),1);
-      const offset=(first.getDay()+6)%7;
+      const offset=first.getDay();
       const length=new Date(first.getFullYear(),first.getMonth()+1,0).getDate();
       const selected=blocks.find(b=>b.id===dateTargetId)?.dueDate;
       let cells='';
@@ -290,7 +290,7 @@
         first.toLocaleDateString('en-US',{month:'long',year:'numeric'})+
         '</strong><div><button type="button" data-date-shift="-1" aria-label="Previous month">‹</button>'+
         '<button type="button" data-date-shift="1" aria-label="Next month">›</button></div></div>'+
-        '<div class="checklist-date-weekdays">'+['M','T','W','T','F','S','S'].map(x=>'<span>'+x+'</span>').join('')+'</div>'+
+        '<div class="checklist-date-weekdays">'+['S','M','T','W','T','F','S'].map(x=>'<span>'+x+'</span>').join('')+'</div>'+
         '<div class="checklist-date-grid">'+cells+'</div>';
     }
     function openDateMenu(id,anchorEl=null,query=''){
@@ -482,7 +482,7 @@
           '<div class="checklist-line-inner">'+icon+
           '<div class="checklist-field-group"><div class="checklist-editor" contenteditable="true" role="textbox" aria-multiline="true" data-block-id="'+safe(b.id)+'" data-placeholder="'+safe(placeholder)+'" spellcheck="true">'+inlineDateText(b)+'</div>'+
           (details?'<div class="checklist-details">'+details+'</div>':'')+'</div></div>'+
-          (b.dueDate?'<span class="checklist-date-label" aria-label="Due '+safe(dateLabel(b.dueDate))+'">'+safe(dateLabel(b.dueDate))+'</span>':'')+
+          (b.dueDate?'<span class="checklist-date-label" aria-label="Due '+safe(dateLabel(b.dueDate))+'"><span class="checklist-date-label-short">'+safe(dateLabel(b.dueDate))+'</span><span class="checklist-date-label-long">'+safe(new Date(b.dueDate+'T12:00:00').toLocaleDateString('en-US',{month:'long',day:'numeric'}))+'</span></span>':'')+
           '<button type="button" class="checklist-delete" data-delete="'+safe(b.id)+'" aria-label="Delete block">×</button></div>';
       }).join('');
       $('checklistEmpty').hidden=true;
