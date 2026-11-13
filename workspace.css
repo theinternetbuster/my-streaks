@@ -1010,3 +1010,62 @@ html[data-theme="light"] .checklist-date-weekdays span{color:#929bad}
   .workspace-bottom-pill .workspace-bottom-highlight{z-index:2!important}
   .workspace-bottom-pill .workspace-bottom-item{z-index:3!important}
 }
+
+/* glass18 — legible content THROUGH the glass (Babbel reference).
+   Previous 15px+ blur and stacked charcoal overlays hid numbers and flames. */
+@media(max-width:799px){
+  .workspace-bottom-pill{
+    background:transparent!important;
+    border:1px solid rgba(255,255,255,.23)!important;
+    box-shadow:0 7px 20px rgba(0,0,0,.12),inset 0 1px 0 rgba(255,255,255,.20)!important;
+    -webkit-backdrop-filter:none!important;
+    backdrop-filter:none!important;
+  }
+  .workspace-bottom-pill::before{
+    background:rgba(105,101,119,.075)!important;
+    -webkit-backdrop-filter:blur(2.5px) saturate(1.08)!important;
+    backdrop-filter:blur(2.5px) saturate(1.08)!important;
+  }
+  .workspace-bottom-pill::after{
+    opacity:1!important;
+    background:linear-gradient(150deg,rgba(255,255,255,.085),rgba(255,255,255,.012) 46%,rgba(255,255,255,.035))!important;
+  }
+  .workspace-bottom-highlight{
+    background:rgba(16,14,24,.17)!important;
+    box-shadow:inset 0 1px rgba(255,255,255,.11),0 2px 8px rgba(0,0,0,.055)!important;
+    -webkit-backdrop-filter:blur(1px)!important;
+    backdrop-filter:blur(1px)!important;
+  }
+  .workspace-bottom-item{
+    color:#f5f5f8!important;
+    text-shadow:0 1px 3px rgba(0,0,0,.70)!important;
+  }
+  .workspace-bottom-item.active{color:#fff!important}
+  html[data-theme="light"] .workspace-bottom-pill{
+    background:transparent!important;
+    border-color:rgba(255,255,255,.67)!important;
+    box-shadow:0 7px 20px rgba(38,44,65,.10),inset 0 1px rgba(255,255,255,.70)!important;
+  }
+  html[data-theme="light"] .workspace-bottom-pill::before{
+    background:rgba(245,247,253,.14)!important;
+    -webkit-backdrop-filter:blur(3px) saturate(1.05)!important;
+    backdrop-filter:blur(3px) saturate(1.05)!important;
+  }
+  html[data-theme="light"] .workspace-bottom-pill::after{
+    background:linear-gradient(150deg,rgba(255,255,255,.13),transparent 48%,rgba(255,255,255,.045))!important;
+  }
+  html[data-theme="light"] .workspace-bottom-highlight{
+    background:rgba(218,222,232,.24)!important;
+    box-shadow:inset 0 1px rgba(255,255,255,.52),0 2px 8px rgba(40,46,65,.04)!important;
+    -webkit-backdrop-filter:blur(1px)!important;
+    backdrop-filter:blur(1px)!important;
+  }
+  html[data-theme="light"] .workspace-bottom-item{
+    color:#1a202d!important;
+    text-shadow:0 1px 2px rgba(255,255,255,.85)!important;
+  }
+}
+@media(max-width:799px) and (prefers-reduced-transparency:reduce){
+  .workspace-bottom-pill::before{background:#303039!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+  html[data-theme="light"] .workspace-bottom-pill::before{background:#f5f6f9!important}
+}
