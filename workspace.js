@@ -251,12 +251,30 @@
       return localDay(gap);
     };
     const weekdayNames=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    const relativeDateMention=date=>{
+      if(!date)return '';
+      const base=new Date(localDay()+'T12:00:00');
+      const target=new Date(date+'T12:00:00');
+      const days=Math.round((target-base)/86400000);
+      if(days===-1)return 'Yesterday';
+      if(days===0)return 'Today';
+      if(days===1)return 'Tomorrow';
+      // Within the surrounding calendar weeks use a weekday; farther out
+      // show the actual calendar date including year, like Notion.
+      const mondayOffset=(base.getDay()+6)%7;
+      const week=Math.floor((days+mondayOffset)/7);
+      if(week>=-1&&week<=1){
+        const day=weekdayNames[target.getDay()];
+        return (week<0?'Last ':week>0?'Next ':'')+day;
+      }
+      return target.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+    };
     const dateLabel=date=>{
       if(!date)return '';
       return new Date(date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});
     };
     // Match entire saved date tokens before any shorter month prefix.
-    const dateMentionRegex=/@(?:Today|Tomorrow|Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+\d{1,2}(?:,?\s+\d{4})?)/i;
+    const dateMentionRegex=/@(?:Today|Tomorrow|Yesterday|(?:Last|Next)\s+(?:Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday)|Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+\d{1,2}(?:,?\s+\d{4})?)/i;
     function findDateMention(value){
       const text=String(value||'');
       const match=text.match(dateMentionRegex);
@@ -274,7 +292,7 @@
       const match=findDateMention(text);
       if(!match)return safe(text);
       return safe(text.slice(0,match.start))+
-        '<span class="checklist-date-mention" data-date-mention="'+safe(b.id)+'" contenteditable="false" role="button" tabindex="0" aria-label="Edit due date '+safe(dateLabel(b.dueDate))+'">'+safe(match.text)+'</span>'+
+        '<span class="checklist-date-mention" data-date-mention="'+safe(b.id)+'" contenteditable="false" role="button" tabindex="0" aria-label="Edit due date '+safe(dateLabel(b.dueDate))+'">'+safe('@'+relativeDateMention(b.dueDate))+'</span>'+
         safe(text.slice(match.end));
     }
     function closeDateMenu(){
@@ -395,12 +413,7 @@
     function applyDueDate(id,date,fromSuggestion=false){
       const b=blocks.find(x=>x.id===id);if(!b)return;
       const existing=findDateMention(b.text);
-      const oldDay=existing?.text?.slice(1)||'';
-      const sameWeekday=weekdayNames.some(day=>day.toLowerCase()===oldDay.toLowerCase())&&
-        date===nextWeekday(weekdayNames.findIndex(day=>day.toLowerCase()===oldDay.toLowerCase()));
-      const dayChoice=dateMenu.dataset.chosenWeekday||'';
-      const token=date?('@'+(date===localDay()?'Today':date===localDay(1)?'Tomorrow':
-        dayChoice|| (sameWeekday?oldDay:dateLabel(date)))):'';
+      const token=date?'@'+relativeDateMention(date):'';
       delete dateMenu.dataset.chosenWeekday;
       if(existing){
         b.text=b.text.slice(0,existing.start)+token+b.text.slice(existing.end);
