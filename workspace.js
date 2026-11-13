@@ -374,14 +374,21 @@
         requestAnimationFrame(()=>focusEditableAt(root.querySelector('.checklist-note-editor[data-note-id="'+b.id+'"]'),(slash?lineStart:offset)+prefix.length));
         return;
       }
+      // Replace only the command before the caret, never the original
+      // text that followed it (e.g. "/todo the dog").
+      const editor=root.querySelector('.checklist-editor[data-block-id="'+id+'"]');
+      const position=editor?editorCaretOffset(editor):b.text.length;
+      const prefix=b.text.slice(0,position);
+      const command=prefix.match(/^\s*\/[a-z0-9-]*$/i);
+      const removeTo=command?position:0;
+      b.text=(removeTo?b.text.slice(removeTo):b.text).replace(/^\s+/,'');
       b.type=normalizedType(type);
-      b.text=b.text.replace(/^\/[a-z0-9 -]*/i,'');
       b.checked=false;
       b.detailsOpen=type==='todoNote'||type==='todoList';
       b.detailsMode=type==='todoList'?'tasks':'notes';
       if(type==='todoList'&&!b.subtasks.length)b.subtasks.push({id:uniqueId(),text:'',checked:false,type:'todo'});
       closeSlash();renderChecklist(true);scheduleSave(true);
-      requestAnimationFrame(()=>focusBlock(id));
+      requestAnimationFrame(()=>focusBlockAt(id,0));
     }
     $('checklistSlashMenu').addEventListener('pointerdown',e=>e.preventDefault());
     $('checklistSlashMenu').addEventListener('click',e=>{
@@ -425,7 +432,7 @@
           '<div class="checklist-line-inner">'+icon+
           '<div class="checklist-field-group"><div class="checklist-editor" contenteditable="true" role="textbox" aria-multiline="true" data-block-id="'+safe(b.id)+'" data-placeholder="'+safe(placeholder)+'" spellcheck="true">'+safe(b.text)+'</div>'+
           (details?'<div class="checklist-details">'+details+'</div>':'')+'</div></div>'+
-          (b.dueDate?'<button type="button" class="checklist-date-pill has-date" data-date-badge="'+safe(b.id)+'" aria-label="Edit due date"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4m8-4v4"/></svg><span>'+safe(dateLabel(b.dueDate))+'</span></button>':'')+
+          ''+
           '<button type="button" class="checklist-delete" data-delete="'+safe(b.id)+'" aria-label="Delete block">×</button></div>';
       }).join('');
       $('checklistEmpty').hidden=true;
@@ -477,7 +484,10 @@
       const b=blocks.find(b=>b.id===field.dataset.blockId);if(!b)return;
       b.text=(field.innerText||field.textContent||'').replace(/\n$/,'').slice(0,5000);
       scheduleSave();
-      const match=b.text.match(/^\/([a-z0-9 -]*)$/i);
+      // Slash commands can precede existing text; inspect only the text
+      // BEFORE the caret, and preserve any content after it.
+      const prefix=b.text.slice(0,editorCaretOffset(field));
+      const match=prefix.match(/^\s*\/([a-z0-9-]*)$/i);
       if(match)openSlash(b.id,match[1].trim());else if(slashFor===b.id)closeSlash();
       suggestDate(field,b);
     });
