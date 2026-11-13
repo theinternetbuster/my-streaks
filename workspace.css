@@ -1677,3 +1677,15 @@ html[data-theme="light"] .checklist-block-menu .block-color-menu-header{
 .checklist-page .checklist-line:not(.block-is-selected) .checklist-editor{
  color:var(--checklist-block-color,inherit);
 }
+
+/* iosdate41: a touch-sized editable landing point after a trailing @date.
+   It keeps Safari's caret outside the non-editable date pill. */
+.checklist-page .checklist-date-caret{
+ display:inline-block;
+ min-width:13px;
+ white-space:pre;
+ vertical-align:baseline;
+ cursor:text;
+ font:inherit;
+ color:inherit;
+}
