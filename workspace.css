@@ -1422,3 +1422,119 @@ html[data-theme="light"] .checklist-format-toolbar .fmt-highlight-symbol{
  .checklist-format-toolbar .fmt-highlight-button{min-width:29px}
  .checklist-format-toolbar>button.fmt-type{min-width:64px;max-width:82px}
 }
+
+/* blockmenu33 — Notion-inspired floating block controls and anchored formatting. */
+.checklist-page .checklist-line{
+ background:var(--checklist-block-bg,transparent);
+ color:var(--checklist-block-color,inherit);
+ border-radius:8px;
+}
+.checklist-page .checklist-line .checklist-editor{
+ color:var(--checklist-block-color,var(--checklist-text-color,#e8e8ec));
+}
+.checklist-page .checklist-line.block-menu-active{
+ outline:1px solid rgba(255,136,79,.4);
+ outline-offset:2px;
+}
+.checklist-page .checklist-delete{display:none!important}
+.checklist-format-toolbar{
+ border-radius:13px!important;
+ padding:5px 7px!important;
+ box-shadow:0 12px 36px rgba(0,0,0,.28)!important;
+ backdrop-filter:blur(18px);
+ -webkit-backdrop-filter:blur(18px);
+ justify-content:space-between;
+}
+.checklist-format-toolbar>button{
+ border-radius:7px!important;
+ transition:background .12s ease,transform .12s ease;
+}
+.checklist-format-toolbar>button:hover{
+ background:rgba(148,148,156,.22)!important;
+}
+.checklist-block-menu[hidden]{display:none!important}
+.checklist-block-menu{
+ position:fixed;z-index:1005;
+ width:268px;max-width:calc(100vw - 24px);
+ max-height:min(580px,calc(100dvh - 24px));
+ overflow-y:auto;overscroll-behavior:contain;
+ padding:8px;border-radius:13px;
+ border:1px solid #424248;
+ background:#262629;color:#e8e8ec;
+ box-shadow:0 16px 45px rgba(0,0,0,.36);
+ font:500 13px/1.4 'DM Sans',sans-serif;
+ animation:block-menu-in .14s ease-out both;
+}
+@keyframes block-menu-in{from{opacity:.5;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+.checklist-block-menu .block-menu-search{
+ display:block;width:100%;height:34px;padding:7px 10px;
+ border-radius:7px;border:1px solid #494950;
+ background:#303034;color:inherit;outline:none;
+ font:inherit;margin-bottom:8px;
+}
+.checklist-block-menu .block-menu-search:focus{border-color:#f27848}
+.checklist-block-menu .block-menu-label{
+ margin:11px 8px 5px;font-size:10px;letter-spacing:.075em;
+ color:#9b9ba4;text-transform:uppercase;font-weight:700;
+}
+.checklist-block-menu>button,
+.checklist-block-menu .block-menu-subheading button{
+ width:100%;min-height:34px;
+ display:flex;align-items:center;justify-content:space-between;gap:12px;
+ text-align:left;padding:7px 10px;background:transparent;
+ border:0;border-radius:7px;color:inherit;
+ font:inherit;cursor:pointer;
+}
+.checklist-block-menu>button:hover,
+.checklist-block-menu .block-menu-subheading button:hover{
+ background:rgba(140,140,148,.2)
+}
+.checklist-block-menu>button[hidden]{display:none!important}
+.checklist-block-menu>button small{
+ color:#95949f;font-size:10px;white-space:nowrap;
+}
+.checklist-block-menu .block-menu-separator{
+ height:1px;background:#44444a;margin:7px 2px;
+}
+.checklist-block-menu .block-menu-info{
+ color:#8e8d95;font-size:11px;padding:4px 8px 9px;
+ overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.checklist-block-menu .block-menu-subheading{
+ display:flex;align-items:center;gap:12px;
+ position:sticky;top:-8px;padding:6px 1px 10px;
+ background:#262629;z-index:2;
+}
+.checklist-block-menu .block-menu-subheading button{
+ width:34px;height:32px;justify-content:center;font-size:20px;
+}
+.checklist-block-menu .block-color-swatch{
+ display:inline-flex;vertical-align:middle;
+ width:20px;height:20px;margin-right:9px;border-radius:5px;
+ border:1px solid #77777e;align-items:center;justify-content:center;
+}
+.checklist-block-menu .block-color-swatch.text{
+ font-weight:750;font-size:14px;
+}
+html[data-theme="light"] .checklist-block-menu{
+ background:#fff;color:#252a36;border-color:#dde0e7;
+ box-shadow:0 15px 42px rgba(19,27,41,.17);
+}
+html[data-theme="light"] .checklist-block-menu .block-menu-search{
+ background:#f7f7f9;color:#252a36;border-color:#e4e5e9
+}
+html[data-theme="light"] .checklist-block-menu .block-menu-subheading{
+ background:#fff;
+}
+html[data-theme="light"] .checklist-block-menu>button:hover{
+ background:#f1f2f5;
+}
+html[data-theme="light"] .checklist-block-menu .block-menu-separator{
+ background:#e5e5eb;
+}
+@media(max-width:799px){
+ .checklist-block-menu{width:min(275px,calc(100vw - 26px))}
+}
+@media(prefers-reduced-motion:reduce){
+ .checklist-block-menu{animation:none}
+}
