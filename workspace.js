@@ -552,8 +552,10 @@
           if(slashMatches[slashSelected])applyCommand(slashMatches[slashSelected].id);
         }else if(dateSuggestionId===editor.dataset.blockId&&!dateMenu.hidden){
           const first=dateMenu.querySelector('[data-date-quick]:not([hidden])');
-          const date=first?.dataset.dateQuick==='tomorrow'?localDay(1):
-            first?.dataset.dateQuick==='week'?localDay(7):localDay();
+          const choice=first?.dataset.dateQuick||'today';
+          const date=choice==='tomorrow'?localDay(1):choice==='week'?localDay(7):
+            choice.startsWith('day')?nextWeekday(Number(choice.slice(3))):localDay();
+          if(choice.startsWith('day'))dateMenu.dataset.chosenWeekday=weekdayNames[Number(choice.slice(3))];
           applyDueDate(editor.dataset.blockId,date,true);
         }else insertChecklistParagraph(editor);
         return;
@@ -700,9 +702,16 @@
         if(e.key==='Enter'||e.key==='Tab'){
           e.preventDefault();
           const q=(b.text.slice(0,editorCaretOffset(field)).match(/@([a-z ]*)$/i)?.[1]||'').trim().toLowerCase().replace(/\s/g,'');
-          const option=[...dateMenu.querySelectorAll('[data-date-quick]:not([hidden])')].find(x=>(x.dataset.dateQuick==='week'?'nextweek':x.dataset.dateQuick).startsWith(q));
+          const option=[...dateMenu.querySelectorAll('[data-date-quick]:not([hidden])')].find(x=>{
+            const value=x.dataset.dateQuick;
+            const name=value==='week'?'nextweek':value.startsWith('day')?weekdayNames[Number(value.slice(3))].toLowerCase():value;
+            return name.startsWith(q);
+          });
           const value=option?.dataset.dateQuick||'today';
-          applyDueDate(id,value==='tomorrow'?localDay(1):value==='week'?localDay(7):localDay(),true);
+          const date=value==='tomorrow'?localDay(1):value==='week'?localDay(7):
+            value.startsWith('day')?nextWeekday(Number(value.slice(3))):localDay();
+          if(value.startsWith('day'))dateMenu.dataset.chosenWeekday=weekdayNames[Number(value.slice(3))];
+          applyDueDate(id,date,true);
           return;
         }
         if(e.key==='Escape'){e.preventDefault();closeDateMenu();return;}
