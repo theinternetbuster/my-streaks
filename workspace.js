@@ -437,6 +437,14 @@
         if(kind==='color'||kind==='background')pending[kind]=value;
         else pending[kind]=!pending[kind];
         pendingTextStyle.set(b.id,pending);
+        const field=root.querySelector('.checklist-editor[data-block-id="'+b.id+'"]');
+        if(field&&!b.text.length){
+          field.style.fontWeight=pending.bold?'800':'';
+          field.style.fontStyle=pending.italic?'italic':'';
+          field.style.textDecoration=[pending.underline?'underline':'',pending.strike?'line-through':''].filter(Boolean).join(' ');
+          field.style.color=markPalette[pending.color]||'';
+          field.style.backgroundColor=backgroundPalette[pending.background]||'';
+        }
         placeFormatToolbar();
       }
     }
