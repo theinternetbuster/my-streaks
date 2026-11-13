@@ -152,7 +152,7 @@
       const out=[];
       for(const original of items){
         const b=normalizeBlock(original,out.length);
-        const legacy=['todoNote','todoList'].includes(b.type);
+        const legacy=['todoNote','todoList'].includes(original.type);
         if(legacy)b.type='todoList';
         out.push(b);
         const hasStoredChildren=items.some(x=>x.parentId===b.id);
@@ -173,7 +173,10 @@
             },out.length));
           }
         }
-        if(legacy){b.note='';b.subtasks=[];b.detailsMode='tasks';}
+        if(legacy){
+          if(!hasStoredChildren&&!out.some(x=>x.parentId===b.id))out.push(normalizeBlock({id:b.id+'-empty-child',parentId:b.id,type:'text',text:''},out.length));
+          b.note='';b.subtasks=[];b.detailsMode='tasks';
+        }
       }
       return out;
     }
@@ -1155,8 +1158,14 @@
         const isTask=['todo','todoNote','todoList'].includes(b.type);
         const isToggle=b.type==='toggle',isBullet=b.type==='bullet';
         const parent=blocks.find(x=>x.id===b.parentId);
-        const isNested=!!parent;
-        const hiddenByParent=!!parent&&(parent.type!=='todoList'||!parent.detailsOpen);
+        let depth=0,hiddenByParent=false,ancestor=parent;
+        const visited=new Set([b.id]);
+        while(ancestor&&!visited.has(ancestor.id)&&depth<5){
+          visited.add(ancestor.id);depth++;
+          if(ancestor.type!=='todoList'||!ancestor.detailsOpen)hiddenByParent=true;
+          ancestor=blocks.find(x=>x.id===ancestor.parentId);
+        }
+        const isNested=depth>0;
         const noteExpanded=isToggle&&!b.collapsed;
         const checkbox=isTask?'<input class="checklist-check" type="checkbox" data-toggle-check="'+safe(b.id)+'" '+(b.checked?'checked':'')+' aria-label="Complete task"/>':'';
         const isOpen=b.type==='todoList'?b.detailsOpen:!b.collapsed;
@@ -1166,7 +1175,7 @@
         const placeholder=(b.type==='h1'?'Heading':b.type==='h2'?'Subheading':isTask?'To-do':isToggle?'Toggle title':isBullet?'List item':"Type here, or press / for commands");
         let details='';
         if(noteExpanded&&b.note)details='<div class="checklist-note-editor" contenteditable="true" role="textbox" aria-multiline="true" data-note-id="'+safe(b.id)+'" data-placeholder="Type notes…" spellcheck="true">'+safe(b.note)+'</div>';
-        return '<div class="checklist-line checklist-type-'+b.type+(isNested?' checklist-child':'')+(hiddenByParent?' checklist-child-hidden':'')+(b.checked?' is-done':'')+(b.collapsed?' is-collapsed':'')+'" data-id="'+safe(b.id)+'" data-parent-id="'+safe(b.parentId||'')+'" style="'+(backgroundPalette[b.blockBackground]?'--checklist-block-bg:'+backgroundPalette[b.blockBackground]+';':'')+(markPalette[b.blockColor]?'--checklist-block-color:'+markPalette[b.blockColor]+';':'')+'">'+
+        return '<div class="checklist-line checklist-type-'+b.type+(isNested?' checklist-child':'')+(hiddenByParent?' checklist-child-hidden':'')+(b.checked?' is-done':'')+(b.collapsed?' is-collapsed':'')+'" data-id="'+safe(b.id)+'" data-parent-id="'+safe(b.parentId||'')+'" style="--nest-level:'+Math.min(depth,4)+';'+(backgroundPalette[b.blockBackground]?'--checklist-block-bg:'+backgroundPalette[b.blockBackground]+';':'')+(markPalette[b.blockColor]?'--checklist-block-color:'+markPalette[b.blockColor]+';':'')+'">'+
           '<div class="checklist-line-tools"><button type="button" class="checklist-insert" data-insert="'+safe(b.id)+'" aria-label="Insert block">+</button><button type="button" class="checklist-handle" aria-label="Drag to rearrange or click for block actions" title="Drag to move · Click for actions">⠿</button></div>'+
           '<div class="checklist-line-inner">'+icon+
           '<div class="checklist-field-group"><div class="checklist-editor" contenteditable="true" role="textbox" aria-multiline="true" data-block-id="'+safe(b.id)+'" data-placeholder="'+safe(placeholder)+'" spellcheck="true">'+htmlWithMarks(b)+'</div>'+
@@ -1705,9 +1714,9 @@
       if(last && !last.text.trim() && last.type==='text')focusBlock(last.id);
       else addBlock(last?.id||null,'text');
     });
-    $('checklistAdd').addEventListener('click',()=>addBlock(blocks.at(-1)?.id||null,'text'));
-    $('checklistAddBottom').addEventListener('click',()=>addBlock(blocks.at(-1)?.id||null,'text'));
-    $('checklistEmpty').addEventListener('click',()=>addBlock(blocks.at(-1)?.id||null,'text'));
+    $('checklistAdd').addEventListener('click',()=>addBlock(blocks.at(-1)?.id||null,'text',''));
+    $('checklistAddBottom').addEventListener('click',()=>addBlock(blocks.at(-1)?.id||null,'text',''));
+    $('checklistEmpty').addEventListener('click',()=>addBlock(blocks.at(-1)?.id||null,'text',''));
     // Document-wide editing shortcuts. Separate editable blocks would otherwise
     // let the browser's Select All / Undo operate on just one field.
     function checklistText(){
