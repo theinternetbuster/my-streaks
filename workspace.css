@@ -1069,3 +1069,33 @@ html[data-theme="light"] .checklist-date-weekdays span{color:#929bad}
   .workspace-bottom-pill::before{background:#303039!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
   html[data-theme="light"] .workspace-bottom-pill::before{background:#f5f6f9!important}
 }
+
+/* iOS checklist: Notion-style clean reading mode. The insertion control is
+   absent until that specific row is being edited, not permanently visible. */
+@media(max-width:799px) and (hover:none){
+  .checklist-page .checklist-line-tools .checklist-insert,
+  .checklist-page .checklist-line-tools .checklist-handle,
+  .checklist-page .checklist-line .checklist-delete{
+    opacity:0!important;
+    visibility:hidden!important;
+    pointer-events:none!important;
+    transition:opacity .16s ease,visibility .16s ease;
+  }
+  .checklist-page .checklist-line:focus-within .checklist-line-tools .checklist-insert{
+    opacity:.88!important;
+    visibility:visible!important;
+    pointer-events:auto!important;
+  }
+  .checklist-page .checklist-line:focus-within .checklist-delete{
+    opacity:.55!important;
+    visibility:visible!important;
+    pointer-events:auto!important;
+  }
+  /* Unlike desktop, tapping a row should not leave controls stuck in hover mode. */
+  .checklist-page .checklist-line:hover:not(:focus-within) .checklist-line-tools .checklist-insert,
+  .checklist-page .checklist-line:hover:not(:focus-within) .checklist-delete{
+    opacity:0!important;
+    visibility:hidden!important;
+    pointer-events:none!important;
+  }
+}
