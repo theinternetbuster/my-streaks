@@ -269,7 +269,7 @@
     }
     function openDateMenu(id,anchorEl=null,query=''){
       const b=blocks.find(x=>x.id===id);
-      if(!b||!['todo','todoNote','todoList'].includes(b.type))return;
+      if(!b)return;
       dateTargetId=id;
       if(!dateViewMonth||dateMenu.hidden){
         const selected=b.dueDate?new Date(b.dueDate+'T12:00:00'):new Date();
@@ -307,7 +307,6 @@
       dateMenu.style.top=Math.max(12,Math.min((rect?.bottom||80)+7,innerHeight-height-12))+'px';
     }
     function suggestDate(field,b){
-      if(!['todo','todoNote','todoList'].includes(b.type))return;
       const caret=editorCaretOffset(field);
       const before=b.text.slice(0,caret);
       const match=before.match(/(?:^|\s)@([a-z ]*)$/i);
@@ -426,7 +425,7 @@
           '<div class="checklist-line-inner">'+icon+
           '<div class="checklist-field-group"><div class="checklist-editor" contenteditable="true" role="textbox" aria-multiline="true" data-block-id="'+safe(b.id)+'" data-placeholder="'+safe(placeholder)+'" spellcheck="true">'+safe(b.text)+'</div>'+
           (details?'<div class="checklist-details">'+details+'</div>':'')+'</div></div>'+
-          (isTask&&b.dueDate?'<button type="button" class="checklist-date-pill has-date" data-date-badge="'+safe(b.id)+'" aria-label="Edit due date"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4m8-4v4"/></svg><span>'+safe(dateLabel(b.dueDate))+'</span></button>':'')+
+          (b.dueDate?'<button type="button" class="checklist-date-pill has-date" data-date-badge="'+safe(b.id)+'" aria-label="Edit due date"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4m8-4v4"/></svg><span>'+safe(dateLabel(b.dueDate))+'</span></button>':'')+
           '<button type="button" class="checklist-delete" data-delete="'+safe(b.id)+'" aria-label="Delete block">×</button></div>';
       }).join('');
       $('checklistEmpty').hidden=true;
@@ -534,13 +533,29 @@
         return;
       }
       if(nested&&e.key==='Enter'&&!e.isComposing){
-        e.preventDefault();const b=blocks.find(x=>x.id===nested.dataset.subtaskText);
+        e.preventDefault();
+        const b=blocks.find(x=>x.id===nested.dataset.subtaskText);
         if(b&&b.subtasks.length<40){
           const prior=b.subtasks.find(t=>t.id===nested.dataset.subtaskId);
-          const sub={id:uniqueId(),text:'',checked:false,type:prior?.type==='bullet'?'bullet':'todo'};
-          const ix=b.subtasks.findIndex(t=>t.id===nested.dataset.subtaskId);
-          b.subtasks.splice(ix+1,0,sub);renderChecklist(true);scheduleSave(true);
-          requestAnimationFrame(()=>root.querySelector('[data-subtask-id="'+sub.id+'"][data-subtask-text]')?.focus());
+          if(!prior)return;
+          const ix=b.subtasks.indexOf(prior);
+          const offset=nested.selectionStart??prior.text.length;
+          // Enter at the beginning inserts an empty subtask ABOVE the current one.
+          // In the middle, split text just as a normal document editor does.
+          const left=prior.text.slice(0,offset),right=prior.text.slice(offset);
+          const sub={id:uniqueId(),text:'',checked:false,type:prior.type==='bullet'?'bullet':'todo'};
+          let focusId=sub.id;
+          if(offset===0&&prior.text.length){
+            b.subtasks.splice(ix,0,sub);
+          }else{
+            prior.text=left;sub.text=right;
+            b.subtasks.splice(ix+1,0,sub);
+          }
+          renderChecklist(true);scheduleSave(true);
+          requestAnimationFrame(()=>{
+            const input=root.querySelector('[data-subtask-id="'+focusId+'"][data-subtask-text]');
+            input?.focus();input?.setSelectionRange(0,0);
+          });
         }return;
       }
       const field=e.target.closest('[contenteditable="true"][data-block-id]');if(!field)return;
@@ -572,11 +587,19 @@
         e.preventDefault();closeSlash();
         const offset=editorCaretOffset(field);
         const before=b.text.slice(0,offset),after=b.text.slice(offset);
+        // A second Enter on an empty task exits checklist mode IN PLACE.
+        // It does not leave another empty paragraph underneath.
+        if(!b.text.trim()&&['todo','todoNote','todoList','bullet'].includes(b.type)){
+          b.type='text';b.checked=false;b.detailsOpen=false;
+          b.text=after;
+          renderChecklist(true);scheduleSave(true);
+          requestAnimationFrame(()=>focusBlockAt(id,0));
+          return;
+        }
         b.text=before;
-        const nextType=['todo','todoNote','todoList'].includes(b.type)?(before.trim()?'todo':'text'):b.type==='bullet'?(before.trim()?'bullet':'text'):'text';
-        if(!before.trim()&&nextType==='text')b.type='text';
+        const nextType=['todo','todoNote','todoList'].includes(b.type)?'todo':b.type==='bullet'?'bullet':'text';
         const newBlock=addBlock(id,nextType,after);
-        requestAnimationFrame(()=>focusBlock(newBlock.id,false));
+        requestAnimationFrame(()=>focusBlockAt(newBlock.id,0));
         return;
       }
       if(e.key==='Backspace'&&!e.ctrlKey&&!e.metaKey&&!e.isComposing&&editorCaretOffset(field)===0&&window.getSelection()?.isCollapsed&&blocks.length>1){
