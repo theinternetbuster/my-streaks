@@ -316,7 +316,15 @@
       let html='',index=0;
       while(index<text.length){
         if(mention&&index===mention.start){
-          html+='<span class="checklist-date-mention" data-date-mention="'+safe(b.id)+'" contenteditable="false" role="button" tabindex="0">'+safe('@'+relativeDateMention(b.dueDate))+'</span>';
+          // Formatting a selection that includes @Today must include the
+          // entire atomic mention; do not lose its highlight or text style.
+          const active=marks.filter(m=>m.start<mention.end&&m.end>mention.start);
+          const classes=active.filter(m=>['bold','italic','underline','strike'].includes(m.kind)).map(m=>'fmt-'+m.kind).join(' ');
+          const color=active.filter(m=>m.kind==='color').at(-1)?.value||'default';
+          const bg=active.filter(m=>m.kind==='background').at(-1)?.value||'default';
+          const style=(markPalette[color]?'color:'+markPalette[color]+';':'')+
+            (backgroundPalette[bg]?'background-color:'+backgroundPalette[bg]+';':'');
+          html+='<span class="checklist-date-mention '+safe(classes)+'" style="'+style+'" data-date-mention="'+safe(b.id)+'" contenteditable="false" role="button" tabindex="0">'+safe('@'+relativeDateMention(b.dueDate))+'</span>';
           index=mention.end;continue;
         }
         if(mention&&index>mention.start&&index<mention.end){index=mention.end;continue;}
@@ -368,11 +376,12 @@
     formatToolbar.hidden=true;
     formatToolbar.innerHTML=
       '<button type="button" data-format-menu="block" class="fmt-type" aria-label="Change block type">Text ▾</button>'+
-      '<button type="button" data-format="bold" title="Bold (Ctrl+B)"><b>B</b></button>'+
-      '<button type="button" data-format="italic" title="Italic (Ctrl+I)"><i>I</i></button>'+
-      '<button type="button" data-format="underline" title="Underline (Ctrl+U)"><u>U</u></button>'+
-      '<button type="button" data-format="strike" title="Strikethrough"><s>S</s></button>'+
-      '<button type="button" data-format-menu="colors" class="fmt-highlight-button" title="Text and highlight color" aria-label="Text and highlight color"><span class="fmt-highlight-symbol">A</span></button>'+
+      '<button type="button" data-format="bold" title="Bold · Ctrl+B"><b>B</b></button>'+
+      '<button type="button" data-format="italic" title="Italic · Ctrl+I"><i>I</i></button>'+
+      '<button type="button" data-format="underline" title="Underline · Ctrl+U"><u>U</u></button>'+
+      '<button type="button" data-format="strike" title="Strikethrough · Ctrl+Shift+S"><s>S</s></button>'+
+      '<button type="button" data-format-menu="colors" class="fmt-highlight-button" title="Text and highlight color · Ctrl+Shift+H" aria-label="Text and highlight color"><span class="fmt-highlight-symbol">A</span></button>'+
+      '<button type="button" data-format-clear title="Clear formatting · Ctrl+Alt+\\" aria-label="Clear formatting"><span class="fmt-clear-icon">T<small>×</small></span></button>'+
       '<div class="fmt-dropdown" hidden></div>';
     document.body.appendChild(formatToolbar);
     let activeFormatId=null,formatRange=null,formatApplying=false,formatInteracting=false;
@@ -383,8 +392,22 @@
         (sel.anchorNode?.nodeType===1?sel.anchorNode.closest?.('.checklist-editor[data-block-id]'):null);
       if(!field||!field.contains(sel.focusNode))return null;
       const getPos=(node,offset)=>{
-        try{const range=document.createRange();range.selectNodeContents(field);range.setEnd(node,offset);return range.toString().length}
-        catch(e){return null;}
+        try{
+          const range=document.createRange();range.selectNodeContents(field);range.setEnd(node,offset);
+          const fragment=range.cloneContents();
+          let length=fragment.textContent.length;
+          // An atomic @date shows a relative label but is stored as a date
+          // token with a potentially different length. Map DOM selection
+          // offsets to the actual saved text, including selected date pills.
+          const block=blocks.find(b=>b.id===field.dataset.blockId);
+          const mention=block?.dueDate?findDateMention(block.text):null;
+          if(mention){
+            fragment.querySelectorAll('[data-date-mention]').forEach(pill=>{
+              length+=mention.end-mention.start-pill.textContent.length;
+            });
+          }
+          return length;
+        }catch(e){return null;}
       };
       const a=getPos(sel.anchorNode,sel.anchorOffset),b=getPos(sel.focusNode,sel.focusOffset);
       return a===null||b===null?null:{id:field.dataset.blockId,start:Math.min(a,b),end:Math.max(a,b)};
@@ -393,8 +416,17 @@
       const field=root.querySelector('.checklist-editor[data-block-id="'+id+'"]');
       if(!field)return;
       const pointAt=offset=>{
-        const walker=document.createTreeWalker(field,NodeFilter.SHOW_TEXT);let node,left=offset;
+        const block=blocks.find(b=>b.id===id);
+        const mention=block?.dueDate?findDateMention(block.text):null;
+        let left=offset,walker=document.createTreeWalker(field,NodeFilter.SHOW_TEXT),node;
         while((node=walker.nextNode())){
+          const token=node.parentElement?.closest?.('[data-date-mention]');
+          if(token){
+            if(node!==token.firstChild)continue;
+            const length=mention?mention.end-mention.start:token.textContent.length;
+            if(left<=length)return {node:token.parentNode,offset:left===0?Array.prototype.indexOf.call(token.parentNode.childNodes,token):Array.prototype.indexOf.call(token.parentNode.childNodes,token)+1};
+            left-=length;continue;
+          }
           if(left<=node.textContent.length)return {node,offset:left};
           left-=node.textContent.length;
         }
@@ -434,6 +466,9 @@
       if(!b)return;
       const s=selection?.start??0,e=selection?.end??s;
       if(e>s){
+        // Force a distinct undo checkpoint even immediately after typing.
+        // This captures both the prior formatting and the caret position.
+        pendingUndoFocus={id:b.id,offset:s};
         const old=b.marks||[];
         const exact=old.some(m=>m.kind===kind&&m.start<=s&&m.end>=e&&(!['color','background'].includes(kind)));
         b.marks=old.flatMap(m=>{
@@ -469,6 +504,28 @@
         placeFormatToolbar();
       }
     }
+    function clearSelectedFormat(){
+      const current=currentEditorSelection();
+      const selection=current&&current.end>current.start?current:formatRange;
+      const b=blocks.find(x=>x.id===selection?.id);
+      if(!b||selection.end<=selection.start)return;
+      const {start:s,end:e}=selection;
+      pendingUndoFocus={id:b.id,offset:s};
+      b.marks=(b.marks||[]).flatMap(m=>{
+        if(m.end<=s||m.start>=e)return [m];
+        const pieces=[];
+        if(m.start<s)pieces.push({...m,end:s});
+        if(m.end>e)pieces.push({...m,start:e});
+        return pieces;
+      });
+      formatApplying=true;
+      formatToolbar.querySelector('.fmt-dropdown').hidden=true;
+      renderChecklist(true);scheduleSave(true);
+      requestAnimationFrame(()=>{
+        selectFormatRange(b.id,s,e);formatRange={id:b.id,start:s,end:e};
+        activeFormatId=b.id;formatApplying=false;placeFormatToolbar();
+      });
+    }
     function showFormatDropdown(mode){
       const menu=formatToolbar.querySelector('.fmt-dropdown');
       if(!menu.hidden&&menu.dataset.mode===mode){menu.hidden=true;return;}
@@ -495,6 +552,7 @@
     formatToolbar.addEventListener('click',event=>{
       setTimeout(()=>{formatInteracting=false;},0);
       const button=event.target.closest('button');if(!button)return;
+      if(button.hasAttribute('data-format-clear')){clearSelectedFormat();return;}
       if(button.dataset.format){applyFormat(button.dataset.format);return;}
       if(button.dataset.formatMenu){showFormatDropdown(button.dataset.formatMenu);return;}
       if(button.dataset.formatColor){applyFormat('color',button.dataset.formatColor);formatToolbar.querySelector('.fmt-dropdown').hidden=true;return;}
@@ -541,8 +599,12 @@
     });
     root.addEventListener('keydown',event=>{
       if(!(event.ctrlKey||event.metaKey)||event.altKey||event.shiftKey)return;
-      const kind=event.key.toLowerCase()==='b'?'bold':event.key.toLowerCase()==='i'?'italic':event.key.toLowerCase()==='u'?'underline':null;
-      if(kind&&event.target.closest('.checklist-editor[data-block-id]')){
+      const key=event.key.toLowerCase();
+      const kind=!event.shiftKey&&key==='b'?'bold':!event.shiftKey&&key==='i'?'italic':
+        !event.shiftKey&&key==='u'?'underline':event.shiftKey&&key==='s'?'strike':null;
+      const editor=event.target.closest('.checklist-editor[data-block-id]');
+      if(!editor)return;
+      if(kind){
         event.preventDefault();
         const selected=currentEditorSelection();
         if(selected&&selected.end>selected.start){formatRange=selected;activeFormatId=selected.id;applyFormat(kind);}
