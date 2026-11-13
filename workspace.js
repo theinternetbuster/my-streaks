@@ -1492,10 +1492,22 @@
         const index=blocks.findIndex(x=>x.id===id);
         pendingUndoFocus={id,offset:0};
         if(index>0){
-          const previous=blocks[index-1],position=previous.text.length;
-          previous.text+=b.text;
-          blocks.splice(index,1);renderChecklist(true);scheduleSave(true);
-          requestAnimationFrame(()=>focusBlockAt(previous.id,position));
+          // The block immediately above may be an indented child of an
+          // expandable task. Backspace should return to the preceding
+          // sibling's title, not to its last nested child.
+          const previous=[...blocks.slice(0,index)].reverse()
+            .find(candidate=>(candidate.parentId||'')===(b.parentId||''));
+          if(previous){
+            const position=previous.text.length;
+            previous.text+=b.text;
+            blocks.splice(index,1);
+            renderChecklist(true);scheduleSave(true);
+            requestAnimationFrame(()=>focusBlockAt(previous.id,position));
+          }else if(!b.text){
+            blocks.splice(index,1);renderChecklist(true);scheduleSave(true);
+            const fallback=blocks[Math.max(0,index-1)];
+            if(fallback)requestAnimationFrame(()=>focusBlockAt(fallback.id,fallback.text.length));
+          }
         }else if(!b.text){
           blocks.splice(index,1);renderChecklist(true);scheduleSave(true);
           requestAnimationFrame(()=>focusBlock(blocks[0].id,false));
