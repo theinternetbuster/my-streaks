@@ -1021,3 +1021,22 @@ html[data-theme="light"] .checklist-date-weekdays span{color:#929bad}
     -webkit-tap-highlight-color:transparent;
   }
 }
+
+/* Plain text after exiting an empty to-do must align with normal document text.
+   No leftover checkbox column or nested indentation in iOS Safari. */
+.checklist-page .checklist-line.checklist-type-text .checklist-line-inner{
+  gap:0!important;
+  padding-left:0!important;
+  margin-left:0!important;
+}
+.checklist-page .checklist-line.checklist-type-text .checklist-field-group{
+  flex:1 1 auto;
+  margin-left:0!important;
+  padding-left:0!important;
+  min-width:0;
+}
+.checklist-page .checklist-line.checklist-type-text .checklist-editor{
+  margin-left:0!important;
+  padding-left:0!important;
+  text-indent:0!important;
+}
