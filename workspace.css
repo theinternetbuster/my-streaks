@@ -1146,3 +1146,11 @@ html[data-theme="light"] .checklist-page .checklist-date-label{color:#8d94a2}
   border-color:#e2e4eb;box-shadow:0 12px 32px #1d264328!important;
  }
 }
+
+/* Compact mobile date labels, expanded month labels on desktop. */
+.checklist-date-label-short{display:none}
+.checklist-date-label-long{display:inline}
+@media(max-width:799px){
+ .checklist-date-label-short{display:inline}
+ .checklist-date-label-long{display:none}
+}
