@@ -39,6 +39,7 @@
       historyPresent=next;lastHistoryAt=now;lastHistoryField=typed?field:'';
     }
     function restoreHistory(direction){
+      closeBlockMenu();
       const from=direction==='undo'?historyUndo:historyRedo;
       const to=direction==='undo'?historyRedo:historyUndo;
       if(!from.length)return;
@@ -93,7 +94,13 @@
       if(tab==='checklist')renderChecklist();
       window.scrollTo({top:0,behavior:'instant'});
     }
-    document.querySelectorAll('[data-workspace]').forEach(b=>b.addEventListener('click',()=>selectTab(b.dataset.workspace)));
+    document.querySelectorAll('[data-workspace]').forEach(b=>b.addEventListener('click',event=>{
+      // Let the browser handle middle-click, Ctrl/Cmd-click, Shift-click and
+      // context-menu Open in new tab/window on genuine anchor navigation.
+      if(b.tagName==='A'&&(event.button!==0||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey))return;
+      if(b.tagName==='A')event.preventDefault();
+      selectTab(b.dataset.workspace);
+    }));
     window.addEventListener('popstate',()=>{
       if(!user||location.pathname.includes('/settings/'))return;
       selectTab(new URLSearchParams(location.search).get('view')||'home',{history:false});
@@ -137,7 +144,7 @@
     }
     function normalizedType(t){return types.some(x=>x.id===t)?t:'text';}
     function normalizeBlock(b,i){
-      return {id:String(b.id||uniqueId()),type:normalizedType(b.type),text:String(b.text||'').slice(0,5000),checked:!!b.checked,collapsed:!!b.collapsed,detailsOpen:b.type==='todo'?false:(typeof b.detailsOpen==='boolean'?b.detailsOpen:(b.type==='todoNote'||b.type==='todoList')&&!b.collapsed),note:String(b.note||'').slice(0,10000),detailsMode:b.type==='todoList'?'tasks':'notes',subtasks:Array.isArray(b.subtasks)?b.subtasks.slice(0,40).filter(t=>t&&typeof t.text==='string').map(t=>({id:String(t.id||uniqueId()),text:String(t.text).slice(0,500),checked:!!t.checked,type:t.type==='bullet'?'bullet':'todo'})):[],dueDate:/^\d{4}-\d{2}-\d{2}$/.test(b.dueDate||'')?b.dueDate:'',endDate:/^\d{4}-\d{2}-\d{2}$/.test(b.endDate||'')?b.endDate:'',dateFormat:b.dateFormat==='absolute'?'absolute':'relative',includeTime:!!b.includeTime,dueTime:/^([01]\d|2[0-3]):[0-5]\d$/.test(b.dueTime||'')?b.dueTime:'09:00',marks:Array.isArray(b.marks)?b.marks.slice(0,100).filter(m=>m&&Number.isInteger(m.start)&&Number.isInteger(m.end)&&m.start>=0&&m.end>m.start&&m.end<=String(b.text||'').length&&['bold','italic','underline','strike','color','background'].includes(m.kind)&&(!m.value||/^[a-z0-9-]{1,24}$/i.test(m.value))).map(m=>({start:m.start,end:m.end,kind:m.kind,value:m.value||''})):[],order:Number.isFinite(b.order)?b.order:i,createdAt:Number(b.createdAt)||Date.now()};
+      return {id:String(b.id||uniqueId()),type:normalizedType(b.type),text:String(b.text||'').slice(0,5000),checked:!!b.checked,collapsed:!!b.collapsed,detailsOpen:b.type==='todo'?false:(typeof b.detailsOpen==='boolean'?b.detailsOpen:(b.type==='todoNote'||b.type==='todoList')&&!b.collapsed),note:String(b.note||'').slice(0,10000),detailsMode:b.type==='todoList'?'tasks':'notes',subtasks:Array.isArray(b.subtasks)?b.subtasks.slice(0,40).filter(t=>t&&typeof t.text==='string').map(t=>({id:String(t.id||uniqueId()),text:String(t.text).slice(0,500),checked:!!t.checked,type:t.type==='bullet'?'bullet':'todo'})):[],dueDate:/^\d{4}-\d{2}-\d{2}$/.test(b.dueDate||'')?b.dueDate:'',endDate:/^\d{4}-\d{2}-\d{2}$/.test(b.endDate||'')?b.endDate:'',dateFormat:b.dateFormat==='absolute'?'absolute':'relative',includeTime:!!b.includeTime,dueTime:/^([01]\d|2[0-3]):[0-5]\d$/.test(b.dueTime||'')?b.dueTime:'09:00',blockBackground:typeof b.blockBackground==='string'&&Object.hasOwn(backgroundPalette,b.blockBackground)?b.blockBackground:'default',blockColor:typeof b.blockColor==='string'&&Object.hasOwn(markPalette,b.blockColor)?b.blockColor:'default',marks:Array.isArray(b.marks)?b.marks.slice(0,100).filter(m=>m&&Number.isInteger(m.start)&&Number.isInteger(m.end)&&m.start>=0&&m.end>m.start&&m.end<=String(b.text||'').length&&['bold','italic','underline','strike','color','background'].includes(m.kind)&&(!m.value||/^[a-z0-9-]{1,24}$/i.test(m.value))).map(m=>({start:m.start,end:m.end,kind:m.kind,value:m.value||''})):[],order:Number.isFinite(b.order)?b.order:i,createdAt:Number(b.createdAt)||Date.now()};
     }
     function scheduleSave(soon=false){
       if(!user)return;
@@ -452,9 +459,15 @@
       }
       const rect=field.getBoundingClientRect();
       if(rect.bottom<0||rect.top>innerHeight){formatToolbar.hidden=true;return;}
-      const width=Math.min(316,innerWidth-24);
-      formatToolbar.style.left=Math.max(12,Math.min(rect.left,innerWidth-width-12))+'px';
-      formatToolbar.style.top=Math.max(8,rect.top>64?rect.top-47:rect.bottom+7)+'px';
+      const width=Math.min(356,innerWidth-24);
+      const selection=window.getSelection();
+      const selectedRect=selection?.rangeCount?selection.getRangeAt(0).getBoundingClientRect():rect;
+      const target=selectedRect?.width?selectedRect:rect;
+      const centered=target.left+target.width/2-width/2;
+      formatToolbar.style.width=width+'px';
+      formatToolbar.style.left=Math.max(12,Math.min(centered,innerWidth-width-12))+'px';
+      const top=target.top-54;
+      formatToolbar.style.top=(top>=8?top:Math.min(innerHeight-62,target.bottom+10))+'px';
       formatToolbar.hidden=false;
       const b=blocks.find(x=>x.id===activeFormatId);
       formatToolbar.querySelector('.fmt-type').textContent=(types.find(t=>t.id===b?.type)?.title||'Text')+' ▾';
@@ -925,13 +938,13 @@
           ).join('')+'<div class="checklist-nested-actions"><button type="button" class="checklist-add-subtask" data-subtask-add="'+safe(b.id)+'">＋ Add a subtask</button><button type="button" class="checklist-add-subtask" data-subtask-bullet="'+safe(b.id)+'">• Bullet list</button></div></div>';
           details=modeSelector+(mode==='notes'?notes:nested);
         }
-        return '<div class="checklist-line checklist-type-'+b.type+(b.checked?' is-done':'')+(b.collapsed?' is-collapsed':'')+'" data-id="'+safe(b.id)+'">'+
-          '<div class="checklist-line-tools"><button type="button" class="checklist-insert" data-insert="'+safe(b.id)+'" aria-label="Insert block">+</button><button type="button" class="checklist-handle" aria-label="Drag to rearrange">⠿</button></div>'+
+        return '<div class="checklist-line checklist-type-'+b.type+(b.checked?' is-done':'')+(b.collapsed?' is-collapsed':'')+'" data-id="'+safe(b.id)+'" style="'+(backgroundPalette[b.blockBackground]?'--checklist-block-bg:'+backgroundPalette[b.blockBackground]+';':'')+(markPalette[b.blockColor]?'--checklist-block-color:'+markPalette[b.blockColor]+';':'')+'">'+
+          '<div class="checklist-line-tools"><button type="button" class="checklist-insert" data-insert="'+safe(b.id)+'" aria-label="Insert block">+</button><button type="button" class="checklist-handle" aria-label="Drag to rearrange or click for block actions" title="Drag to move · Click for actions">⠿</button></div>'+
           '<div class="checklist-line-inner">'+icon+
           '<div class="checklist-field-group"><div class="checklist-editor" contenteditable="true" role="textbox" aria-multiline="true" data-block-id="'+safe(b.id)+'" data-placeholder="'+safe(placeholder)+'" spellcheck="true">'+htmlWithMarks(b)+'</div>'+
           (details?'<div class="checklist-details">'+details+'</div>':'')+'</div></div>'+
           (b.dueDate?'<span class="checklist-date-label" aria-label="Due '+safe(dateLabel(b.dueDate))+'"><span class="checklist-date-label-short">'+safe(dateLabel(b.dueDate))+'</span><span class="checklist-date-label-long">'+safe(new Date(b.dueDate+'T12:00:00').toLocaleDateString('en-US',{month:'long',day:'numeric'}))+'</span></span>':'')+
-          '<button type="button" class="checklist-delete" data-delete="'+safe(b.id)+'" aria-label="Delete block">×</button></div>';
+          '</div>';
       }).join('');
       $('checklistEmpty').hidden=true;
       root.querySelectorAll('textarea').forEach(resizeField);
