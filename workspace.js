@@ -938,12 +938,14 @@
       if(!b){closeBlockMenu();return;}
       const button=(action,text,shortcut='')=>
         '<button type="button" data-block-action="'+action+'"><span>'+text+'</span><small>'+shortcut+'</small></button>';
+      blockMenu.classList.toggle('is-colors',blockMenuMode==='colors');
       if(blockMenuMode==='colors'){
-        blockMenu.innerHTML='<div class="block-menu-subheading"><button type="button" data-block-action="back">‹</button><strong>Color</strong></div>'+
-          '<div class="block-menu-label">TEXT COLOR</div>'+
-          blockColors.map(color=>button('text:'+color,'<span class="block-color-swatch text" style="color:'+(markPalette[color]||'inherit')+'">A</span> '+color[0].toUpperCase()+color.slice(1)+' text')).join('')+
-          '<div class="block-menu-label">BACKGROUND COLOR</div>'+
-          blockColors.map(color=>button('background:'+color,'<span class="block-color-swatch" style="background:'+(backgroundPalette[color]||'transparent')+'"></span> '+color[0].toUpperCase()+color.slice(1)+' background')).join('');
+        blockMenu.innerHTML='<div class="block-color-menu-header"><button type="button" data-block-action="back" aria-label="Back to actions">‹</button><strong>Block colors</strong></div>'+
+          '<div class="block-color-columns">'+
+            '<section class="block-color-group"><div class="block-menu-label">TEXT COLOR</div>'+
+            blockColors.map(color=>button('text:'+color,'<span class="block-color-swatch text" style="color:'+(markPalette[color]||'inherit')+'">A</span> '+color[0].toUpperCase()+color.slice(1)+' text'+(b.blockColor===color?' <span class="block-color-check">✓</span>':''))).join('')+
+            '</section><section class="block-color-group"><div class="block-menu-label">BACKGROUND COLOR</div>'+
+            blockColors.map(color=>button('background:'+color,'<span class="block-color-swatch" style="background:'+(backgroundPalette[color]||'transparent')+'"></span> '+color[0].toUpperCase()+color.slice(1)+' background'+(b.blockBackground===color?' <span class="block-color-check">✓</span>':''))).join('')+'</section></div>';
       }else if(blockMenuMode==='turn'){
         blockMenu.innerHTML='<div class="block-menu-subheading"><button type="button" data-block-action="back">‹</button><strong>Turn into</strong></div>'+
           types.map(t=>button('type:'+t.id,safe(t.symbol)+'　'+safe(t.title))).join('');
