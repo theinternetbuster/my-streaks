@@ -1002,3 +1002,11 @@ html[data-theme="light"] .checklist-date-weekdays span{color:#929bad}
   .workspace-bottom-pill::before{background:#303039!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
   html[data-theme="light"] .workspace-bottom-pill::before{background:#f5f6f9!important}
 }
+
+/* Safari compositing: keep frosted pane in front of the transparent element canvas. */
+@media(max-width:799px){
+  .workspace-bottom-pill::before{z-index:0!important}
+  .workspace-bottom-pill::after{z-index:1!important}
+  .workspace-bottom-pill .workspace-bottom-highlight{z-index:2!important}
+  .workspace-bottom-pill .workspace-bottom-item{z-index:3!important}
+}
