@@ -600,6 +600,14 @@
         if(e.key==='Escape'){e.preventDefault();closeDateMenu();return;}
       }
       if(slashFor===id&&!$('checklistSlashMenu').hidden){
+        // Typing a space after a complete command converts in place, even
+        // when an existing sentence follows the slash command.
+        if(e.key===' '&&!e.isComposing){
+          const prefix=b.text.slice(0,editorCaretOffset(field));
+          const token=prefix.match(/^\s*\/([a-z0-9-]+)$/i);
+          const selected=token&&types.find(t=>t.id.toLowerCase()===token[1].toLowerCase());
+          if(selected){e.preventDefault();applyCommand(selected.id);return;}
+        }
         if(e.key==='ArrowDown'||e.key==='ArrowUp'){
           e.preventDefault();slashSelected=(slashSelected+(e.key==='ArrowDown'?1:-1)+slashMatches.length)%slashMatches.length;
           $('checklistSlashMenu').querySelectorAll('[data-command]').forEach((el,i)=>el.classList.toggle('selected',i===slashSelected));return;
