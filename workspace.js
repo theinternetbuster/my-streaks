@@ -459,7 +459,7 @@
     // Native iOS keyboards commonly produce beforeinput(insertParagraph) without
     // a keydown. Both desktop Enter and the virtual Return key must share the
     // exact same block transition, rather than letting WebKit add <div><br>.
-    function insertChecklistParagraph(field){
+    function insertChecklistParagraph(field,overrideOffset=null){
       const id=field?.dataset?.blockId;
       const b=blocks.find(item=>item.id===id);
       if(!b)return false;
@@ -482,7 +482,7 @@
         requestAnimationFrame(()=>focusBlockAt(id,0));
         return true;
       }
-      const offset=Math.max(0,Math.min(editorCaretOffset(field),b.text.length));
+      const offset=Math.max(0,Math.min(overrideOffset??editorCaretOffset(field),b.text.length));
       const before=b.text.slice(0,offset);
       const after=b.text.slice(offset);
       b.text=before;
@@ -533,6 +533,13 @@
       }
       const field=e.target.closest('[contenteditable="true"][data-block-id]');if(!field)return;
       const b=blocks.find(b=>b.id===field.dataset.blockId);if(!b)return;
+      // Fallback for iOS WebKit versions that deliver input without a
+      // cancellable beforeinput for the software keyboard's Return key.
+      if(e.inputType==='insertParagraph'||
+          (e.inputType==='insertLineBreak'&&window.matchMedia('(pointer:coarse)').matches)){
+        insertChecklistParagraph(field,Math.max(0,editorCaretOffset(field)-1));
+        return;
+      }
       b.text=(field.innerText||field.textContent||'').replace(/\n$/,'').slice(0,5000);
       scheduleSave();
       // Slash commands can precede existing text; inspect only the text
