@@ -1144,6 +1144,31 @@
         else clearBlockSelection();
       }
     });
+    // A date mention stores one fixed calendar date. The displayed relative
+    // label can change at midnight without rewriting the saved text.
+    let lastRelativeLabelDay=localDay();
+    function refreshRelativeDateLabels(){
+      const today=localDay();
+      if(today===lastRelativeLabelDay)return;
+      lastRelativeLabelDay=today;
+      if(!user||tab!=='checklist')return;
+      for(const b of blocks){
+        if(!b.dueDate)continue;
+        const editor=root.querySelector('.checklist-editor[data-block-id="'+b.id+'"]');
+        const mention=editor?.querySelector('[data-date-mention]');
+        if(!mention)continue;
+        // Avoid rebuilding a contenteditable tree and losing the caret.
+        mention.textContent='@'+relativeDateMention(b.dueDate);
+        mention.setAttribute('aria-label','Edit due date '+dateLabel(b.dueDate));
+      }
+    }
+    // Safari may suspend timers while backgrounded; visibility/focus refreshes
+    // cover resume as well as an overnight tab left open.
+    setInterval(refreshRelativeDateLabels,60000);
+    document.addEventListener('visibilitychange',()=>{
+      if(!document.hidden)refreshRelativeDateLabels();
+    });
+    window.addEventListener('focus',refreshRelativeDateLabels);
     function renderChecklist(force=false){
       if(!root)return;
       // A blank document opens with a real editable paragraph, not a button.
