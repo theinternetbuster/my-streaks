@@ -1399,3 +1399,26 @@ html[data-theme="light"] .checklist-format-toolbar .fmt-highlight-symbol{
  font-style:italic!important;
  font-synthesis:style;
 }
+
+/* format32: the editor's save status remains functional but isn't shown
+   as permanent chrome; a failed save can still be surfaced elsewhere. */
+#checklistSyncStatus{display:none!important}
+/* Fit the Clear formatting action without overlapping the last button. */
+.checklist-format-toolbar{max-width:calc(100vw - 20px)}
+.checklist-format-toolbar .fmt-clear-icon{
+ display:inline-flex;align-items:center;justify-content:center;
+ position:relative;font:600 15px/1 'DM Sans',sans-serif;
+ width:22px;height:22px;letter-spacing:-.6px
+}
+.checklist-format-toolbar .fmt-clear-icon small{
+ position:absolute;bottom:0;right:-1px;font-size:13px;font-weight:800;
+}
+.checklist-format-toolbar>button[data-format-clear]{
+ border-left:1px solid rgba(145,145,150,.3);border-radius:0 6px 6px 0;
+ margin-left:2px;padding:0 6px;
+}
+@media(max-width:799px){
+ .checklist-format-toolbar>button{min-width:29px}
+ .checklist-format-toolbar .fmt-highlight-button{min-width:29px}
+ .checklist-format-toolbar>button.fmt-type{min-width:64px;max-width:82px}
+}
