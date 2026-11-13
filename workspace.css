@@ -1538,3 +1538,80 @@ html[data-theme="light"] .checklist-block-menu .block-menu-separator{
 @media(prefers-reduced-motion:reduce){
  .checklist-block-menu{animation:none}
 }
+
+/* blockmenu34 — two-stage block selection and unobstructed color palettes. */
+.checklist-page .checklist-line.block-is-selected,
+html[data-theme="light"] .checklist-page .checklist-line.block-is-selected{
+ background:rgba(48,113,197,.33)!important;
+ outline:1px solid rgba(72,139,224,.38)!important;
+ border-radius:7px;
+}
+.checklist-page .checklist-line.block-is-selected .checklist-editor{
+ color:inherit;
+}
+/* While a block's menu is open, adjacent blocks should not reveal grips.
+   Once the menu closes, the usual hover behavior comes back. */
+.checklist-page .checklist-blocks.block-menu-is-open .checklist-line:not(.block-is-selected) .checklist-insert,
+.checklist-page .checklist-blocks.block-menu-is-open .checklist-line:not(.block-is-selected) .checklist-handle{
+ opacity:0!important;pointer-events:none!important;
+}
+.checklist-page .checklist-line.block-is-selected .checklist-handle{
+ opacity:1!important;
+}
+/* Bring nested subtasks closer to the parent line while keeping the
+   vertical guide clean and visually connected. */
+.checklist-page .checklist-details{
+ margin-top:0!important;
+ padding-top:3px!important;
+ margin-bottom:10px!important;
+}
+.checklist-page .checklist-subtasks{
+ padding-top:0!important;
+ padding-bottom:3px!important;
+ gap:5px!important;
+}
+.checklist-page .checklist-subtask{
+ min-height:29px;
+}
+.checklist-block-menu.is-colors{
+ width:536px!important;
+ max-width:calc(100vw - 24px)!important;
+ max-height:calc(100dvh - 20px)!important;
+ overflow-y:auto;
+}
+.checklist-block-menu .block-color-menu-header{
+ display:flex;align-items:center;gap:9px;
+ border-bottom:1px solid rgba(140,140,148,.22);
+ padding:3px 6px 10px;margin-bottom:5px;
+}
+.checklist-block-menu .block-color-menu-header button{
+ width:27px;height:27px;border:0;background:transparent;
+ border-radius:6px;color:inherit;font-size:22px;
+}
+.checklist-block-menu .block-color-menu-header button:hover{background:rgba(130,130,140,.16)}
+.checklist-block-menu .block-color-menu-header strong{font-size:13px}
+.checklist-block-menu .block-color-columns{
+ display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+ column-gap:9px;
+}
+.checklist-block-menu .block-color-group{min-width:0}
+.checklist-block-menu .block-color-group>button{
+ width:100%;min-height:32px;padding:5px 7px;
+ display:flex;align-items:center;justify-content:space-between;
+ background:transparent;color:inherit;border:0;border-radius:7px;
+ font:500 12px/1.35 'DM Sans',sans-serif;text-align:left;cursor:pointer;
+}
+.checklist-block-menu .block-color-group>button:hover{background:rgba(132,132,140,.17)}
+.checklist-block-menu .block-color-group .block-color-swatch{
+ width:18px;height:18px;flex:none;
+}
+.checklist-block-menu .block-color-check{color:#ff783d;font-weight:800;margin-left:3px}
+html[data-theme="light"] .checklist-block-menu .block-color-menu-header{
+ border-bottom-color:#ececf0;
+}
+@media(max-width:560px){
+ .checklist-block-menu.is-colors{width:min(325px,calc(100vw - 24px))!important}
+ .checklist-block-menu .block-color-columns{
+  grid-template-columns:1fr;
+ }
+}
