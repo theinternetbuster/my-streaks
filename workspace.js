@@ -375,7 +375,7 @@
       '<button type="button" data-format-menu="colors" class="fmt-highlight-button" title="Text and highlight color" aria-label="Text and highlight color"><span class="fmt-highlight-symbol">A</span></button>'+
       '<div class="fmt-dropdown" hidden></div>';
     document.body.appendChild(formatToolbar);
-    let activeFormatId=null,formatRange=null,formatApplying=false;
+    let activeFormatId=null,formatRange=null,formatApplying=false,formatInteracting=false;
     function currentEditorSelection(){
       const sel=window.getSelection();
       if(!sel?.rangeCount)return null;
@@ -485,6 +485,7 @@
       }
     }
     formatToolbar.addEventListener('pointerdown',event=>{
+      formatInteracting=true;
       const selection=currentEditorSelection();
       if(selection&&selection.end>selection.start){
         formatRange=selection;activeFormatId=selection.id;
@@ -492,6 +493,7 @@
       event.preventDefault();
     });
     formatToolbar.addEventListener('click',event=>{
+      setTimeout(()=>{formatInteracting=false;},0);
       const button=event.target.closest('button');if(!button)return;
       if(button.dataset.format){applyFormat(button.dataset.format);return;}
       if(button.dataset.formatMenu){showFormatDropdown(button.dataset.formatMenu);return;}
@@ -516,7 +518,7 @@
       }
     });
     document.addEventListener('selectionchange',()=>{
-      if(formatApplying)return;
+      if(formatApplying||formatInteracting)return;
       const selection=currentEditorSelection();
       if(selection&&selection.end>selection.start){
         formatRange=selection;activeFormatId=selection.id;
