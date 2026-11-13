@@ -428,7 +428,13 @@
       if(e>s){
         const old=b.marks||[];
         const exact=old.some(m=>m.kind===kind&&m.start<=s&&m.end>=e&&(!['color','background'].includes(kind)));
-        b.marks=old.filter(m=>!(m.kind===kind&&m.start<e&&m.end>s));
+        b.marks=old.flatMap(m=>{
+          if(m.kind!==kind||m.end<=s||m.start>=e)return [m];
+          const pieces=[];
+          if(m.start<s)pieces.push({...m,end:s});
+          if(m.end>e)pieces.push({...m,start:e});
+          return pieces;
+        });
         if(!exact&&value!=='default')b.marks.push({start:s,end:e,kind,value:typeof value==='string'?value:''});
         renderChecklist(true);scheduleSave(true);
         requestAnimationFrame(()=>{selectFormatRange(b.id,s,e);placeFormatToolbar()});
