@@ -1308,6 +1308,33 @@
       }
       const field=event.target.closest?.('.checklist-editor,.checklist-note-editor');
       if(!field||restoringHistory)return;
+      // Date mentions are contenteditable=false atomic elements. When Backspace
+      // or Delete removes an entire mention, clear the underlying due date as
+      // well as the visible @token, including its end-date/time metadata.
+      const block=blocks.find(b=>b.id===field.dataset.blockId);
+      if(block?.dueDate&&['deleteContentBackward','deleteContentForward'].includes(event.inputType)){
+        const mention=findDateMention(block.text);
+        const selection=window.getSelection();
+        const position=currentEditorSelection();
+        if(mention&&position?.id===block.id&&selection?.isCollapsed&&
+          ((event.inputType==='deleteContentBackward'&&position.start===mention.end)||
+           (event.inputType==='deleteContentForward'&&position.start===mention.start))){
+          event.preventDefault();
+          const at=mention.start;
+          pendingUndoFocus={id:block.id,offset:at};
+          block.text=block.text.slice(0,mention.start)+block.text.slice(mention.end);
+          block.dueDate='';block.endDate='';block.includeTime=false;block.dueTime='09:00';
+          block.marks=(block.marks||[]).flatMap(mark=>{
+            if(mark.end<=mention.start)return [mark];
+            if(mark.start>=mention.end)return [{...mark,start:mark.start-(mention.end-mention.start),end:mark.end-(mention.end-mention.start)}];
+            if(mark.start<mention.start)return [{...mark,end:mention.start}];
+            return [];
+          });
+          renderChecklist(true);scheduleSave(true);
+          requestAnimationFrame(()=>focusBlockAt(block.id,at));
+          return;
+        }
+      }
       if(event.inputType?.startsWith('delete')&&!event.inputType.includes('ByCut')){
         pendingUndoFocus={id:field.dataset.blockId||('note:'+field.dataset.noteId),offset:editorCaretOffset(field)};
       }
@@ -1341,7 +1368,17 @@
       const nextText=(field.innerText||field.textContent||'').replace(/\n$/,'').slice(0,5000);
       updateMarksForEdit(b,nextText);
       b.text=nextText;
+      // If a selection, cut, or browser-native delete removed the atomic
+      // date element, its separate right-side date label must disappear too.
+      const dateWasRemoved=!!b.dueDate&&!field.querySelector('[data-date-mention]');
+      if(dateWasRemoved){
+        b.dueDate='';b.endDate='';b.includeTime=false;b.dueTime='09:00';
+      }
       scheduleSave();
+      if(dateWasRemoved){
+        const position=editorCaretOffset(field);
+        requestAnimationFrame(()=>{renderChecklist(true);focusBlockAt(b.id,position);});
+      }
       // Slash commands can precede existing text; inspect only the text
       // BEFORE the caret, and preserve any content after it.
       const prefix=b.text.slice(0,editorCaretOffset(field));
