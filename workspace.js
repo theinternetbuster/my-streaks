@@ -381,7 +381,7 @@
           const bg=active.filter(m=>m.kind==='background').at(-1)?.value||'default';
           const style=(markPalette[color]?'color:'+markPalette[color]+';':'')+
             (backgroundPalette[bg]?'background-color:'+backgroundPalette[bg]+';':'');
-          html+='<span class="checklist-date-mention '+safe(classes)+'" style="'+style+'" data-date-mention="'+safe(b.id)+'" contenteditable="false" role="button" tabindex="0">'+safe('@'+relativeDateMention(b.dueDate))+'</span>';
+          html+='<span class="checklist-date-mention '+safe(classes)+'" style="'+style+'" data-date-mention="'+safe(b.id)+'" contenteditable="false" role="button" tabindex="0">'+safe('@'+relativeDateMention(b.dueDate))+'</span>'+((mention.end===text.length)?'<span class="checklist-date-caret" data-date-caret="'+safe(b.id)+'">\u200B</span>':'');
           index=mention.end;continue;
         }
         if(mention&&index>mention.start&&index<mention.end){index=mention.end;continue;}
@@ -452,7 +452,7 @@
         try{
           const range=document.createRange();range.selectNodeContents(field);range.setEnd(node,offset);
           const fragment=range.cloneContents();
-          let length=fragment.textContent.length;
+          let length=fragment.textContent.replace(/[\u200B\uFEFF]/g,'').length;
           // An atomic @date shows a relative label but is stored as a date
           // token with a potentially different length. Map DOM selection
           // offsets to the actual saved text, including selected date pills.
@@ -733,7 +733,8 @@
       if(!match)return safe(text);
       return safe(text.slice(0,match.start))+
         '<span class="checklist-date-mention" data-date-mention="'+safe(b.id)+'" contenteditable="false" role="button" tabindex="0" aria-label="Edit due date '+safe(dateLabel(b.dueDate))+'">'+safe('@'+relativeDateMention(b.dueDate))+'</span>'+
-        safe(text.slice(match.end));
+        safe(text.slice(match.end))+
+        (match.end===text.length?'<span class="checklist-date-caret" data-date-caret="'+safe(b.id)+'">\u200B</span>':'');
     }
     function closeDateMenu(){
       dateMenu.hidden=true;dateScrim.hidden=true;dateMenu.classList.remove('is-sheet','is-suggestion');
@@ -1274,6 +1275,11 @@
       const before=b.text.slice(0,offset);
       const after=b.text.slice(offset);
       b.text=before;
+      const originalDate=b.dueDate;
+      const movedDate=!!originalDate&&!findDateMention(before)&&!!findDateMention(after);
+      if(movedDate){
+        b.dueDate='';b.endDate='';b.includeTime=false;
+      }
       const nextType=isTask?'todo':b.type==='bullet'?'bullet':'text';
       // Enter on an expandable to-do creates a separate sibling task,
       // NOT an indented child inside its dropdown. Keep the existing
@@ -1285,6 +1291,10 @@
         insertAfterId=lastFamilyBlock?.id||id;
       }
       const newBlock=addBlock(insertAfterId,nextType,after,b.parentId||'');
+      if(movedDate){
+        newBlock.dueDate=originalDate;
+        renderChecklist(true);scheduleSave(true);
+      }
       requestAnimationFrame(()=>focusBlockAt(newBlock.id,0));
       return true;
     }
@@ -1365,7 +1375,10 @@
         insertChecklistParagraph(field,Math.max(0,editorCaretOffset(field)-1));
         return;
       }
-      const nextText=(field.innerText||field.textContent||'').replace(/\n$/,'').slice(0,5000);
+      // The invisible editable caret anchor after a trailing date is only
+      // present in the DOM, never in persisted task text.
+      const nextText=(field.innerText||field.textContent||'')
+        .replace(/[\u200B\uFEFF]/g,'').replace(/\n$/,'').slice(0,5000);
       updateMarksForEdit(b,nextText);
       b.text=nextText;
       // If a selection, cut, or browser-native delete removed the atomic
@@ -1557,7 +1570,16 @@
       if(!selection||!selection.rangeCount||!field.contains(selection.anchorNode))return (field.textContent||'').length;
       const range=selection.getRangeAt(0).cloneRange();
       range.selectNodeContents(field);range.setEnd(selection.anchorNode,selection.anchorOffset);
-      return range.toString().length;
+      const snapshot=range.cloneContents();
+      let count=snapshot.textContent.replace(/[\u200B\uFEFF]/g,'').length;
+      const block=blocks.find(b=>b.id===field.dataset.blockId);
+      const mention=block?.dueDate?findDateMention(block.text):null;
+      if(mention){
+        snapshot.querySelectorAll('[data-date-mention]').forEach(token=>{
+          count+=mention.end-mention.start-token.textContent.length;
+        });
+      }
+      return count;
     }
     function focusBlockAt(id,offset){
       const field=root.querySelector('.checklist-editor[data-block-id="'+id+'"]');
@@ -1592,6 +1614,12 @@
         return false;
       }
       locate(field);
+      // Safari needs a real editable text node after an atomic @date pill.
+      // Otherwise tapping/pressing Return at the right edge can jump before it.
+      const landing=field.querySelector('[data-date-caret]');
+      if(landing&&mention?.end===block.text.length&&offset>=block.text.length&&landing.firstChild){
+        point={node:landing.firstChild,offset:0};
+      }
       field.focus();
       const range=document.createRange(),sel=window.getSelection();
       range.setStart(point.node,point.offset);
