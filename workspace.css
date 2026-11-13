@@ -894,180 +894,87 @@ html[data-theme="light"] .checklist-date-cal-header button:hover,
 html[data-theme="light"] .checklist-date-grid .checklist-date-day:hover{background:#f3e9e3}
 html[data-theme="light"] .checklist-date-weekdays span{color:#929bad}
 
-/* Mobile translucent navigation — frosted, layered, and readable on scrolling content. */
+/* iOS floating navigation — consolidated Babbel-inspired finish.
+   One glass surface, no competing multi-layer glass16–20 overrides. */
 @media(max-width:799px){
   .workspace-bottom-nav:not([hidden]){
-    isolation:isolate;
     bottom:max(17px,calc(env(safe-area-inset-bottom,0px) + 9px));
+    width:min(calc(100vw - 32px),490px);
   }
-  .workspace-bottom-pill{
-    isolation:isolate;
-    overflow:hidden;
-    border:1px solid rgba(255,255,255,.27)!important;
-    background:linear-gradient(145deg,rgba(65,62,76,.49),rgba(28,27,38,.57))!important;
-    -webkit-backdrop-filter:blur(28px) saturate(1.75) brightness(1.04)!important;
-    backdrop-filter:blur(28px) saturate(1.75) brightness(1.04)!important;
-    box-shadow:0 15px 42px rgba(0,0,0,.31),inset 0 1px 0 rgba(255,255,255,.23),inset 0 -1px 0 rgba(0,0,0,.13)!important;
-  }
-  .workspace-bottom-pill::after{
-    content:"";position:absolute;inset:1px;border-radius:inherit;
-    background:linear-gradient(158deg,rgba(255,255,255,.11),transparent 39%,rgba(255,255,255,.045) 85%);
-    pointer-events:none;z-index:0;
-  }
-  .workspace-bottom-highlight{
-    z-index:1;
-    background:rgba(8,8,12,.61)!important;
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 3px 14px rgba(0,0,0,.16)!important;
-    -webkit-backdrop-filter:blur(12px) saturate(1.35);
-    backdrop-filter:blur(12px) saturate(1.35);
-  }
-  .workspace-bottom-item{z-index:2;position:relative;color:rgba(255,255,255,.86)!important;text-shadow:0 1px 5px rgba(0,0,0,.17)}
-  .workspace-bottom-item.active{color:#fff!important}
-  html[data-theme="light"] .workspace-bottom-pill{
-    background:linear-gradient(150deg,rgba(255,255,255,.69),rgba(245,246,252,.51))!important;
-    border-color:rgba(255,255,255,.83)!important;
-    -webkit-backdrop-filter:blur(30px) saturate(1.65) brightness(1.05)!important;
-    backdrop-filter:blur(30px) saturate(1.65) brightness(1.05)!important;
-    box-shadow:0 14px 36px rgba(42,50,74,.17),inset 0 1px 0 rgba(255,255,255,.9),inset 0 -1px 0 rgba(90,100,125,.08)!important;
-  }
-  html[data-theme="light"] .workspace-bottom-pill::after{
-    background:linear-gradient(145deg,rgba(255,255,255,.29),transparent 50%,rgba(255,255,255,.10));
-  }
-  html[data-theme="light"] .workspace-bottom-highlight{
-    background:rgba(229,231,238,.65)!important;
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.84),0 2px 9px rgba(41,47,68,.065)!important;
-    -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
-  }
-  html[data-theme="light"] .workspace-bottom-item{color:rgba(30,33,42,.86)!important;text-shadow:none}
-  html[data-theme="light"] .workspace-bottom-item.active{color:#141824!important}
-}
-@media(max-width:799px) and (prefers-reduced-transparency:reduce){
-  .workspace-bottom-pill{background:#292933!important}
-  html[data-theme="light"] .workspace-bottom-pill{background:#f6f7fa!important}
-}
-
-/* glass17 — genuinely transparent iPhone tab bar.
-   Use a separate frosted pane; avoid the previous opaque dark fills. */
-@media(max-width:799px){
-  .workspace-bottom-nav:not([hidden]){isolation:auto!important}
   .workspace-bottom-pill{
     position:relative;
-    isolation:isolate!important;
-    overflow:visible!important;
-    background:transparent!important;
-    border:1px solid rgba(255,255,255,.31)!important;
-    box-shadow:0 7px 26px rgba(0,0,0,.20),inset 0 1px rgba(255,255,255,.24)!important;
-    -webkit-backdrop-filter:none!important;
-    backdrop-filter:none!important;
+    isolation:isolate;
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    overflow:hidden;
+    padding:6px;
+    border:1px solid rgba(255,255,255,.22);
+    border-radius:999px;
+    background:rgba(43,43,46,.76);
+    -webkit-backdrop-filter:blur(5px) saturate(1.18);
+    backdrop-filter:blur(5px) saturate(1.18);
+    box-shadow:0 10px 29px rgba(0,0,0,.23),inset 0 1px rgba(255,255,255,.13);
   }
   .workspace-bottom-pill::before{
-    content:"";position:absolute;inset:0;z-index:-1;
-    border-radius:inherit;pointer-events:none;
-    background:rgba(80,79,91,.23);
-    -webkit-backdrop-filter:blur(15px) saturate(1.8)!important;
-    backdrop-filter:blur(15px) saturate(1.8)!important;
-  }
-  .workspace-bottom-pill::after{
-    inset:0;z-index:-1;opacity:.8;
-    background:linear-gradient(160deg,rgba(255,255,255,.13),rgba(255,255,255,.015) 48%,rgba(255,255,255,.08))!important;
+    content:"";
+    position:absolute;
+    inset:1px;
+    z-index:0;
+    pointer-events:none;
     border-radius:inherit;
+    background:linear-gradient(170deg,rgba(255,255,255,.08),transparent 45%,rgba(255,255,255,.025));
   }
+  .workspace-bottom-pill::after{content:none}
   .workspace-bottom-highlight{
-    background:rgba(9,8,16,.36)!important;
-    box-shadow:inset 0 1px rgba(255,255,255,.08),0 2px 8px rgba(0,0,0,.09)!important;
-    -webkit-backdrop-filter:blur(8px)!important;
-    backdrop-filter:blur(8px)!important;
-  }
-  .workspace-bottom-item{color:rgba(255,255,255,.90)!important}
-  html[data-theme="light"] .workspace-bottom-pill{
-    background:transparent!important;
-    border-color:rgba(255,255,255,.83)!important;
-    box-shadow:0 8px 27px rgba(34,42,64,.13),inset 0 1px rgba(255,255,255,.87)!important;
-  }
-  html[data-theme="light"] .workspace-bottom-pill::before{
-    background:rgba(255,255,255,.26)!important;
-    -webkit-backdrop-filter:blur(17px) saturate(1.45)!important;
-    backdrop-filter:blur(17px) saturate(1.45)!important;
-  }
-  html[data-theme="light"] .workspace-bottom-pill::after{
-    background:linear-gradient(150deg,rgba(255,255,255,.34),transparent 55%,rgba(255,255,255,.08))!important;
-  }
-  html[data-theme="light"] .workspace-bottom-highlight{
-    background:rgba(220,223,232,.42)!important;
-    box-shadow:inset 0 1px rgba(255,255,255,.73),0 2px 8px rgba(26,34,56,.05)!important;
-  }
-  html[data-theme="light"] .workspace-bottom-item{color:rgba(25,29,40,.91)!important}
-}
-@media(max-width:799px) and (prefers-reduced-transparency:reduce){
-  .workspace-bottom-pill::before{background:#303039!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
-  html[data-theme="light"] .workspace-bottom-pill::before{background:#f5f6f9!important}
-}
-
-/* Safari compositing: keep frosted pane in front of the transparent element canvas. */
-@media(max-width:799px){
-  .workspace-bottom-pill::before{z-index:0!important}
-  .workspace-bottom-pill::after{z-index:1!important}
-  .workspace-bottom-pill .workspace-bottom-highlight{z-index:2!important}
-  .workspace-bottom-pill .workspace-bottom-item{z-index:3!important}
-}
-
-/* glass18 — legible content THROUGH the glass (Babbel reference).
-   Previous 15px+ blur and stacked charcoal overlays hid numbers and flames. */
-@media(max-width:799px){
-  .workspace-bottom-pill{
-    background:transparent!important;
-    border:1px solid rgba(255,255,255,.23)!important;
-    box-shadow:0 7px 20px rgba(0,0,0,.12),inset 0 1px 0 rgba(255,255,255,.20)!important;
-    -webkit-backdrop-filter:none!important;
-    backdrop-filter:none!important;
-  }
-  .workspace-bottom-pill::before{
-    background:rgba(105,101,119,.075)!important;
-    -webkit-backdrop-filter:blur(2.5px) saturate(1.08)!important;
-    backdrop-filter:blur(2.5px) saturate(1.08)!important;
-  }
-  .workspace-bottom-pill::after{
-    opacity:1!important;
-    background:linear-gradient(150deg,rgba(255,255,255,.085),rgba(255,255,255,.012) 46%,rgba(255,255,255,.035))!important;
-  }
-  .workspace-bottom-highlight{
-    background:rgba(16,14,24,.17)!important;
-    box-shadow:inset 0 1px rgba(255,255,255,.11),0 2px 8px rgba(0,0,0,.055)!important;
-    -webkit-backdrop-filter:blur(1px)!important;
-    backdrop-filter:blur(1px)!important;
+    position:absolute;
+    z-index:1;
+    top:6px;bottom:6px;left:6px;
+    width:calc((100% - 12px)/3);
+    border-radius:999px;
+    background:rgba(5,5,8,.74);
+    box-shadow:inset 0 1px rgba(255,255,255,.055),0 2px 8px rgba(0,0,0,.10);
+    -webkit-backdrop-filter:blur(2px);
+    backdrop-filter:blur(2px);
   }
   .workspace-bottom-item{
-    color:#f5f5f8!important;
-    text-shadow:0 1px 3px rgba(0,0,0,.70)!important;
+    position:relative;
+    z-index:2;
+    min-height:63px;
+    padding:9px 4px 8px;
+    gap:5px;
+    color:rgba(255,255,255,.87);
+    font-size:11px;
+    font-weight:500;
+    text-shadow:none;
+    -webkit-tap-highlight-color:transparent;
   }
-  .workspace-bottom-item.active{color:#fff!important}
+  .workspace-bottom-item svg{width:26px;height:26px;stroke-width:1.85}
+  .workspace-bottom-item.active{color:#fff;font-weight:650}
   html[data-theme="light"] .workspace-bottom-pill{
-    background:transparent!important;
-    border-color:rgba(255,255,255,.67)!important;
-    box-shadow:0 7px 20px rgba(38,44,65,.10),inset 0 1px rgba(255,255,255,.70)!important;
+    background:rgba(255,255,255,.80);
+    border-color:rgba(209,210,216,.72);
+    -webkit-backdrop-filter:blur(7px) saturate(1.12);
+    backdrop-filter:blur(7px) saturate(1.12);
+    box-shadow:0 10px 30px rgba(32,39,62,.105),inset 0 1px rgba(255,255,255,.89);
   }
   html[data-theme="light"] .workspace-bottom-pill::before{
-    background:rgba(245,247,253,.14)!important;
-    -webkit-backdrop-filter:blur(3px) saturate(1.05)!important;
-    backdrop-filter:blur(3px) saturate(1.05)!important;
-  }
-  html[data-theme="light"] .workspace-bottom-pill::after{
-    background:linear-gradient(150deg,rgba(255,255,255,.13),transparent 48%,rgba(255,255,255,.045))!important;
+    background:linear-gradient(160deg,rgba(255,255,255,.27),transparent 62%);
   }
   html[data-theme="light"] .workspace-bottom-highlight{
-    background:rgba(218,222,232,.24)!important;
-    box-shadow:inset 0 1px rgba(255,255,255,.52),0 2px 8px rgba(40,46,65,.04)!important;
-    -webkit-backdrop-filter:blur(1px)!important;
-    backdrop-filter:blur(1px)!important;
+    background:rgba(221,222,227,.73);
+    box-shadow:inset 0 1px rgba(255,255,255,.74),0 2px 7px rgba(46,50,67,.065);
+    -webkit-backdrop-filter:blur(2px);
+    backdrop-filter:blur(2px);
   }
-  html[data-theme="light"] .workspace-bottom-item{
-    color:#1a202d!important;
-    text-shadow:0 1px 2px rgba(255,255,255,.85)!important;
-  }
+  html[data-theme="light"] .workspace-bottom-item{color:#29292d}
+  html[data-theme="light"] .workspace-bottom-item.active{color:#111114}
 }
 @media(max-width:799px) and (prefers-reduced-transparency:reduce){
-  .workspace-bottom-pill::before{background:#303039!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
-  html[data-theme="light"] .workspace-bottom-pill::before{background:#f5f6f9!important}
+  .workspace-bottom-pill{background:#29292c}
+  html[data-theme="light"] .workspace-bottom-pill{background:#f7f7f9}
+  .workspace-bottom-pill,.workspace-bottom-highlight{
+    -webkit-backdrop-filter:none;backdrop-filter:none;
+  }
 }
 
 /* iOS checklist: Notion-style clean reading mode. The insertion control is
@@ -1100,39 +1007,3 @@ html[data-theme="light"] .checklist-date-weekdays span{color:#929bad}
   }
 }
 
-/* glass20: balanced frosted tint between glass17 (too opaque) and glass18 (too clear).
-   Applies to the iOS-sized navigation only, without changing the page itself. */
-@media (max-width:799px){
-  .workspace-bottom-pill{
-    border-color:rgba(255,255,255,.26)!important;
-    box-shadow:0 9px 26px rgba(0,0,0,.17),inset 0 1px rgba(255,255,255,.21)!important;
-  }
-  .workspace-bottom-pill::before{
-    background:rgba(51,50,58,.28)!important;
-    -webkit-backdrop-filter:blur(5px) saturate(1.2)!important;
-    backdrop-filter:blur(5px) saturate(1.2)!important;
-  }
-  .workspace-bottom-pill::after{
-    background:linear-gradient(160deg,rgba(255,255,255,.085),transparent 52%,rgba(255,255,255,.028))!important;
-  }
-  .workspace-bottom-highlight{
-    background:rgba(10,10,15,.28)!important;
-    -webkit-backdrop-filter:blur(3px)!important;
-    backdrop-filter:blur(3px)!important;
-    box-shadow:inset 0 1px rgba(255,255,255,.12),0 2px 7px rgba(0,0,0,.07)!important;
-  }
-  html[data-theme="light"] .workspace-bottom-pill{
-    border-color:rgba(255,255,255,.78)!important;
-    box-shadow:0 9px 26px rgba(30,39,61,.13),inset 0 1px rgba(255,255,255,.84)!important;
-  }
-  html[data-theme="light"] .workspace-bottom-pill::before{
-    background:rgba(248,249,252,.34)!important;
-    -webkit-backdrop-filter:blur(5px) saturate(1.12)!important;
-    backdrop-filter:blur(5px) saturate(1.12)!important;
-  }
-  html[data-theme="light"] .workspace-bottom-highlight{
-    background:rgba(222,226,235,.40)!important;
-    -webkit-backdrop-filter:blur(3px)!important;
-    backdrop-filter:blur(3px)!important;
-  }
-}
