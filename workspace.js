@@ -349,6 +349,141 @@
         }
       }
     }
+    // Compact contextual formatting tools. The selection is preserved while
+    // clicking buttons, with formatting saved as ranges rather than raw HTML.
+    const formatToolbar=document.createElement('div');
+    formatToolbar.className='checklist-format-toolbar';
+    formatToolbar.hidden=true;
+    formatToolbar.innerHTML=
+      '<button type="button" data-format-menu="block" class="fmt-type" aria-label="Change block type">Text ▾</button>'+
+      '<button type="button" data-format="bold" title="Bold (Ctrl+B)"><b>B</b></button>'+
+      '<button type="button" data-format="italic" title="Italic (Ctrl+I)"><i>I</i></button>'+
+      '<button type="button" data-format="underline" title="Underline (Ctrl+U)"><u>U</u></button>'+
+      '<button type="button" data-format="strike" title="Strikethrough"><s>S</s></button>'+
+      '<button type="button" data-format-menu="colors" title="Text and background color">A<span class="fmt-color-dot"></span> ▾</button>'+
+      '<div class="fmt-dropdown" hidden></div>';
+    document.body.appendChild(formatToolbar);
+    let activeFormatId=null,formatRange=null;
+    function currentEditorSelection(){
+      const sel=window.getSelection();
+      if(!sel?.rangeCount)return null;
+      const field=sel.anchorNode?.parentElement?.closest?.('.checklist-editor[data-block-id]')||
+        (sel.anchorNode?.nodeType===1?sel.anchorNode.closest?.('.checklist-editor[data-block-id]'):null);
+      if(!field||!field.contains(sel.focusNode))return null;
+      const getPos=(node,offset)=>{
+        try{const range=document.createRange();range.selectNodeContents(field);range.setEnd(node,offset);return range.toString().length}
+        catch(e){return null;}
+      };
+      const a=getPos(sel.anchorNode,sel.anchorOffset),b=getPos(sel.focusNode,sel.focusOffset);
+      return a===null||b===null?null:{id:field.dataset.blockId,start:Math.min(a,b),end:Math.max(a,b)};
+    }
+    function selectFormatRange(id,start,end){
+      const field=root.querySelector('.checklist-editor[data-block-id="'+id+'"]');
+      if(!field)return;
+      const pointAt=offset=>{
+        const walker=document.createTreeWalker(field,NodeFilter.SHOW_TEXT);let node,left=offset;
+        while((node=walker.nextNode())){
+          if(left<=node.textContent.length)return {node,offset:left};
+          left-=node.textContent.length;
+        }
+        return {node:field,offset:field.childNodes.length};
+      };
+      const first=pointAt(start),last=pointAt(end),range=document.createRange();
+      range.setStart(first.node,first.offset);range.setEnd(last.node,last.offset);
+      field.focus();const sel=window.getSelection();sel.removeAllRanges();sel.addRange(range);
+    }
+    function placeFormatToolbar(){
+      const s=currentEditorSelection();
+      if(s){formatRange=s;activeFormatId=s.id;}
+      const field=activeFormatId?root.querySelector('.checklist-editor[data-block-id="'+activeFormatId+'"]'):null;
+      if(!field||!root.contains(field)||!['checklist'].includes(tab)){
+        formatToolbar.hidden=true;return;
+      }
+      const rect=field.getBoundingClientRect();
+      if(rect.bottom<0||rect.top>innerHeight){formatToolbar.hidden=true;return;}
+      const width=Math.min(316,innerWidth-24);
+      formatToolbar.style.left=Math.max(12,Math.min(rect.left,innerWidth-width-12))+'px';
+      formatToolbar.style.top=Math.max(8,rect.top>64?rect.top-47:rect.bottom+7)+'px';
+      formatToolbar.hidden=false;
+      const b=blocks.find(x=>x.id===activeFormatId);
+      formatToolbar.querySelector('.fmt-type').textContent=(types.find(t=>t.id===b?.type)?.title||'Text')+' ▾';
+    }
+    function applyFormat(kind,value=true){
+      const selection=formatRange||currentEditorSelection();
+      const b=blocks.find(x=>x.id===(selection?.id||activeFormatId));
+      if(!b)return;
+      const s=selection?.start??0,e=selection?.end??s;
+      if(e>s){
+        const old=b.marks||[];
+        const exact=old.some(m=>m.kind===kind&&m.start<=s&&m.end>=e&&(!['color','background'].includes(kind)));
+        b.marks=old.filter(m=>!(m.kind===kind&&m.start<e&&m.end>s));
+        if(!exact&&value!=='default')b.marks.push({start:s,end:e,kind,value:typeof value==='string'?value:''});
+        renderChecklist(true);scheduleSave(true);
+        requestAnimationFrame(()=>{selectFormatRange(b.id,s,e);placeFormatToolbar()});
+      }else{
+        const pending={...(pendingTextStyle.get(b.id)||{})};
+        if(kind==='color'||kind==='background')pending[kind]=value;
+        else pending[kind]=!pending[kind];
+        pendingTextStyle.set(b.id,pending);
+        placeFormatToolbar();
+      }
+    }
+    function showFormatDropdown(mode){
+      const menu=formatToolbar.querySelector('.fmt-dropdown');
+      if(!menu.hidden&&menu.dataset.mode===mode){menu.hidden=true;return;}
+      menu.dataset.mode=mode;menu.hidden=false;
+      if(mode==='block'){
+        menu.innerHTML='<div class="fmt-menu-label">TURN INTO</div>'+
+          types.map(t=>'<button type="button" data-format-block="'+safe(t.id)+'">'+safe(t.symbol)+'　'+safe(t.title)+'</button>').join('');
+      }else{
+        const swatches=['default','gray','brown','orange','yellow','green','blue','purple','pink','red'];
+        menu.innerHTML='<div class="fmt-menu-label">TEXT COLOR</div><div class="fmt-swatches">'+
+          swatches.map(x=>'<button type="button" data-format-color="'+x+'" title="'+x+'" style="color:'+(markPalette[x]||'inherit')+'">'+(x==='default'?'A':'A')+'</button>').join('')+
+          '</div><div class="fmt-menu-label">BACKGROUND COLOR</div><div class="fmt-swatches">'+
+          swatches.map(x=>'<button type="button" data-format-background="'+x+'" title="'+x+'" style="background:'+(backgroundPalette[x]||'transparent')+'"></button>').join('')+'</div>';
+      }
+    }
+    formatToolbar.addEventListener('pointerdown',event=>event.preventDefault());
+    formatToolbar.addEventListener('click',event=>{
+      const button=event.target.closest('button');if(!button)return;
+      if(button.dataset.format){applyFormat(button.dataset.format);return;}
+      if(button.dataset.formatMenu){showFormatDropdown(button.dataset.formatMenu);return;}
+      if(button.dataset.formatColor){applyFormat('color',button.dataset.formatColor);formatToolbar.querySelector('.fmt-dropdown').hidden=true;return;}
+      if(button.dataset.formatBackground){applyFormat('background',button.dataset.formatBackground);formatToolbar.querySelector('.fmt-dropdown').hidden=true;return;}
+      if(button.dataset.formatBlock){
+        const b=blocks.find(x=>x.id===activeFormatId);if(!b)return;
+        b.type=normalizedType(button.dataset.formatBlock);b.checked=false;
+        b.detailsOpen=['todoNote','todoList'].includes(b.type);
+        b.detailsMode=b.type==='todoList'?'tasks':'notes';
+        formatToolbar.querySelector('.fmt-dropdown').hidden=true;
+        renderChecklist(true);scheduleSave(true);
+        requestAnimationFrame(()=>{focusBlockAt(b.id,0);placeFormatToolbar()});
+      }
+    });
+    root.addEventListener('focusin',event=>{
+      const field=event.target.closest('.checklist-editor[data-block-id]');
+      if(!field)return;
+      activeFormatId=field.dataset.blockId;
+      formatRange={id:activeFormatId,start:editorCaretOffset(field),end:editorCaretOffset(field)};
+      placeFormatToolbar();
+    });
+    document.addEventListener('selectionchange',()=>{
+      const selection=currentEditorSelection();
+      if(selection){formatRange=selection;activeFormatId=selection.id;placeFormatToolbar();}
+    });
+    document.addEventListener('pointerdown',event=>{
+      if(!formatToolbar.contains(event.target)&&!root.contains(event.target)){
+        formatToolbar.hidden=true;formatToolbar.querySelector('.fmt-dropdown').hidden=true;
+        activeFormatId=null;formatRange=null;
+      }
+    });
+    root.addEventListener('keydown',event=>{
+      if(!(event.ctrlKey||event.metaKey)||event.altKey||event.shiftKey)return;
+      const kind=event.key.toLowerCase()==='b'?'bold':event.key.toLowerCase()==='i'?'italic':event.key.toLowerCase()==='u'?'underline':null;
+      if(kind&&event.target.closest('.checklist-editor[data-block-id]')){
+        event.preventDefault();formatRange=currentEditorSelection();applyFormat(kind);
+      }
+    },true);
     function inlineDateText(b){
       const text=b.text||'';
       if(!b.dueDate)return safe(text);
