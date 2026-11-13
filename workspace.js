@@ -7,8 +7,7 @@
     {id:'h1',title:'Heading 1',subtitle:'Large section heading',symbol:'H1'},
     {id:'h2',title:'Heading 2',subtitle:'Smaller heading',symbol:'H2'},
     {id:'todo',title:'To-do list',subtitle:'A task to check off',symbol:'☐'},
-    {id:'todoNote',title:'To-do with notes',subtitle:'Expandable notes beneath a task',symbol:'☷'},
-    {id:'todoList',title:'To-do with subtasks',subtitle:'Expandable mini-checklist',symbol:'☰'},
+    {id:'todoList',title:'Expandable to-do',subtitle:'A task with freely editable indented blocks',symbol:'☰'},
     {id:'toggle',title:'Toggle',subtitle:'Collapsible notes',symbol:'▸'},
     {id:'bullet',title:'Bulleted list',subtitle:'Simple list item',symbol:'•'},
     {id:'text',title:'Text',subtitle:'Regular notes',symbol:'T'}
@@ -51,7 +50,7 @@
       to.push({content:serializeBlocks(),focus:focusId?{id:focusId,offset:position??0}:null});
       restoringHistory=true;
       clearDocumentSelection();
-      blocks=JSON.parse(restored.content).map(normalizeBlock);
+      blocks=migrateChecklistBlocks(JSON.parse(restored.content));
       closeSlash();renderChecklist(true);
       historyPresent=serializeBlocks();lastHistoryAt=0;lastHistoryField='';
       restoringHistory=false;scheduleSave(true);
@@ -121,7 +120,7 @@
           if(epoch!==listenerEpoch||!user)return;
           if(!dirty){
             const incoming=snapshot.exists()?snapshot.data().blocks:[];
-            const nextBlocks=Array.isArray(incoming)?incoming.filter(b=>b&&typeof b.text==='string').slice(0,500).map(normalizeBlock):[];
+            const nextBlocks=Array.isArray(incoming)?migrateChecklistBlocks(incoming.filter(b=>b&&typeof b.text==='string').slice(0,500)):[];
             const nextJson=JSON.stringify(nextBlocks.map((b,i)=>({...b,order:i})));
             if(nextJson!==serializeBlocks()){
               blocks=nextBlocks;resetHistory();renderChecklist();
@@ -144,7 +143,39 @@
     }
     function normalizedType(t){return types.some(x=>x.id===t)?t:'text';}
     function normalizeBlock(b,i){
-      return {id:String(b.id||uniqueId()),type:normalizedType(b.type),text:String(b.text||'').slice(0,5000),checked:!!b.checked,collapsed:!!b.collapsed,detailsOpen:b.type==='todo'?false:(typeof b.detailsOpen==='boolean'?b.detailsOpen:(b.type==='todoNote'||b.type==='todoList')&&!b.collapsed),note:String(b.note||'').slice(0,10000),detailsMode:b.type==='todoList'?'tasks':'notes',subtasks:Array.isArray(b.subtasks)?b.subtasks.slice(0,40).filter(t=>t&&typeof t.text==='string').map(t=>({id:String(t.id||uniqueId()),text:String(t.text).slice(0,500),checked:!!t.checked,type:t.type==='bullet'?'bullet':'todo'})):[],dueDate:/^\d{4}-\d{2}-\d{2}$/.test(b.dueDate||'')?b.dueDate:'',endDate:/^\d{4}-\d{2}-\d{2}$/.test(b.endDate||'')?b.endDate:'',dateFormat:b.dateFormat==='absolute'?'absolute':'relative',includeTime:!!b.includeTime,dueTime:/^([01]\d|2[0-3]):[0-5]\d$/.test(b.dueTime||'')?b.dueTime:'09:00',blockBackground:typeof b.blockBackground==='string'&&Object.hasOwn(backgroundPalette,b.blockBackground)?b.blockBackground:'default',blockColor:typeof b.blockColor==='string'&&Object.hasOwn(markPalette,b.blockColor)?b.blockColor:'default',marks:Array.isArray(b.marks)?b.marks.slice(0,100).filter(m=>m&&Number.isInteger(m.start)&&Number.isInteger(m.end)&&m.start>=0&&m.end>m.start&&m.end<=String(b.text||'').length&&['bold','italic','underline','strike','color','background'].includes(m.kind)&&(!m.value||/^[a-z0-9-]{1,24}$/i.test(m.value))).map(m=>({start:m.start,end:m.end,kind:m.kind,value:m.value||''})):[],order:Number.isFinite(b.order)?b.order:i,createdAt:Number(b.createdAt)||Date.now()};
+      return {parentId:typeof b.parentId==='string'?b.parentId:'',id:String(b.id||uniqueId()),type:normalizedType(b.type),text:String(b.text||'').slice(0,5000),checked:!!b.checked,collapsed:!!b.collapsed,detailsOpen:typeof b.detailsOpen==='boolean'?b.detailsOpen:(b.type==='todoNote'||b.type==='todoList')&&!b.collapsed,note:String(b.note||'').slice(0,10000),detailsMode:b.type==='todoList'?'tasks':'notes',subtasks:Array.isArray(b.subtasks)?b.subtasks.slice(0,40).filter(t=>t&&typeof t.text==='string').map(t=>({id:String(t.id||uniqueId()),text:String(t.text).slice(0,500),checked:!!t.checked,type:t.type==='bullet'?'bullet':'todo'})):[],dueDate:/^\d{4}-\d{2}-\d{2}$/.test(b.dueDate||'')?b.dueDate:'',endDate:/^\d{4}-\d{2}-\d{2}$/.test(b.endDate||'')?b.endDate:'',dateFormat:b.dateFormat==='absolute'?'absolute':'relative',includeTime:!!b.includeTime,dueTime:/^([01]\d|2[0-3]):[0-5]\d$/.test(b.dueTime||'')?b.dueTime:'09:00',blockBackground:typeof b.blockBackground==='string'&&Object.hasOwn(backgroundPalette,b.blockBackground)?b.blockBackground:'default',blockColor:typeof b.blockColor==='string'&&Object.hasOwn(markPalette,b.blockColor)?b.blockColor:'default',marks:Array.isArray(b.marks)?b.marks.slice(0,100).filter(m=>m&&Number.isInteger(m.start)&&Number.isInteger(m.end)&&m.start>=0&&m.end>m.start&&m.end<=String(b.text||'').length&&['bold','italic','underline','strike','color','background'].includes(m.kind)&&(!m.value||/^[a-z0-9-]{1,24}$/i.test(m.value))).map(m=>({start:m.start,end:m.end,kind:m.kind,value:m.value||''})):[],order:Number.isFinite(b.order)?b.order:i,createdAt:Number(b.createdAt)||Date.now()};
+    }
+    // Convert the old two-style subtask/note format to ordinary nested
+    // blocks. The migration is deterministic for a stored snapshot and
+    // never discards existing notes or subtasks.
+    function migrateChecklistBlocks(items){
+      const out=[];
+      for(const original of items){
+        const b=normalizeBlock(original,out.length);
+        const legacy=['todoNote','todoList'].includes(b.type);
+        if(legacy)b.type='todoList';
+        out.push(b);
+        const hasStoredChildren=items.some(x=>x.parentId===b.id);
+        if(legacy&&!hasStoredChildren){
+          if(b.note.trim()){
+            for(const [index,line] of b.note.split('\n').entries()){
+              if(!line.trim())continue;
+              out.push(normalizeBlock({
+                id:b.id+'-note-'+index,type:line.startsWith('• ')?'bullet':'text',
+                text:line.replace(/^• /,''),parentId:b.id
+              },out.length));
+            }
+          }
+          for(const t of b.subtasks){
+            out.push(normalizeBlock({
+              id:t.id,type:t.type==='bullet'?'bullet':'todo',
+              checked:t.checked,text:t.text,parentId:b.id
+            },out.length));
+          }
+        }
+        if(legacy){b.note='';b.subtasks=[];b.detailsMode='tasks';}
+      }
+      return out;
     }
     function scheduleSave(soon=false){
       if(!user)return;
@@ -177,8 +208,10 @@
       pendingWrite=pendingWrite.then(run,run);
       await pendingWrite;
     }
-    function addBlock(afterId=null,type='todo',text=''){
-      const b={id:uniqueId(),type,text,checked:false,collapsed:false,detailsOpen:type==='todoNote'||type==='todoList',note:'',detailsMode:type==='todoList'?'tasks':'notes',subtasks:type==='todoList'?[{id:uniqueId(),text:'',checked:false,type:'todo'}]:[],dueDate:'',order:blocks.length,createdAt:Date.now()};
+    function addBlock(afterId=null,type='todo',text='',forcedParentId=null){
+      const preceding=blocks.find(x=>x.id===afterId);
+      const parentId=forcedParentId!==null?forcedParentId:(preceding?.parentId||'');
+      const b={id:uniqueId(),type,text,parentId,checked:false,collapsed:false,detailsOpen:type==='todoList',note:'',detailsMode:'tasks',subtasks:[],dueDate:'',order:blocks.length,createdAt:Date.now()};
       const index=afterId?blocks.findIndex(x=>x.id===afterId):-1;
       if(index>=0)blocks.splice(index+1,0,b);else blocks.push(b);
       renderChecklist(true);scheduleSave(true);
@@ -926,9 +959,12 @@
       b.text=(removeTo?b.text.slice(removeTo):b.text).replace(/^\s+/,'');
       b.type=normalizedType(type);
       b.checked=false;
-      b.detailsOpen=type==='todoNote'||type==='todoList';
-      b.detailsMode=type==='todoList'?'tasks':'notes';
-      if(type==='todoList'&&!b.subtasks.length)b.subtasks.push({id:uniqueId(),text:'',checked:false,type:'todo'});
+      b.detailsOpen=type==='todoList';
+      b.detailsMode='tasks';
+      if(type==='todoList'&&!blocks.some(x=>x.parentId===b.id)){
+        const index=blocks.indexOf(b);
+        blocks.splice(index+1,0,normalizeBlock({id:uniqueId(),parentId:b.id,type:'todo',text:''},index+1));
+      }
       closeSlash();renderChecklist(true);scheduleSave(true);
       requestAnimationFrame(()=>focusBlockAt(id,0));
     }
