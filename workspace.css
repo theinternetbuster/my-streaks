@@ -1007,3 +1007,17 @@ html[data-theme="light"] .checklist-date-weekdays span{color:#929bad}
   }
 }
 
+
+/* Mobile web/PWA screens are app-like: keep the copyright footer on desktop only. */
+@media(max-width:799px){
+  .site-footer{display:none!important}
+}
+/* A focused row retains a stable, finger-sized contextual insertion target. */
+@media(max-width:799px) and (hover:none){
+  .checklist-page .checklist-line:focus-within .checklist-line-tools .checklist-insert{
+    width:28px;min-width:28px;height:32px;
+    opacity:1!important;
+    touch-action:manipulation;
+    -webkit-tap-highlight-color:transparent;
+  }
+}
