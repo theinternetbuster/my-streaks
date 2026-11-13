@@ -255,14 +255,27 @@
       if(!date)return '';
       return new Date(date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});
     };
+    // Match entire saved date tokens before any shorter month prefix.
+    const dateMentionRegex=/@(?:Today|Tomorrow|Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+\d{1,2}(?:,?\s+\d{4})?)/i;
+    function findDateMention(value){
+      const text=String(value||'');
+      const match=text.match(dateMentionRegex);
+      if(!match)return null;
+      let end=match.index+match[0].length;
+      // Previously broken month matching left numbers at the very end:
+      // "@Nov 23 25 12 25". Clean only a terminal run of stray numbers.
+      const residue=text.slice(end).match(/^(?:\s+\d{1,2})+(?=\s*$)/);
+      if(residue)end+=residue[0].length;
+      return {start:match.index,end,text:match[0]};
+    }
     function inlineDateText(b){
       const text=b.text||'';
       if(!b.dueDate)return safe(text);
-      const match=text.match(/@(Today|Tomorrow|Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|[A-Za-z]{3} \d{1,2})\b/i);
+      const match=findDateMention(text);
       if(!match)return safe(text);
-      return safe(text.slice(0,match.index))+
-        '<span class="checklist-date-mention" data-date-mention="'+safe(b.id)+'" contenteditable="false" role="button" tabindex="0" aria-label="Edit due date '+safe(dateLabel(b.dueDate))+'">'+safe(match[0])+'</span>'+
-        safe(text.slice(match.index+match[0].length));
+      return safe(text.slice(0,match.start))+
+        '<span class="checklist-date-mention" data-date-mention="'+safe(b.id)+'" contenteditable="false" role="button" tabindex="0" aria-label="Edit due date '+safe(dateLabel(b.dueDate))+'">'+safe(match.text)+'</span>'+
+        safe(text.slice(match.end));
     }
     function closeDateMenu(){
       dateMenu.hidden=true;dateScrim.hidden=true;dateMenu.classList.remove('is-sheet','is-suggestion');
@@ -381,18 +394,18 @@
     }
     function applyDueDate(id,date,fromSuggestion=false){
       const b=blocks.find(x=>x.id===id);if(!b)return;
-      const existing=b.text.match(/@(Today|Tomorrow|[A-Z][a-z]+|[A-Z][a-z]{2} \d{1,2})/i);
-      const oldDay=existing?.[1]||'';
+      const existing=findDateMention(b.text);
+      const oldDay=existing?.text?.slice(1)||'';
       const sameWeekday=weekdayNames.some(day=>day.toLowerCase()===oldDay.toLowerCase())&&
         date===nextWeekday(weekdayNames.findIndex(day=>day.toLowerCase()===oldDay.toLowerCase()));
       const dayChoice=dateMenu.dataset.chosenWeekday||'';
       const token=date?('@'+(date===localDay()?'Today':date===localDay(1)?'Tomorrow':
         dayChoice|| (sameWeekday?oldDay:dateLabel(date)))):'';
       delete dateMenu.dataset.chosenWeekday;
-      if(fromSuggestion){
+      if(existing){
+        b.text=b.text.slice(0,existing.start)+token+b.text.slice(existing.end);
+      }else if(fromSuggestion){
         b.text=b.text.replace(/@[a-z ]*$/i,token);
-      }else if(/@(Today|Tomorrow|[A-Z][a-z]+|[A-Z][a-z]{2} \d{1,2})/i.test(b.text)){
-        b.text=b.text.replace(/@(Today|Tomorrow|[A-Z][a-z]+|[A-Z][a-z]{2} \d{1,2})/i,token);
       }
       b.dueDate=date||'';
       if(!date){b.endDate='';b.includeTime=false;b.dueTime='09:00';}
