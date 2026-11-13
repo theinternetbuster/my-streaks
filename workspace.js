@@ -916,10 +916,22 @@
     blockMenu.hidden=true;
     document.body.appendChild(blockMenu);
     let blockMenuId=null,blockMenuMode='main',blockMenuSearch='';
+    let selectedBlockId=null;
+    function paintBlockSelection(){
+      root.classList.toggle('has-selected-block',!!selectedBlockId);
+      root.classList.toggle('block-menu-is-open',!blockMenu.hidden);
+      root.querySelectorAll('.checklist-line').forEach(line=>{
+        const selected=line.dataset.id===selectedBlockId;
+        line.classList.toggle('block-is-selected',selected);
+        line.setAttribute('aria-selected',String(selected));
+      });
+    }
+    function clearBlockSelection(){selectedBlockId=null;paintBlockSelection();}
     const blockColors=['default','gray','brown','orange','yellow','green','blue','purple','pink','red'];
     function closeBlockMenu(){
       blockMenu.hidden=true;blockMenuId=null;blockMenuMode='main';
       root.querySelectorAll('.block-menu-active').forEach(el=>el.classList.remove('block-menu-active'));
+      paintBlockSelection();
     }
     function renderBlockMenu(){
       const b=blocks.find(x=>x.id===blockMenuId);
@@ -949,15 +961,24 @@
           '<div class="block-menu-info">'+safe(b.text.trim()||'Empty block')+'</div>';
       }
     }
+    function placeBlockMenu(handle){
+      if(blockMenu.hidden)return;
+      const anchor=handle||root.querySelector('.checklist-line[data-id="'+blockMenuId+'"] .checklist-handle');
+      const rect=anchor?.getBoundingClientRect()||{left:20,right:40,top:70,bottom:96};
+      const width=Math.min(blockMenuMode==='colors'?536:268,innerWidth-24);
+      const height=Math.min(blockMenu.scrollHeight,innerHeight-24);
+      const x=Math.max(12,Math.min(rect.right+9,innerWidth-width-12));
+      const y=Math.max(8,Math.min(rect.top,innerHeight-height-12));
+      blockMenu.style.left=x+'px';
+      blockMenu.style.top=y+'px';
+    }
     function openBlockMenu(id,handle){
       if(blockMenuId===id&&!blockMenu.hidden){closeBlockMenu();return;}
-      closeBlockMenu();blockMenuId=id;blockMenuMode='main';blockMenuSearch='';
-      renderBlockMenu();blockMenu.hidden=false;
+      closeBlockMenu();selectedBlockId=id;blockMenuId=id;blockMenuMode='main';blockMenuSearch='';
+      renderBlockMenu();blockMenu.hidden=false;paintBlockSelection();
       handle.closest('.checklist-line')?.classList.add('block-menu-active');
       const rect=handle.getBoundingClientRect();
-      const w=268;
-      blockMenu.style.left=Math.min(innerWidth-w-12,Math.max(12,rect.right+9))+'px';
-      blockMenu.style.top=Math.max(8,Math.min(rect.top,innerHeight-Math.min(blockMenu.scrollHeight,490)-12))+'px';
+      placeBlockMenu(handle);
     }
     function deleteChecklistBlock(id){
       const index=blocks.findIndex(b=>b.id===id);
@@ -973,9 +994,9 @@
       const action=button.dataset.blockAction;
       const b=blocks.find(x=>x.id===blockMenuId);
       if(!b)return;
-      if(action==='back'){blockMenuMode='main';renderBlockMenu();return;}
+      if(action==='back'){blockMenuMode='main';renderBlockMenu();placeBlockMenu();return;}
       if(action==='colors'||action==='turn'){
-        blockMenuMode=action;renderBlockMenu();return;
+        blockMenuMode=action;renderBlockMenu();placeBlockMenu();return;
       }
       if(action==='delete'){deleteChecklistBlock(b.id);return;}
       if(action==='duplicate'){
@@ -1014,7 +1035,24 @@
       });
     });
     document.addEventListener('pointerdown',event=>{
-      if(!blockMenu.hidden&&!blockMenu.contains(event.target)&&!event.target.closest('.checklist-handle'))closeBlockMenu();
+      if(event.target.closest('.checklist-handle'))return;
+      if(!blockMenu.hidden){
+        if(!blockMenu.contains(event.target)){
+          // First outside click dismisses the menu but retains blue selection.
+          closeBlockMenu();
+        }
+        return;
+      }
+      if(selectedBlockId){
+        // Second outside click clears the block highlight.
+        clearBlockSelection();
+      }
+    },true);
+    document.addEventListener('keydown',event=>{
+      if(event.key==='Escape'&&selectedBlockId){
+        if(!blockMenu.hidden)closeBlockMenu();
+        else clearBlockSelection();
+      }
     });
     function renderChecklist(force=false){
       if(!root)return;
@@ -1056,6 +1094,7 @@
       $('checklistEmpty').hidden=true;
       root.querySelectorAll('textarea').forEach(resizeField);
       setupSortable();
+      paintBlockSelection();
     }
     function resizeField(field){
       field.style.height='auto';field.style.height=Math.max(26,field.scrollHeight)+'px';
