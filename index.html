@@ -786,9 +786,9 @@ body:has(#loginPanel:not([hidden])) .shell,
     <header class="topbar">
       <a class="brand brand-home" href="/my-streaks/" aria-label="My Streaks — Home"><div class="brand-icon"><svg class="brand-flame" viewBox="0 0 24 24" aria-hidden="true"><use href="#flame-solid"></use></svg></div><div><strong>My Streaks</strong><small>Stay consistent, your way.</small></div></a>
       <nav id="workspaceTopNav" class="workspace-top-nav" aria-label="Main navigation" hidden>
-        <button type="button" data-workspace="home" class="workspace-link active" aria-current="page">Home</button>
-        <button type="button" data-workspace="insights" class="workspace-link">Insights</button>
-        <button type="button" data-workspace="checklist" class="workspace-link">Checklist</button>
+        <a href="/my-streaks/" data-workspace="home" class="workspace-link active" aria-current="page">Home</a>
+        <a href="/my-streaks/?view=insights" data-workspace="insights" class="workspace-link">Insights</a>
+        <a href="/my-streaks/?view=checklist" data-workspace="checklist" class="workspace-link">Checklist</a>
       </nav>
       <div class="top-actions"><span id="syncState" class="sr-only" aria-live="polite">Connecting…</span><a id="headerExploreLink" class="header-explore-link" href="#features" hidden>Explore features <span aria-hidden="true">↗</span></a><button id="userBtn" class="avatar-button account-trigger" aria-label="Open account and settings" aria-expanded="false" hidden><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.1 3.2-7 8-7s8 2.9 8 7"/></svg><span id="userGreeting">Hi!</span></button></div>
     </header>
