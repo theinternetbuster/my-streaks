@@ -542,6 +542,23 @@
         if(sub){sub.type='bullet';sub.text='';renderChecklist(true);scheduleSave(true);requestAnimationFrame(()=>root.querySelector('[data-subtask-id="'+sub.id+'"][data-subtask-text]')?.focus());}
         return;
       }
+      if(nested&&e.key==='Backspace'&&!e.isComposing&&!e.ctrlKey&&!e.metaKey){
+        const b=blocks.find(x=>x.id===nested.dataset.subtaskText);
+        const index=b?.subtasks.findIndex(x=>x.id===nested.dataset.subtaskId)??-1;
+        const item=index>=0?b.subtasks[index]:null;
+        if(item&&!nested.value.length&&nested.selectionStart===0&&nested.selectionEnd===0){
+          e.preventDefault();
+          b.subtasks.splice(index,1);
+          const previous=b.subtasks[index-1]||b.subtasks[index]||null;
+          renderChecklist(true);scheduleSave(true);
+          requestAnimationFrame(()=>{
+            const input=previous?root.querySelector('[data-subtask-id="'+previous.id+'"][data-subtask-text]'):root.querySelector('.checklist-editor[data-block-id="'+b.id+'"]');
+            input?.focus();
+            if(previous)input?.setSelectionRange(previous.text.length,previous.text.length);
+          });
+          return;
+        }
+      }
       if(nested&&e.key==='Enter'&&!e.isComposing){
         e.preventDefault();
         const b=blocks.find(x=>x.id===nested.dataset.subtaskText);
@@ -601,7 +618,8 @@
         // It does not leave another empty paragraph underneath.
         if(!b.text.trim()&&['todo','todoNote','todoList','bullet'].includes(b.type)){
           b.type='text';b.checked=false;b.detailsOpen=false;
-          b.text=after;
+          b.detailsMode='notes';b.subtasks=[];b.note='';b.dueDate='';
+          b.text='';
           renderChecklist(true);scheduleSave(true);
           requestAnimationFrame(()=>focusBlockAt(id,0));
           return;
