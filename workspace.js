@@ -137,7 +137,7 @@
     }
     function normalizedType(t){return types.some(x=>x.id===t)?t:'text';}
     function normalizeBlock(b,i){
-      return {id:String(b.id||uniqueId()),type:normalizedType(b.type),text:String(b.text||'').slice(0,5000),checked:!!b.checked,collapsed:!!b.collapsed,detailsOpen:b.type==='todo'?false:(typeof b.detailsOpen==='boolean'?b.detailsOpen:(b.type==='todoNote'||b.type==='todoList')&&!b.collapsed),note:String(b.note||'').slice(0,10000),detailsMode:b.type==='todoList'?'tasks':'notes',subtasks:Array.isArray(b.subtasks)?b.subtasks.slice(0,40).filter(t=>t&&typeof t.text==='string').map(t=>({id:String(t.id||uniqueId()),text:String(t.text).slice(0,500),checked:!!t.checked,type:t.type==='bullet'?'bullet':'todo'})):[],dueDate:/^\d{4}-\d{2}-\d{2}$/.test(b.dueDate||'')?b.dueDate:'',order:Number.isFinite(b.order)?b.order:i,createdAt:Number(b.createdAt)||Date.now()};
+      return {id:String(b.id||uniqueId()),type:normalizedType(b.type),text:String(b.text||'').slice(0,5000),checked:!!b.checked,collapsed:!!b.collapsed,detailsOpen:b.type==='todo'?false:(typeof b.detailsOpen==='boolean'?b.detailsOpen:(b.type==='todoNote'||b.type==='todoList')&&!b.collapsed),note:String(b.note||'').slice(0,10000),detailsMode:b.type==='todoList'?'tasks':'notes',subtasks:Array.isArray(b.subtasks)?b.subtasks.slice(0,40).filter(t=>t&&typeof t.text==='string').map(t=>({id:String(t.id||uniqueId()),text:String(t.text).slice(0,500),checked:!!t.checked,type:t.type==='bullet'?'bullet':'todo'})):[],dueDate:/^\d{4}-\d{2}-\d{2}$/.test(b.dueDate||'')?b.dueDate:'',endDate:/^\d{4}-\d{2}-\d{2}$/.test(b.endDate||'')?b.endDate:'',dateFormat:b.dateFormat==='absolute'?'absolute':'relative',includeTime:!!b.includeTime,dueTime:/^([01]\d|2[0-3]):[0-5]\d$/.test(b.dueTime||'')?b.dueTime:'09:00',order:Number.isFinite(b.order)?b.order:i,createdAt:Number(b.createdAt)||Date.now()};
     }
     function scheduleSave(soon=false){
       if(!user)return;
@@ -395,6 +395,8 @@
         b.text=b.text.replace(/@(Today|Tomorrow|[A-Z][a-z]+|[A-Z][a-z]{2} \d{1,2})/i,token);
       }
       b.dueDate=date||'';
+      if(!date){b.endDate='';b.includeTime=false;b.dueTime='09:00';}
+      if(b.endDate&&b.endDate<b.dueDate)b.endDate=b.dueDate;
       closeDateMenu();renderChecklist(true);scheduleSave(true);
       requestAnimationFrame(()=>focusBlock(b.id));
     }
@@ -403,6 +405,17 @@
       if(e.target.closest('[data-date-quick]'))e.preventDefault();
     });
     dateMenu.addEventListener('click',e=>{
+      if(e.target.closest('.checklist-date-help'))return;
+      if(e.target.closest('[data-date-format-toggle]')){
+        const b=blocks.find(x=>x.id===dateTargetId);
+        if(b){b.dateFormat=b.dateFormat==='absolute'?'relative':'absolute';
+          const scroll=dateMenu.querySelector('.checklist-date-sheet-scroll')?.scrollTop||0;
+          dateMenu.innerHTML=renderMobileDateSheet(b);
+          const panel=dateMenu.querySelector('.checklist-date-sheet-scroll');if(panel)panel.scrollTop=scroll;
+          scheduleSave(true);
+        }
+        return;
+      }
       if(e.target.closest('.checklist-date-close')){closeDateMenu();return;}
       const day=e.target.closest('[data-date-day]');
       if(day&&dateTargetId){
@@ -425,8 +438,26 @@
       applyDueDate(dateTargetId,date,!!dateSuggestionId);
     });
     dateMenu.addEventListener('change',e=>{
-      if(e.target.matches('#checklistCustomDate')&&dateTargetId)
-        applyDueDate(dateTargetId,e.target.value,!!dateSuggestionId);
+      if(e.target.matches('#checklistCustomDate')&&dateTargetId){
+        if(e.target.value)applyDueDate(dateTargetId,e.target.value,!!dateSuggestionId);
+        return;
+      }
+      const b=blocks.find(x=>x.id===dateTargetId);
+      if(!b)return;
+      if(e.target.matches('[data-date-end-toggle]')){
+        b.endDate=e.target.checked?(b.endDate||b.dueDate||localDay()):'';
+      }else if(e.target.matches('[data-date-end-value]')){
+        b.endDate=e.target.value&&e.target.value>=b.dueDate?e.target.value:b.dueDate;
+      }else if(e.target.matches('[data-date-time-toggle]')){
+        b.includeTime=e.target.checked;
+      }else if(e.target.matches('[data-date-time-value]')){
+        b.dueTime=e.target.value||'09:00';
+      }else return;
+      const scroll=dateMenu.querySelector('.checklist-date-sheet-scroll')?.scrollTop||0;
+      dateMenu.innerHTML=renderMobileDateSheet(b);
+      const panel=dateMenu.querySelector('.checklist-date-sheet-scroll');
+      if(panel)panel.scrollTop=scroll;
+      scheduleSave(true);
     });
     document.addEventListener('pointerdown',e=>{
       if(!dateMenu.hidden&&!dateMenu.contains(e.target)&&!e.target.closest('[data-date-mention]'))closeDateMenu();
