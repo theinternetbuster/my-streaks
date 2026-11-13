@@ -1133,26 +1133,19 @@
       root.innerHTML=blocks.map(b=>{
         const isTask=['todo','todoNote','todoList'].includes(b.type);
         const isToggle=b.type==='toggle',isBullet=b.type==='bullet';
-        const expanded=(b.type==='todoNote'||b.type==='todoList')&&b.detailsOpen;
+        const parent=blocks.find(x=>x.id===b.parentId);
+        const isNested=!!parent;
+        const hiddenByParent=!!parent&&(parent.type!=='todoList'||!parent.detailsOpen);
         const noteExpanded=isToggle&&!b.collapsed;
         const checkbox=isTask?'<input class="checklist-check" type="checkbox" data-toggle-check="'+safe(b.id)+'" '+(b.checked?'checked':'')+' aria-label="Complete task"/>':'';
-        const isOpen=(b.type==='todoNote'||b.type==='todoList')?b.detailsOpen:!b.collapsed;
-        const arrow=b.type==='todoNote'||b.type==='todoList'||isToggle?
+        const isOpen=b.type==='todoList'?b.detailsOpen:!b.collapsed;
+        const arrow=b.type==='todoList'||isToggle?
           '<button type="button" class="checklist-toggle-icon '+(!isOpen?'collapsed':'')+'" data-collapse="'+safe(b.id)+'" aria-label="'+(!isOpen?'Expand details':'Collapse details')+'" aria-expanded="'+String(isOpen)+'">'+(!isOpen?'▸':'▾')+'</button>':'';
         const icon=isTask?checkbox+arrow:isToggle?arrow:isBullet?'<span class="checklist-bullet">•</span>':'';
         const placeholder=(b.type==='h1'?'Heading':b.type==='h2'?'Subheading':isTask?'To-do':isToggle?'Toggle title':isBullet?'List item':"Type here, or press / for commands");
         let details='';
-        if(noteExpanded)details='<div class="checklist-note-editor" contenteditable="true" role="textbox" aria-multiline="true" data-note-id="'+safe(b.id)+'" data-placeholder="Type notes or /bullet…" spellcheck="true">'+safe(b.note)+'</div>';
-        if(expanded){
-          const mode=b.detailsMode==='tasks'?'tasks':'notes';
-          const modeSelector='';
-          const notes='<div class="checklist-note-editor" contenteditable="true" role="textbox" aria-multiline="true" data-note-id="'+safe(b.id)+'" data-placeholder="Type notes or /bullet…" spellcheck="true">'+safe(b.note)+'</div>';
-          const nested='<div class="checklist-subtasks">'+b.subtasks.map(t=>
-            '<div class="checklist-subtask '+(t.type==='bullet'?'subtask-bullet':'')+'"><span class="subtask-bullet-dot" aria-hidden="true">•</span><input type="checkbox" data-subtask-check="'+safe(b.id)+'" data-subtask-id="'+safe(t.id)+'" '+(t.checked?'checked':'')+' aria-label="Complete subtask"/><input type="text" maxlength="500" data-subtask-text="'+safe(b.id)+'" data-subtask-id="'+safe(t.id)+'" value="'+safe(t.text)+'" placeholder="'+(t.type==='bullet'?'Bullet point':'Subtask or /bullet')+'" class="'+(t.checked?'completed':'')+'"/><button type="button" data-subtask-kind="'+safe(b.id)+'" data-subtask-id="'+safe(t.id)+'" aria-label="Switch between task and bullet">⋯</button><button type="button" data-subtask-remove="'+safe(b.id)+'" data-subtask-id="'+safe(t.id)+'" aria-label="Remove subtask">×</button></div>'
-          ).join('')+'<div class="checklist-nested-actions"><button type="button" class="checklist-add-subtask" data-subtask-add="'+safe(b.id)+'">＋ Add a subtask</button><button type="button" class="checklist-add-subtask" data-subtask-bullet="'+safe(b.id)+'">• Bullet list</button></div></div>';
-          details=modeSelector+(mode==='notes'?notes:nested);
-        }
-        return '<div class="checklist-line checklist-type-'+b.type+(b.checked?' is-done':'')+(b.collapsed?' is-collapsed':'')+'" data-id="'+safe(b.id)+'" style="'+(backgroundPalette[b.blockBackground]?'--checklist-block-bg:'+backgroundPalette[b.blockBackground]+';':'')+(markPalette[b.blockColor]?'--checklist-block-color:'+markPalette[b.blockColor]+';':'')+'">'+
+        if(noteExpanded&&b.note)details='<div class="checklist-note-editor" contenteditable="true" role="textbox" aria-multiline="true" data-note-id="'+safe(b.id)+'" data-placeholder="Type notes…" spellcheck="true">'+safe(b.note)+'</div>';
+        return '<div class="checklist-line checklist-type-'+b.type+(isNested?' checklist-child':'')+(hiddenByParent?' checklist-child-hidden':'')+(b.checked?' is-done':'')+(b.collapsed?' is-collapsed':'')+'" data-id="'+safe(b.id)+'" data-parent-id="'+safe(b.parentId||'')+'" style="'+(backgroundPalette[b.blockBackground]?'--checklist-block-bg:'+backgroundPalette[b.blockBackground]+';':'')+(markPalette[b.blockColor]?'--checklist-block-color:'+markPalette[b.blockColor]+';':'')+'">'+
           '<div class="checklist-line-tools"><button type="button" class="checklist-insert" data-insert="'+safe(b.id)+'" aria-label="Insert block">+</button><button type="button" class="checklist-handle" aria-label="Drag to rearrange or click for block actions" title="Drag to move · Click for actions">⠿</button></div>'+
           '<div class="checklist-line-inner">'+icon+
           '<div class="checklist-field-group"><div class="checklist-editor" contenteditable="true" role="textbox" aria-multiline="true" data-block-id="'+safe(b.id)+'" data-placeholder="'+safe(placeholder)+'" spellcheck="true">'+htmlWithMarks(b)+'</div>'+
@@ -1175,6 +1168,12 @@
         animation:200,handle:'.checklist-handle',draggable:'.checklist-line',
         ghostClass:'checklist-ghost',chosenClass:'checklist-chosen',
         forceFallback:true,fallbackOnBody:true,delay:170,delayOnTouchOnly:true,
+        onMove:event=>{
+          const dragged=blocks.find(b=>b.id===event.dragged?.dataset.id);
+          const target=blocks.find(b=>b.id===event.related?.dataset.id);
+          return !!dragged&&!!target&&dragged.parentId===target.parentId&&
+            !blocks.some(x=>x.parentId===dragged.id);
+        },
         onEnd:()=>{
           const ids=[...root.querySelectorAll('.checklist-line')].map(x=>x.dataset.id);
           blocks.sort((a,b)=>ids.indexOf(a.id)-ids.indexOf(b.id));
@@ -1213,7 +1212,7 @@
       const after=b.text.slice(offset);
       b.text=before;
       const nextType=isTask?'todo':b.type==='bullet'?'bullet':'text';
-      const newBlock=addBlock(id,nextType,after);
+      const newBlock=addBlock(id,nextType,after,b.type==='todoList'?b.id:null);
       requestAnimationFrame(()=>focusBlockAt(newBlock.id,0));
       return true;
     }
