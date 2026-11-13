@@ -1049,12 +1049,21 @@
       const rect=handle.getBoundingClientRect();
       placeBlockMenu(handle);
     }
+    function descendantIds(id){
+      const ids=new Set([id]);
+      for(let changed=true;changed;){
+        changed=false;
+        for(const b of blocks){if(b.parentId&&ids.has(b.parentId)&&!ids.has(b.id)){ids.add(b.id);changed=true;}}
+      }
+      return ids;
+    }
     function deleteChecklistBlock(id){
       const index=blocks.findIndex(b=>b.id===id);
       if(index<0)return;
       const next=blocks[index+1]?.id||blocks[index-1]?.id||null;
       pendingUndoFocus={id:next||id,offset:0};
-      blocks.splice(index,1);closeBlockMenu();
+      const ids=descendantIds(id);
+      blocks=blocks.filter(b=>!ids.has(b.id));closeBlockMenu();
       renderChecklist(true);scheduleSave(true);
       if(next)requestAnimationFrame(()=>focusBlockAt(next,0));
     }
@@ -1069,18 +1078,30 @@
       }
       if(action==='delete'){deleteChecklistBlock(b.id);return;}
       if(action==='duplicate'){
-        const clone=normalizeBlock({...b,id:uniqueId(),createdAt:Date.now()},blocks.length);
-        const index=blocks.findIndex(x=>x.id===b.id);
-        blocks.splice(index+1,0,clone);
+        const family=descendantIds(b.id);
+        const originals=blocks.filter(x=>family.has(x.id));
+        const ids=new Map(originals.map(x=>[x.id,uniqueId()]));
+        const copies=originals.map((x,i)=>normalizeBlock({
+          ...x,id:ids.get(x.id),
+          parentId:ids.get(x.parentId)||x.parentId,createdAt:Date.now()
+        },i));
+        const index=blocks.findIndex(x=>x.id===originals.at(-1).id);
+        blocks.splice(index+1,0,...copies);
         closeBlockMenu();renderChecklist(true);scheduleSave(true);
-        requestAnimationFrame(()=>focusBlockAt(clone.id,clone.text.length));
+        requestAnimationFrame(()=>focusBlockAt(copies[0].id,copies[0].text.length));
         return;
       }
       if(action.startsWith('type:')){
         pendingUndoFocus={id:b.id,offset:0};
         b.type=normalizedType(action.slice(5));b.checked=false;
-        b.detailsOpen=['todoList','todoNote'].includes(b.type);
-        b.detailsMode=b.type==='todoList'?'tasks':'notes';
+        b.detailsOpen=b.type==='todoList';
+        b.detailsMode='tasks';
+        if(b.type==='todoList'&&!blocks.some(x=>x.parentId===b.id)){
+          blocks.splice(blocks.indexOf(b)+1,0,normalizeBlock({
+            id:uniqueId(),parentId:b.id,type:'todo',text:''
+          },blocks.length));
+        }
+        if(b.type!=='todoList')blocks.filter(x=>x.parentId===b.id).forEach(x=>x.parentId=b.parentId||'');
       }else if(action.startsWith('text:')||action.startsWith('background:')){
         pendingUndoFocus={id:b.id,offset:0};
         const [which,color]=action.split(':');
@@ -1090,7 +1111,7 @@
       }else if(action==='move-up'||action==='move-down'){
         const index=blocks.findIndex(x=>x.id===b.id);
         const next=index+(action==='move-up'?-1:1);
-        if(next<0||next>=blocks.length)return;
+        if(next<0||next>=blocks.length||blocks[next].parentId!==b.parentId)return;
         [blocks[index],blocks[next]]=[blocks[next],blocks[index]];
         pendingUndoFocus={id:b.id,offset:0};
       }else return;
@@ -1202,6 +1223,7 @@
         b.subtasks=[];
         b.note='';
         b.dueDate='';
+        for(const child of blocks.filter(x=>x.parentId===b.id))child.parentId=b.parentId||'';
         renderChecklist(true);
         scheduleSave(true);
         requestAnimationFrame(()=>focusBlockAt(id,0));
@@ -1657,8 +1679,15 @@
       }else if(collapse){
         const block=blocks.find(x=>x.id===collapse.dataset.collapse);
         if(block){
-          if(['todo','todoNote','todoList'].includes(block.type))block.detailsOpen=!block.detailsOpen;
-          else block.collapsed=!block.collapsed;
+          if(block.type==='todoList'){
+            block.detailsOpen=!block.detailsOpen;
+            if(block.detailsOpen&&!blocks.some(x=>x.parentId===block.id)){
+              const pos=blocks.indexOf(block);
+              blocks.splice(pos+1,0,normalizeBlock({
+                id:uniqueId(),parentId:block.id,type:'text',text:''
+              },pos+1));
+            }
+          }else block.collapsed=!block.collapsed;
           renderChecklist(true);scheduleSave(true);
         }
       }
