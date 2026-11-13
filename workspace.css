@@ -1383,3 +1383,19 @@ html[data-theme="light"] .fmt-swatches button{background:#f8f8fa;border-color:#d
  .checklist-format-toolbar>button.fmt-type{min-width:79px;font-size:11px}
  .checklist-format-toolbar>button{min-width:30px;padding:0 5px}
 }
+
+/* format31: Notion-style boxed A highlight icon, selection-only toolbar */
+.checklist-format-toolbar .fmt-highlight-button{padding:0 8px;min-width:34px}
+.checklist-format-toolbar .fmt-highlight-symbol{
+ display:inline-flex;align-items:center;justify-content:center;
+ width:21px;height:20px;border:1px solid #8e8e97;
+ border-radius:5px;font:700 12px/1 'DM Sans',sans-serif;
+ color:inherit;background:rgba(255,255,255,.055);
+}
+html[data-theme="light"] .checklist-format-toolbar .fmt-highlight-symbol{
+ border-color:#abb0bb;background:#f5f5f7;
+}
+.checklist-page .checklist-editor .fmt-italic{
+ font-style:italic!important;
+ font-synthesis:style;
+}
