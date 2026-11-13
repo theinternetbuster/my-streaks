@@ -893,3 +893,55 @@ html[data-theme="light"] .checklist-date-custom input{background:#f7f8fa;border-
 html[data-theme="light"] .checklist-date-cal-header button:hover,
 html[data-theme="light"] .checklist-date-grid .checklist-date-day:hover{background:#f3e9e3}
 html[data-theme="light"] .checklist-date-weekdays span{color:#929bad}
+
+/* Mobile translucent navigation — frosted, layered, and readable on scrolling content. */
+@media(max-width:799px){
+  .workspace-bottom-nav:not([hidden]){
+    isolation:isolate;
+    bottom:max(17px,calc(env(safe-area-inset-bottom,0px) + 9px));
+  }
+  .workspace-bottom-pill{
+    isolation:isolate;
+    overflow:hidden;
+    border:1px solid rgba(255,255,255,.27)!important;
+    background:linear-gradient(145deg,rgba(65,62,76,.49),rgba(28,27,38,.57))!important;
+    -webkit-backdrop-filter:blur(28px) saturate(1.75) brightness(1.04)!important;
+    backdrop-filter:blur(28px) saturate(1.75) brightness(1.04)!important;
+    box-shadow:0 15px 42px rgba(0,0,0,.31),inset 0 1px 0 rgba(255,255,255,.23),inset 0 -1px 0 rgba(0,0,0,.13)!important;
+  }
+  .workspace-bottom-pill::after{
+    content:"";position:absolute;inset:1px;border-radius:inherit;
+    background:linear-gradient(158deg,rgba(255,255,255,.11),transparent 39%,rgba(255,255,255,.045) 85%);
+    pointer-events:none;z-index:0;
+  }
+  .workspace-bottom-highlight{
+    z-index:1;
+    background:rgba(8,8,12,.61)!important;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 3px 14px rgba(0,0,0,.16)!important;
+    -webkit-backdrop-filter:blur(12px) saturate(1.35);
+    backdrop-filter:blur(12px) saturate(1.35);
+  }
+  .workspace-bottom-item{z-index:2;position:relative;color:rgba(255,255,255,.86)!important;text-shadow:0 1px 5px rgba(0,0,0,.17)}
+  .workspace-bottom-item.active{color:#fff!important}
+  html[data-theme="light"] .workspace-bottom-pill{
+    background:linear-gradient(150deg,rgba(255,255,255,.69),rgba(245,246,252,.51))!important;
+    border-color:rgba(255,255,255,.83)!important;
+    -webkit-backdrop-filter:blur(30px) saturate(1.65) brightness(1.05)!important;
+    backdrop-filter:blur(30px) saturate(1.65) brightness(1.05)!important;
+    box-shadow:0 14px 36px rgba(42,50,74,.17),inset 0 1px 0 rgba(255,255,255,.9),inset 0 -1px 0 rgba(90,100,125,.08)!important;
+  }
+  html[data-theme="light"] .workspace-bottom-pill::after{
+    background:linear-gradient(145deg,rgba(255,255,255,.29),transparent 50%,rgba(255,255,255,.10));
+  }
+  html[data-theme="light"] .workspace-bottom-highlight{
+    background:rgba(229,231,238,.65)!important;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.84),0 2px 9px rgba(41,47,68,.065)!important;
+    -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+  }
+  html[data-theme="light"] .workspace-bottom-item{color:rgba(30,33,42,.86)!important;text-shadow:none}
+  html[data-theme="light"] .workspace-bottom-item.active{color:#141824!important}
+}
+@media(max-width:799px) and (prefers-reduced-transparency:reduce){
+  .workspace-bottom-pill{background:#292933!important}
+  html[data-theme="light"] .workspace-bottom-pill{background:#f6f7fa!important}
+}
