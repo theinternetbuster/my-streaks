@@ -824,7 +824,16 @@
         const editor=target.closest('.checklist-editor');
         const block=blocks.find(b=>b.id===editor.dataset.blockId);
         if(block?.dueDate){
-          const pos=editorCaretOffset(editor);
+          let pos=editorCaretOffset(editor);
+          // On iOS, the click can precede the browser updating the caret.
+          // Use the finger position for an accurate tap on @Today.
+          const hit=document.caretRangeFromPoint?.(e.clientX,e.clientY);
+          if(hit&&editor.contains(hit.startContainer)){
+            const range=document.createRange();
+            range.selectNodeContents(editor);
+            range.setEnd(hit.startContainer,hit.startOffset);
+            pos=range.toString().length;
+          }
           const tokens=[...block.text.matchAll(/@(Today|Tomorrow|[A-Z][a-z]{2} \d{1,2})/gi)];
           if(tokens.some(t=>pos>=t.index&&pos<=t.index+t[0].length))openDateMenu(block.id,editor);
         }
