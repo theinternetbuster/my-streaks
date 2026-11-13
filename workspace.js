@@ -588,6 +588,16 @@
         formatToolbar.hidden=true;
       }
     });
+    function hideFormatToolbar({clearSelection=false}={}){
+      formatToolbar.hidden=true;
+      const dropdown=formatToolbar.querySelector('.fmt-dropdown');
+      dropdown.hidden=true;dropdown.dataset.mode='';
+      formatRange=null;activeFormatId=null;
+      if(clearSelection){
+        const selection=window.getSelection();
+        if(selection?.rangeCount)selection.removeAllRanges();
+      }
+    }
     document.addEventListener('selectionchange',()=>{
       if(formatApplying||formatInteracting)return;
       const selection=currentEditorSelection();
@@ -605,18 +615,39 @@
       }else{
         // Hide on a collapsed caret or selection outside the editor.
         // Retain a selected range only while interacting with the toolbar.
-        if(!formatToolbar.contains(document.activeElement)){
-          formatToolbar.hidden=true;
-          formatToolbar.querySelector('.fmt-dropdown').hidden=true;
-          formatRange=null;activeFormatId=null;
-        }
+        if(!formatToolbar.contains(document.activeElement))hideFormatToolbar();
       }
     });
     document.addEventListener('pointerdown',event=>{
-      if(!formatToolbar.contains(event.target)&&!root.contains(event.target)){
-        formatToolbar.hidden=true;formatToolbar.querySelector('.fmt-dropdown').hidden=true;
-        activeFormatId=null;formatRange=null;
+      if(formatToolbar.contains(event.target))return;
+      if(!root.contains(event.target)){
+        hideFormatToolbar();
+      }else if(!event.target.closest('.checklist-editor[data-block-id]')){
+        hideFormatToolbar();
       }
+    });
+    // iOS Safari retains a DOM selection after its Done keyboard button.
+    // Blur, a collapsed selection, or tapping outside the active text should
+    // always dismiss our additional toolbar.
+    root.addEventListener('focusout',event=>{
+      if(!event.target.closest('.checklist-editor[data-block-id]'))return;
+      setTimeout(()=>{
+        if(formatInteracting||formatApplying)return;
+        const selection=currentEditorSelection();
+        if(!selection||selection.end<=selection.start)hideFormatToolbar();
+      },0);
+    });
+    document.addEventListener('touchstart',event=>{
+      if(formatToolbar.hidden||formatToolbar.contains(event.target))return;
+      if(!event.target.closest('.checklist-editor[data-block-id]')){
+        hideFormatToolbar();
+      }
+    },{passive:true});
+    window.visualViewport?.addEventListener('resize',()=>{
+      if(formatToolbar.hidden)return;
+      const selection=currentEditorSelection();
+      const editor=document.activeElement?.closest?.('.checklist-editor[data-block-id]');
+      if(!editor||!selection||selection.end<=selection.start)hideFormatToolbar();
     });
     root.addEventListener('keydown',event=>{
       // Notion-style keyboard shortcut to remove all formatting in selection.
