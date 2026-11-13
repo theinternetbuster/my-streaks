@@ -1430,7 +1430,7 @@ html[data-theme="light"] .checklist-format-toolbar .fmt-highlight-symbol{
  border-radius:8px;
 }
 .checklist-page .checklist-line .checklist-editor{
- color:var(--checklist-block-color,var(--checklist-text-color,#e8e8ec));
+ color:var(--checklist-block-color,inherit);
 }
 .checklist-page .checklist-line.block-menu-active{
  outline:1px solid rgba(255,136,79,.4);
