@@ -400,6 +400,21 @@
       closeDateMenu();renderChecklist(true);scheduleSave(true);
       requestAnimationFrame(()=>focusBlock(b.id));
     }
+    // Dismiss the full-height date sheet by pulling down from its handle/header.
+    let dateDragStart=null;
+    dateMenu.addEventListener('touchstart',event=>{
+      if(!dateMenu.classList.contains('is-sheet')||!event.target.closest('.checklist-date-sheet-top,.checklist-date-sheet-handle'))return;
+      dateDragStart=event.touches[0]?.clientY??null;
+    },{passive:true});
+    dateMenu.addEventListener('touchend',event=>{
+      if(dateDragStart===null)return;
+      const end=event.changedTouches[0]?.clientY??dateDragStart;
+      if(end-dateDragStart>90)closeDateMenu();
+      dateDragStart=null;
+    },{passive:true});
+    document.addEventListener('keydown',event=>{
+      if(event.key==='Escape'&&!dateMenu.hidden){event.preventDefault();closeDateMenu();}
+    });
     dateScrim.addEventListener('click',closeDateMenu);
     dateMenu.addEventListener('pointerdown',e=>{
       if(e.target.closest('[data-date-quick]'))e.preventDefault();
