@@ -180,6 +180,20 @@
       }
       return out;
     }
+    function changeBlockType(b,type){
+      const next=normalizedType(type);
+      if(b.type==='todoList'&&next!=='todoList'){
+        for(const child of blocks.filter(x=>x.parentId===b.id))child.parentId=b.parentId||'';
+      }
+      b.type=next;b.checked=false;b.detailsOpen=next==='todoList';
+      b.detailsMode='tasks';
+      if(next==='todoList'&&!blocks.some(x=>x.parentId===b.id)){
+        const index=blocks.indexOf(b);
+        blocks.splice(index+1,0,normalizeBlock({
+          id:uniqueId(),parentId:b.id,type:'text',text:''
+        },index+1));
+      }
+    }
     function scheduleSave(soon=false){
       if(!user)return;
       trackHistory();
@@ -608,9 +622,7 @@
       if(button.dataset.formatBackground){applyFormat('background',button.dataset.formatBackground);formatToolbar.querySelector('.fmt-dropdown').hidden=true;return;}
       if(button.dataset.formatBlock){
         const b=blocks.find(x=>x.id===activeFormatId);if(!b)return;
-        b.type=normalizedType(button.dataset.formatBlock);b.checked=false;
-        b.detailsOpen=['todoNote','todoList'].includes(b.type);
-        b.detailsMode=b.type==='todoList'?'tasks':'notes';
+        changeBlockType(b,button.dataset.formatBlock);
         formatToolbar.querySelector('.fmt-dropdown').hidden=true;
         renderChecklist(true);scheduleSave(true);
         requestAnimationFrame(()=>{focusBlockAt(b.id,0);placeFormatToolbar()});
@@ -960,14 +972,7 @@
       const command=prefix.match(/^\s*\/[a-z0-9-]*$/i);
       const removeTo=command?position:0;
       b.text=(removeTo?b.text.slice(removeTo):b.text).replace(/^\s+/,'');
-      b.type=normalizedType(type);
-      b.checked=false;
-      b.detailsOpen=type==='todoList';
-      b.detailsMode='tasks';
-      if(type==='todoList'&&!blocks.some(x=>x.parentId===b.id)){
-        const index=blocks.indexOf(b);
-        blocks.splice(index+1,0,normalizeBlock({id:uniqueId(),parentId:b.id,type:'todo',text:''},index+1));
-      }
+      changeBlockType(b,type);
       closeSlash();renderChecklist(true);scheduleSave(true);
       requestAnimationFrame(()=>focusBlockAt(id,0));
     }
@@ -1096,15 +1101,7 @@
       }
       if(action.startsWith('type:')){
         pendingUndoFocus={id:b.id,offset:0};
-        b.type=normalizedType(action.slice(5));b.checked=false;
-        b.detailsOpen=b.type==='todoList';
-        b.detailsMode='tasks';
-        if(b.type==='todoList'&&!blocks.some(x=>x.parentId===b.id)){
-          blocks.splice(blocks.indexOf(b)+1,0,normalizeBlock({
-            id:uniqueId(),parentId:b.id,type:'todo',text:''
-          },blocks.length));
-        }
-        if(b.type!=='todoList')blocks.filter(x=>x.parentId===b.id).forEach(x=>x.parentId=b.parentId||'');
+        changeBlockType(b,action.slice(5));
       }else if(action.startsWith('text:')||action.startsWith('background:')){
         pendingUndoFocus={id:b.id,offset:0};
         const [which,color]=action.split(':');
