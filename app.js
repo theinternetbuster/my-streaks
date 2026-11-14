@@ -117,7 +117,7 @@ function display(view){
  if(user && ['dashboard','insightsPanel','checklistPanel'].includes(view))syncDesktopRoute();
 }
 function escapeHTML(str){ return String(str).replace(/[&<>"']/g, ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
-function normalise(raw){ return {id:raw.id,name:String(raw.name||'Habit'),createdDate:raw.createdDate||todayKey(),createdAt:Number(raw.createdAt)||0,order:Number.isFinite(raw.order)?raw.order:null,completions:Array.isArray(raw.completions)?[...new Set(raw.completions.filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x)))].sort():[],freezeDates:Array.isArray(raw.freezeDates)?[...new Set(raw.freezeDates.filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x)))].sort():[],freezeProcessedThrough:raw.freezeProcessedThrough||null,cadence:raw.cadence==='weekly'?'weekly':'daily',weeklyTarget:Math.max(1,Math.min(7,Number(raw.weeklyTarget)||2))}; }
+function normalise(raw){ return {id:raw.id,name:String(raw.name||'Habit'),createdDate:raw.createdDate||todayKey(),createdAt:Number(raw.createdAt)||0,order:Number.isFinite(raw.order)?raw.order:null,completions:Array.isArray(raw.completions)?[...new Set(raw.completions.filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x)))].sort():[],freezeDates:Array.isArray(raw.freezeDates)?[...new Set(raw.freezeDates.filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x)))].sort():[],freezeProcessedThrough:raw.freezeProcessedThrough||null,cadence:raw.cadence==='weekly'?'weekly':'daily',weeklyTarget:Math.max(1,Math.min(7,Number(raw.weeklyTarget)||2)),goalPeriodStart:/^\d{4}-\d{2}-\d{2}$/.test(raw.goalPeriodStart||'')?raw.goalPeriodStart:null,goalBaseline:Math.max(0,Number(raw.goalBaseline)||0),goalHistory:Array.isArray(raw.goalHistory)?raw.goalHistory:[],goalHistoricalBest:Math.max(0,Number(raw.goalHistoricalBest)||0)}; }
 
 /**
  * Two weekly freezes belong to each habit. Count a missed day only while its
@@ -150,10 +150,13 @@ function evaluateHabit(habit,asOf=todayKey()){
  const completed=new Set(habit.completions.filter(k=>k<=asOf));
  const frozen=new Set((habit.freezeDates||[]).filter(k=>k<=asOf));
  const dates=[...completed,...frozen].sort(),first=dates[0];
+ const period=habit.goalPeriodStart;
  const states=new Map();
- if(!first)return {streak:0,freezes:2,active:false,states,lastCompleted:null,doneToday:false};
- let active=false,streak=0,spent=0,prevWeek=null,lastCompleted=null,iterations=0;
- const start=first<habit.createdDate?first:habit.createdDate;
+ if(period){for(const k of completed)if(k<period)states.set(k,'done');for(const k of frozen)if(k<period)states.set(k,'freeze');}
+ const baseline=period?habit.goalBaseline||0:0;
+ if(!first&&!baseline)return {streak:0,freezes:2,active:false,states,lastCompleted:null,doneToday:false};
+ let active=baseline>0,streak=baseline,spent=0,prevWeek=null,lastCompleted=null,iterations=0;
+ const start=period||(first<habit.createdDate?first:habit.createdDate);
  for(let d=parseKey(start);dateKey(d)<=asOf&&iterations++<36525;d.setDate(d.getDate()+1)){
    const key=dateKey(d),week=weekStart(key);
    if(week!==prevWeek){spent=0;prevWeek=week;}
@@ -173,13 +176,14 @@ function evaluateWeeklyHabit(habit,asOf=todayKey()){
  const target=Math.max(1,Math.min(7,habit.weeklyTarget||2));
  const completed=[...new Set((habit.completions||[]).filter(k=>k<=asOf))].sort();
  const done=new Set(completed),states=new Map(completed.map(k=>[k,'done']));
- const currentWeek=weekStart(asOf),firstWeek=weekStart(habit.createdDate||asOf);
+ const period=habit.goalPeriodStart||habit.createdDate||asOf;
+ const currentWeek=weekStart(asOf),firstWeek=weekStart(period);
  const counts=new Map(),protectedWeeks=[],usedMonths=new Set();
- for(const day of completed){const week=weekStart(day);counts.set(week,(counts.get(week)||0)+1);}
- let streak=0,week=firstWeek,guard=0;
+ for(const day of completed){if(day<period)continue;const week=weekStart(day);counts.set(week,(counts.get(week)||0)+1);}
+ let streak=habit.goalPeriodStart?(habit.goalBaseline||0):0,week=firstWeek,guard=0;
  while(week<=currentWeek&&guard++<6000){
    const count=counts.get(week)||0,isCurrent=week===currentWeek;
-   const partialFirstWeek=week===firstWeek&&(habit.createdDate||asOf)>week;
+   const partialFirstWeek=week===firstWeek&&period>week;
    if(!isCurrent&&!partialFirstWeek&&count<target){
      // Weekly protection is spent at the END of an unsuccessful week.
      // The calendar month is determined by that Sunday's date.
@@ -548,13 +552,24 @@ async function saveHabit(event){
  const name=el('habitName').value.trim();if(!name)return;
  const cadence=el('habitCadence').value==='weekly'?'weekly':'daily';
  const weeklyTarget=Math.max(1,Math.min(7,Number(el('habitWeeklyTarget').value)||2));
- const editing=modalEditingId;hideModal();
+ const editing=modalEditingId;
+ const previous=editing?habits.find(h=>h.id===editing):null;
+ const goalChanged=!!previous&&(previous.cadence!==cadence||(cadence==='weekly'&&previous.weeklyTarget!==weeklyTarget));
+ if(goalChanged&&!confirm('Change goal frequency?\n\nYour completed days and previous streak history will be preserved. Your new goal and streak-freeze rules will apply from today onward.'))return;
+ hideModal();
  await withBusy(async()=>{
   if(editing){
    await runTransaction(db,async tx=>{
     const ref=habitDoc(editing),snap=await tx.get(ref);
     if(!snap.exists())throw Error('Habit not found');
-    tx.update(ref,{name,cadence,weeklyTarget});
+    const old=normalise({id:editing,...snap.data()});
+    const changed=old.cadence!==cadence||(cadence==='weekly'&&old.weeklyTarget!==weeklyTarget);
+    if(!changed){tx.update(ref,{name,cadence,weeklyTarget});return;}
+    const start=todayKey(),prior=addDays(start,-1);
+    const sameDay=old.goalPeriodStart===start;
+    const before=sameDay?old.goalBaseline:evaluateHabit(old,prior).streak;
+    const history=sameDay?old.goalHistory:[...old.goalHistory,{effectiveDate:start,previousCadence:old.cadence,previousTarget:old.weeklyTarget,streakBefore:before}];
+    tx.update(ref,{name,cadence,weeklyTarget,goalPeriodStart:start,goalBaseline:before,goalHistory:history,goalHistoricalBest:Math.max(old.goalHistoricalBest,before),freezeProcessedThrough:prior});
    });
    showToast('Habit updated');
   }else{
@@ -566,14 +581,14 @@ async function saveHabit(event){
  });
 }
 async function removeHabit(){const h=selectedHabit();if(!h)return;if(!confirm(`Delete “${h.name}” and all its check-in history? This cannot be undone.`))return;hideModal();await withBusy(async()=>{await deleteDoc(habitDoc(h.id));selectedId=null;display('dashboard');showToast('Habit deleted');});}
-function exportBackup(){if(!user)return;const data={app:'my-streaks',version:1,exportedAt:new Date().toISOString(),habits:habits.map(({name,createdDate,completions,cadence,weeklyTarget})=>({name,createdDate,completions,cadence,weeklyTarget}))};const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`my-streaks-backup-${todayKey()}.json`;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);showToast('Backup downloaded');}
+function exportBackup(){if(!user)return;const data={app:'my-streaks',version:1,exportedAt:new Date().toISOString(),habits:habits.map(({name,createdDate,completions,cadence,weeklyTarget,freezeDates,freezeProcessedThrough,goalPeriodStart,goalBaseline,goalHistory,goalHistoricalBest})=>({name,createdDate,completions,cadence,weeklyTarget,freezeDates,freezeProcessedThrough,goalPeriodStart,goalBaseline,goalHistory,goalHistoricalBest}))};const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`my-streaks-backup-${todayKey()}.json`;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);showToast('Backup downloaded');}
 async function importBackup(file){if(!file||!user)return;let data;try{data=JSON.parse(await file.text());}catch{showToast('That is not a valid JSON file');return;}
  if(data?.app!=='my-streaks'||!Array.isArray(data.habits)||data.habits.length>500){showToast('Invalid My Streaks backup');return;}
  if(!confirm(`Import ${data.habits.length} habits as new habits? This will not overwrite your current habits.`))return;
  await withBusy(async()=>{
   for(let i=0;i<data.habits.length;i+=300){const batch=writeBatch(db);for(const record of data.habits.slice(i,i+300)){
     if(typeof record.name!=='string'||!record.name.trim()||record.name.length>60||!/^\d{4}-\d{2}-\d{2}$/.test(record.createdDate)||!Array.isArray(record.completions))throw Error('Invalid backup contents');
-    const clean=normalise({...record,id:'new'});const ref=doc(habitCollection());batch.set(ref,{name:clean.name,createdDate:clean.createdDate,completions:clean.completions,cadence:clean.cadence,weeklyTarget:clean.weeklyTarget,freezeDates:[],freezeProcessedThrough:yesterdayKey(),createdAt:Date.now()});
+    const clean=normalise({...record,id:'new'});const ref=doc(habitCollection());batch.set(ref,{name:clean.name,createdDate:clean.createdDate,completions:clean.completions,cadence:clean.cadence,weeklyTarget:clean.weeklyTarget,freezeDates:clean.freezeDates,freezeProcessedThrough:clean.freezeProcessedThrough||yesterdayKey(),goalPeriodStart:clean.goalPeriodStart,goalBaseline:clean.goalBaseline,goalHistory:clean.goalHistory,goalHistoricalBest:clean.goalHistoricalBest,createdAt:Date.now()});
   }await batch.commit();}showToast('Backup imported');
  });}
 function signIn(){signInWithPopup(auth,provider).catch(async err=>{if(['auth/popup-blocked','auth/operation-not-supported-in-this-environment'].includes(err.code)){try{await signInWithRedirect(auth,provider);}catch(e){showToast(errorMessage(e));}}else if(err.code!=='auth/popup-closed-by-user'){showToast(errorMessage(err));}});}
