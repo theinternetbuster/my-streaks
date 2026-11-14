@@ -2162,34 +2162,39 @@
     },true);
     window.addEventListener('scroll',()=>{if(documentRange)drawDocumentSelection();},{passive:true});
     window.addEventListener('resize',()=>{if(documentRange)drawDocumentSelection();});
-    function longestFor(h){
-      if(h.cadence==='weekly'){
-        const done=new Set(h.completions||[]),target=Math.max(1,Math.min(7,h.weeklyTarget||2));
-        const counts=new Map();
-        for(const day of done){
-          const monday=key(weekStart(parse(day)));
-          counts.set(monday,(counts.get(monday)||0)+1);
-        }
-        let best=0,current=0,week=key(weekStart(parse(h.createdDate||localDay()))),guard=0;
-        const currentWeek=key(weekStart(new Date()));
-        while(week<=currentWeek&&guard++<6000){
-          if((counts.get(week)||0)>=target){current++;best=Math.max(best,current);}
-          else current=0;
-          week=key(shift(parse(week),7));
-        }
-        return best;
-      }
-      const done=new Set(h.completions||[]),freeze=new Set(h.freezeDates||[]);
-      const all=[...done,...freeze].sort();if(!all.length)return 0;
-      const start=parse(all[0]),end=new Date();end.setHours(12,0,0,0);
-      let active=false,current=0,max=0,n=0;
-      for(let day=start;day<=end&&n++<37000;day=shift(day,1)){
-        const k=key(day);
-        if(done.has(k)){current=active?current+1:1;active=true;max=Math.max(max,current);}
-        else if(!freeze.has(k)){active=false;current=0;}
-      }
-      return max;
-    }
+     function protectedWeeklyHistory(h){
+       const target=Math.max(1,Math.min(7,h.weeklyTarget||2));
+       const done=[...new Set(h.completions||[])].sort(),counts=new Map();
+       for(const day of done){if(h.goalPeriodStart&&day<h.goalPeriodStart)continue;const monday=key(weekStart(parse(day)));counts.set(monday,(counts.get(monday)||0)+1);}
+       let current=h.goalPeriodStart?(h.goalBaseline||0):0,best=current,week=key(weekStart(parse(h.goalPeriodStart||h.createdDate||localDay()))),guard=0;
+       const currentWeek=key(weekStart(new Date())),usedMonths=new Set(),protectedWeeks=[];
+       const partialStart=h.goalPeriodStart||h.createdDate||localDay();
+       while(week<=currentWeek&&guard++<6000){
+         const count=counts.get(week)||0;
+         if(week!==currentWeek&&!(week===key(weekStart(parse(partialStart)))&&partialStart>week)&&count<target){
+           const month=key(shift(parse(week),6)).slice(0,7);
+           if(current>0&&!usedMonths.has(month)){usedMonths.add(month);protectedWeeks.push(week);current+=count;}
+           else current=0;
+         }else current+=count;
+         best=Math.max(best,current);
+         week=key(shift(parse(week),7));
+       }
+       return {longest:best,protectedWeeks};
+     }
+     function longestFor(h){
+       if(h.goalPeriodStart)return Math.max(h.goalHistoricalBest||0,evaluateHabit(h).streak);
+       if(h.cadence==='weekly')return protectedWeeklyHistory(h).longest;
+       const done=new Set(h.completions||[]),freeze=new Set(h.freezeDates||[]);
+       const all=[...done,...freeze].sort();if(!all.length)return 0;
+       const start=parse(all[0]),end=new Date();end.setHours(12,0,0,0);
+       let active=false,current=0,max=0,n=0;
+       for(let day=start;day<=end&&n++<37000;day=shift(day,1)){
+         const k=key(day);
+         if(done.has(k)){current=active?current+1:1;active=true;max=Math.max(max,current);}
+         else if(!freeze.has(k)){active=false;current=0;}
+       }
+       return max;
+     }
     function weeklyChart(h){
       const completed=new Set(h.completions||[]),start=weekStart(new Date());
       let bars='';
@@ -2364,37 +2369,4 @@
     return {setUser,selectTab,onHabitsChange,renderInsights,renderChecklist,tab:()=>tab,dispose};
   }
   window.MyStreaksWorkspace={start};
-})()     function protectedWeeklyHistory(h){
-       const target=Math.max(1,Math.min(7,h.weeklyTarget||2));
-       const done=[...new Set(h.completions||[])].sort(),counts=new Map();
-       for(const day of done){if(h.goalPeriodStart&&day<h.goalPeriodStart)continue;const monday=key(weekStart(parse(day)));counts.set(monday,(counts.get(monday)||0)+1);}
-       let current=h.goalPeriodStart?(h.goalBaseline||0):0,best=current,week=key(weekStart(parse(h.goalPeriodStart||h.createdDate||localDay()))),guard=0;
-       const currentWeek=key(weekStart(new Date())),usedMonths=new Set(),protectedWeeks=[];
-       const partialStart=h.goalPeriodStart||h.createdDate||localDay();
-       while(week<=currentWeek&&guard++<6000){
-         const count=counts.get(week)||0;
-         if(week!==currentWeek&&!(week===key(weekStart(parse(partialStart)))&&partialStart>week)&&count<target){
-           const month=key(shift(parse(week),6)).slice(0,7);
-           if(current>0&&!usedMonths.has(month)){usedMonths.add(month);protectedWeeks.push(week);current+=count;}
-           else current=0;
-         }else current+=count;
-         best=Math.max(best,current);
-         week=key(shift(parse(week),7));
-       }
-       return {longest:best,protectedWeeks};
-     }
-     function longestFor(h){
-       if(h.goalPeriodStart)return Math.max(h.goalHistoricalBest||0,evaluateHabit(h).streak);
-       if(h.cadence==='weekly')return protectedWeeklyHistory(h).longest;
-       const done=new Set(h.completions||[]),freeze=new Set(h.freezeDates||[]);
-       const all=[...done,...freeze].sort();if(!all.length)return 0;
-       const start=parse(all[0]),end=new Date();end.setHours(12,0,0,0);
-       let active=false,current=0,max=0,n=0;
-       for(let day=start;day<=end&&n++<37000;day=shift(day,1)){
-         const k=key(day);
-         if(done.has(k)){current=active?current+1:1;active=true;max=Math.max(max,current);}
-         else if(!freeze.has(k)){active=false;current=0;}
-       }
-       return max;
-     }
-;
+})();
