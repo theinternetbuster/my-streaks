@@ -16,8 +16,8 @@
   <link rel="icon" type="image/svg+xml" href="app-icon.svg" />
   <meta name="description" content="A private streak tracker with weekly freezes and cloud sync." />
   <title>My Streaks</title>
-  <link rel="stylesheet" href="styles.css?v=20261114-weekly43" />
-  <link rel="stylesheet" href="workspace.css?v=20261114-weekly43" />
+  <link rel="stylesheet" href="styles.css?v=20261114-weekly44" />
+  <link rel="stylesheet" href="workspace.css?v=20261114-weekly44" />
   <style id="critical-landing-styles">
 /* Critical inline fallback is scoped to logged-out view so signed-in themes are unchanged. */
 [hidden]{display:none!important}
@@ -1001,7 +1001,7 @@ body:has(#loginPanel:not([hidden])) .shell,
       <label for="habitCadence">Goal frequency</label>
       <select id="habitCadence" class="habit-frequency-select" aria-label="Habit goal frequency">
         <option value="daily">Every day · 2 weekly streak freezes</option>
-        <option value="weekly">Weekly target · no daily freezes</option>
+        <option value="weekly">Weekly target · 1 monthly streak freeze</option>
       </select>
       <div id="habitWeeklyOptions" class="habit-weekly-options" hidden>
         <label for="habitWeeklyTarget">Sessions per week</label>
@@ -1014,7 +1014,7 @@ body:has(#loginPanel:not([hidden])) .shell,
           <option value="6">6 days per week</option>
           <option value="7">7 days per week</option>
         </select>
-        <p class="habit-frequency-hint">Every gym day counts toward your streak. Reach your weekly minimum to protect it; other days are flexible rest days.</p>
+        <p class="habit-frequency-hint">Every session counts. Miss your weekly goal once per month without losing the streak; unused freezes do not roll over.</p>
       </div>
       <div class="modal-buttons"><button type="button" id="cancelModal" class="secondary-btn">Cancel</button><button type="submit" id="saveHabit" class="primary-btn">Create habit</button></div></form><div id="editOnly" hidden><button id="deleteHabit" class="danger-btn">Delete this habit</button></div></div></div>
     <div id="accountMenu" class="account-overlay" role="dialog" aria-modal="true" aria-labelledby="accountGreeting" hidden>
@@ -1377,7 +1377,11 @@ body:has(#loginPanel:not([hidden])) .shell,
 })();
 
   </script>
-  <script defer src="workspace.js?v=20261114-weekly43"></script>
-  <script type="module" src="app.js?v=20261114-weekly43"></script>
+  <style>
+    .calendar-day{position:relative}
+    .calendar-day .weekly-freeze-mark{position:absolute;right:2px;bottom:2px;width:15px;height:15px;fill:none;stroke:#4596f1;stroke-width:1.8;pointer-events:none}
+  </style>
+  <script defer src="workspace.js?v=20261114-weekly44"></script>
+  <script type="module" src="app.js?v=20261114-weekly44"></script>
 </body>
 </html>
