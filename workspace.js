@@ -1226,7 +1226,9 @@
           const target=blocks.find(b=>b.id===event.related?.dataset.id);
           return !!dragged&&!!target&&dragged.parentId===target.parentId;
         },
+        onStart:()=>{touchGripDragging=true;touchGripState=null;},
         onEnd:()=>{
+          touchGripDragging=false;
           const ids=[...root.querySelectorAll('.checklist-line')].map(x=>x.dataset.id);
           const index=new Map(ids.map((id,i)=>[id,i]));
           const byOrder=(a,b)=>(index.get(a.id)??Infinity)-(index.get(b.id)??Infinity);
@@ -1760,17 +1762,35 @@
     // On a touch screen, the currently edited line exposes its own grip.
     // Open the block menu on pointerdown so iOS does not hide the grip during
     // keyboard blur before the click arrives.
+    let touchGripState=null,touchGripDragging=false,skipGripClickUntil=0;
     root.addEventListener('pointerdown',event=>{
       if(event.pointerType==='mouse')return;
       const handle=event.target.closest?.('.checklist-handle');
-      if(!handle)return;
-      const line=handle.closest('.checklist-line');
+      const line=handle?.closest('.checklist-line');
       if(!line)return;
-      event.preventDefault();
-      event.stopPropagation();
-      document.activeElement?.closest?.('.checklist-editor')?.blur();
-      openBlockMenu(line.dataset.id,handle);
+      touchGripDragging=false;
+      touchGripState={id:line.dataset.id,handle,
+        pointerId:event.pointerId,x:event.clientX,y:event.clientY,time:Date.now(),moved:false};
+      // Do not prevent pointerdown: Sortable needs it for long-press drag.
     },true);
+    document.addEventListener('pointermove',event=>{
+      const state=touchGripState;
+      if(!state||event.pointerId!==state.pointerId)return;
+      if(Math.hypot(event.clientX-state.x,event.clientY-state.y)>10)state.moved=true;
+    },{passive:true,capture:true});
+    document.addEventListener('pointerup',event=>{
+      const state=touchGripState;
+      if(!state||event.pointerId!==state.pointerId)return;
+      touchGripState=null;
+      if(state.moved||touchGripDragging)return;
+      // Quick tap opens actions; longer hold remains available for drag.
+      if(Date.now()-state.time>260)return;
+      event.preventDefault();
+      skipGripClickUntil=Date.now()+600;
+      document.activeElement?.closest?.('.checklist-editor')?.blur();
+      if(root.contains(state.handle))openBlockMenu(state.id,state.handle);
+    },true);
+    document.addEventListener('pointercancel',()=>{touchGripState=null;},true);
     // The space immediately AFTER a date is for typing, not opening the
     // calendar. Explicitly focus this editable landing point on iPhone.
     root.addEventListener('pointerdown',event=>{
@@ -1809,6 +1829,7 @@
       const dateBadge=target.closest('[data-date-badge]');
       const handle=target.closest('.checklist-handle');
       if(handle){
+        if(Date.now()<skipGripClickUntil)return;
         const line=handle.closest('.checklist-line');
         if(line)openBlockMenu(line.dataset.id,handle);
         return;
