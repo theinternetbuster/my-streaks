@@ -1757,6 +1757,20 @@
       touchInsertTime=Date.now();
       addBlock(before.id,'text','');
     },true);
+    // On a touch screen, the currently edited line exposes its own grip.
+    // Open the block menu on pointerdown so iOS does not hide the grip during
+    // keyboard blur before the click arrives.
+    root.addEventListener('pointerdown',event=>{
+      if(event.pointerType==='mouse')return;
+      const handle=event.target.closest?.('.checklist-handle');
+      if(!handle)return;
+      const line=handle.closest('.checklist-line');
+      if(!line)return;
+      event.preventDefault();
+      event.stopPropagation();
+      document.activeElement?.closest?.('.checklist-editor')?.blur();
+      openBlockMenu(line.dataset.id,handle);
+    },true);
     // The space immediately AFTER a date is for typing, not opening the
     // calendar. Explicitly focus this editable landing point on iPhone.
     root.addEventListener('pointerdown',event=>{
