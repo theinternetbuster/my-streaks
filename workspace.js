@@ -2367,10 +2367,10 @@
 })()     function protectedWeeklyHistory(h){
        const target=Math.max(1,Math.min(7,h.weeklyTarget||2));
        const done=[...new Set(h.completions||[])].sort(),counts=new Map();
-       for(const day of done){const monday=key(weekStart(parse(day)));counts.set(monday,(counts.get(monday)||0)+1);}
-       let current=0,best=0,week=key(weekStart(parse(h.createdDate||localDay()))),guard=0;
+       for(const day of done){if(h.goalPeriodStart&&day<h.goalPeriodStart)continue;const monday=key(weekStart(parse(day)));counts.set(monday,(counts.get(monday)||0)+1);}
+       let current=h.goalPeriodStart?(h.goalBaseline||0):0,best=current,week=key(weekStart(parse(h.goalPeriodStart||h.createdDate||localDay()))),guard=0;
        const currentWeek=key(weekStart(new Date())),usedMonths=new Set(),protectedWeeks=[];
-       const partialStart=h.createdDate||localDay();
+       const partialStart=h.goalPeriodStart||h.createdDate||localDay();
        while(week<=currentWeek&&guard++<6000){
          const count=counts.get(week)||0;
          if(week!==currentWeek&&!(week===key(weekStart(parse(partialStart)))&&partialStart>week)&&count<target){
@@ -2384,6 +2384,7 @@
        return {longest:best,protectedWeeks};
      }
      function longestFor(h){
+       if(h.goalPeriodStart)return Math.max(h.goalHistoricalBest||0,evaluateHabit(h).streak);
        if(h.cadence==='weekly')return protectedWeeklyHistory(h).longest;
        const done=new Set(h.completions||[]),freeze=new Set(h.freezeDates||[]);
        const all=[...done,...freeze].sort();if(!all.length)return 0;
