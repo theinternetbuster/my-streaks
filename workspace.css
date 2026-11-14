@@ -1723,3 +1723,30 @@ html[data-theme="light"] .checklist-block-menu .block-color-menu-header{
   opacity:0!important;visibility:hidden!important;pointer-events:none!important;
  }
 }
+
+/* weeklyhabits42: optional weekly goals; daily habits retain original design. */
+.habit-frequency-select{
+ display:block;width:100%;min-height:43px;padding:10px 12px;
+ border:1px solid rgba(155,155,160,.32);border-radius:10px;
+ background:var(--surface,#25252a);color:inherit;
+ font:500 14px 'DM Sans',sans-serif;margin:8px 0 15px;
+}
+.habit-weekly-options{
+ padding:10px 12px 8px;margin-bottom:15px;
+ border:1px solid rgba(137,137,148,.25);border-radius:12px;
+ background:rgba(132,132,145,.065);
+}
+.habit-weekly-options[hidden],.freeze-box[hidden]{display:none!important}
+.habit-weekly-options .habit-frequency-select{margin:6px 0 6px}
+.habit-frequency-hint{font-size:12px;line-height:1.5;color:#999ba7;margin:5px 0}
+.habit-weekly-progress{
+ display:block;font:600 11px/1.3 'DM Sans',sans-serif;
+ color:#a8a8b1;margin-left:auto;white-space:nowrap;
+}
+.habit-card.completed-today .habit-weekly-progress{color:#ffb48e}
+.habit-week-unit{
+ font:700 13px 'DM Sans',sans-serif;color:#999aa4;
+ letter-spacing:0;margin-left:-4px;
+}
+html[data-theme="light"] .habit-frequency-select{background:#fff;color:#283041}
+html[data-theme="light"] .habit-weekly-progress{color:#636f7e}
