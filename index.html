@@ -997,7 +997,26 @@ body:has(#loginPanel:not([hidden])) .shell,
       </div>
     </section>
     <div id="toast" role="status" aria-live="polite"></div>
-    <div id="modalBackdrop" class="modal-backdrop" hidden><div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><div class="modal-header"><h2 id="modalTitle">New habit</h2><button id="closeModal" class="ghost-icon" aria-label="Close">×</button></div><form id="habitForm"><label for="habitName">Habit name</label><input id="habitName" maxlength="60" autocomplete="off" placeholder="e.g. German" required /><div class="modal-buttons"><button type="button" id="cancelModal" class="secondary-btn">Cancel</button><button type="submit" id="saveHabit" class="primary-btn">Create habit</button></div></form><div id="editOnly" hidden><button id="deleteHabit" class="danger-btn">Delete this habit</button></div></div></div>
+    <div id="modalBackdrop" class="modal-backdrop" hidden><div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><div class="modal-header"><h2 id="modalTitle">New habit</h2><button id="closeModal" class="ghost-icon" aria-label="Close">×</button></div><form id="habitForm"><label for="habitName">Habit name</label><input id="habitName" maxlength="60" autocomplete="off" placeholder="e.g. German" required />
+      <label for="habitCadence">Goal frequency</label>
+      <select id="habitCadence" class="habit-frequency-select" aria-label="Habit goal frequency">
+        <option value="daily">Every day · 2 weekly streak freezes</option>
+        <option value="weekly">Weekly target · no daily freezes</option>
+      </select>
+      <div id="habitWeeklyOptions" class="habit-weekly-options" hidden>
+        <label for="habitWeeklyTarget">Sessions per week</label>
+        <select id="habitWeeklyTarget" class="habit-frequency-select" aria-label="Sessions per week">
+          <option value="1">1 day per week</option>
+          <option value="2" selected>2 days per week</option>
+          <option value="3">3 days per week</option>
+          <option value="4">4 days per week</option>
+          <option value="5">5 days per week</option>
+          <option value="6">6 days per week</option>
+          <option value="7">7 days per week</option>
+        </select>
+        <p class="habit-frequency-hint">Each completed week adds one to your weekly streak. Missed days don't use freezes.</p>
+      </div>
+      <div class="modal-buttons"><button type="button" id="cancelModal" class="secondary-btn">Cancel</button><button type="submit" id="saveHabit" class="primary-btn">Create habit</button></div></form><div id="editOnly" hidden><button id="deleteHabit" class="danger-btn">Delete this habit</button></div></div></div>
     <div id="accountMenu" class="account-overlay" role="dialog" aria-modal="true" aria-labelledby="accountGreeting" hidden>
       <div id="accountScrim" class="account-scrim" aria-hidden="true"></div>
       <section class="account-sheet">
