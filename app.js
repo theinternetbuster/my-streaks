@@ -56,7 +56,7 @@ function applyHabitSnapshot(snapshot){
  // Background tasks should never prevent the user's dashboard from opening.
  for(const record of snapshot.docs){
    const raw=record.data();
-   if(!Array.isArray(raw.freezeDates) || (raw.freezeProcessedThrough && raw.freezeProcessedThrough<yesterdayKey())){
+   if(raw.cadence!=='weekly'&&(!Array.isArray(raw.freezeDates) || (raw.freezeProcessedThrough && raw.freezeProcessedThrough<yesterdayKey()))){
      Promise.resolve().then(()=>reconcileFreezeLedger(record.id)).catch(e=>console.warn('Freeze reconciliation',e));
    }
  }
@@ -117,7 +117,7 @@ function display(view){
  if(user && ['dashboard','insightsPanel','checklistPanel'].includes(view))syncDesktopRoute();
 }
 function escapeHTML(str){ return String(str).replace(/[&<>"']/g, ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
-function normalise(raw){ return {id:raw.id,name:String(raw.name||'Habit'),createdDate:raw.createdDate||todayKey(),createdAt:Number(raw.createdAt)||0,order:Number.isFinite(raw.order)?raw.order:null,completions:Array.isArray(raw.completions)?[...new Set(raw.completions.filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x)))].sort():[],freezeDates:Array.isArray(raw.freezeDates)?[...new Set(raw.freezeDates.filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x)))].sort():[],freezeProcessedThrough:raw.freezeProcessedThrough||null}; }
+function normalise(raw){ return {id:raw.id,name:String(raw.name||'Habit'),createdDate:raw.createdDate||todayKey(),createdAt:Number(raw.createdAt)||0,order:Number.isFinite(raw.order)?raw.order:null,completions:Array.isArray(raw.completions)?[...new Set(raw.completions.filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x)))].sort():[],freezeDates:Array.isArray(raw.freezeDates)?[...new Set(raw.freezeDates.filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x)))].sort():[],freezeProcessedThrough:raw.freezeProcessedThrough||null,cadence:raw.cadence==='weekly'?'weekly':'daily',weeklyTarget:Math.max(1,Math.min(7,Number(raw.weeklyTarget)||2))}; }
 
 /**
  * Two weekly freezes belong to each habit. Count a missed day only while its
@@ -146,6 +146,7 @@ function legacyEvaluateHabit(habit, asOf=todayKey()){
  return {states};
 }
 function evaluateHabit(habit,asOf=todayKey()){
+ if(habit.cadence==='weekly')return evaluateWeeklyHabit(habit,asOf);
  const completed=new Set(habit.completions.filter(k=>k<=asOf));
  const frozen=new Set((habit.freezeDates||[]).filter(k=>k<=asOf));
  const dates=[...completed,...frozen].sort(),first=dates[0];
@@ -167,6 +168,30 @@ function evaluateHabit(habit,asOf=todayKey()){
    }
  }
  return {streak,freezes:Math.max(0,2-spent),active,states,lastCompleted,doneToday:completed.has(asOf)&&!frozen.has(asOf)};
+}
+function evaluateWeeklyHabit(habit,asOf=todayKey()){
+ const target=Math.max(1,Math.min(7,habit.weeklyTarget||2));
+ const completed=new Set(habit.completions.filter(k=>k<=asOf));
+ const states=new Map([...completed].map(k=>[k,'done']));
+ const currentWeek=weekStart(asOf);
+ const startWeek=weekStart(habit.createdDate||asOf);
+ const counts=new Map();
+ for(const date of completed){
+   const week=weekStart(date);
+   counts.set(week,(counts.get(week)||0)+1);
+ }
+ let streak=0,week=startWeek,guard=0;
+ while(week<=currentWeek&&guard++<6000){
+   const count=counts.get(week)||0;
+   const current=week===currentWeek;
+   if(count>=target)streak++;
+   else if(!current)streak=0;
+   week=addDays(week,7);
+ }
+ const weekCount=counts.get(currentWeek)||0;
+ return {streak,freezes:0,active:streak>0,states,lastCompleted:[...completed].sort().at(-1)||null,
+   doneToday:completed.has(asOf),weeklyCount:weekCount,weeklyTarget:target,
+   weeklyComplete:weekCount>=target};
 }
 function yesterdayKey(){return addDays(todayKey(),-1);}
 const freezeReconciling=new Set();
@@ -232,12 +257,14 @@ function renderDashboard(){
  grid.innerHTML=habits.map(h=>{
    const shown=pendingCheckins.has(h.id)?{...h,completions:[...new Set([...h.completions,todayKey()])]}:h;
    const info=evaluateHabit(shown);
+   const weekly=h.cadence==='weekly';
+   const progress=weekly?'<span class="habit-weekly-progress">'+info.weeklyCount+'/'+info.weeklyTarget+' this week</span>':'';
    return '<div class="habit-card'+(info.doneToday?' completed-today':'')+'" data-id="'+escapeHTML(h.id)+'" data-done="'+info.doneToday+'" role="button" tabindex="0" aria-label="'+escapeHTML(h.name)+(layoutMode==='calendar'?' — tap to edit calendar':info.doneToday?' — hold to edit calendar':' — hold to check in')+'">'+
      '<span class="hold-progress" aria-hidden="true"></span>'+
-     '<div class="habit-card-head"><h3>'+escapeHTML(h.name)+'</h3>'+
+     '<div class="habit-card-head"><h3>'+escapeHTML(h.name)+'</h3>'+progress+
      (layoutMode==='calendar'?'<span class="mini-streak"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#flame-solid"></use></svg>'+info.streak+'</span>':'')+'</div>'+
      (layoutMode==='calendar'?smallCalendar(h,info):
-     '<div class="card-bottom"><span class="card-streak"><svg class="card-flame" viewBox="0 0 24 24" aria-hidden="true"><use href="#flame-solid"></use></svg> '+info.streak+'</span><span class="card-arrow">↗</span></div>')+
+     '<div class="card-bottom"><span class="card-streak"><svg class="card-flame" viewBox="0 0 24 24" aria-hidden="true"><use href="#flame-solid"></use></svg> '+info.streak+(weekly?'<small class="habit-week-unit">wk</small>':'')+'</span><span class="card-arrow">↗</span></div>')+
      '</div>';
  }).join('');
  el('emptyState').hidden=habits.length!==0;
@@ -251,7 +278,7 @@ function clearCalendarTextSelection(){
 function openCalendarEditor(id){
  const h=habits.find(h=>h.id===id);
  if(!h)return;
- if(!h.freezeProcessedThrough){showToast('Synchronizing your frozen days. Try again shortly.');return;}
+ if(h.cadence!=='weekly'&&!h.freezeProcessedThrough){showToast('Synchronizing your frozen days. Try again shortly.');return;}
  clearTimeout(editorCloseTimer);
  editorHabitId=id;editorMonth=new Date(new Date().getFullYear(),new Date().getMonth(),1);
  el('calendarEditor').classList.remove('closing');
@@ -312,9 +339,9 @@ async function saveEditorDate(id,key){
   await runTransaction(db,async tx=>{
    const ref=habitDoc(id),snap=await tx.get(ref);
    if(!snap.exists())throw Error('Habit no longer exists');
-   if(!Array.isArray(snap.data().freezeDates))throw Error('Freeze history is still synchronizing');
+   if(snap.data().cadence!=='weekly'&&!Array.isArray(snap.data().freezeDates))throw Error('Freeze history is still synchronizing');
    const record=normalise({id,...snap.data()});
-   if(record.freezeDates.includes(key))throw Error('Blue freeze dates are locked');
+   if(record.cadence!=='weekly'&&record.freezeDates.includes(key))throw Error('Blue freeze dates are locked');
    const dates=new Set(record.completions);
    if(desired)dates.add(key);else dates.delete(key);
    tx.update(ref,{completions:[...dates].sort()});
@@ -427,7 +454,7 @@ async function checkInHabit(id){
      const dates=Array.isArray(snapshot.data().completions)?snapshot.data().completions:[];
      if(!dates.includes(key))tx.update(ref,{completions:[...dates,key].sort()});
    });
-   showToast('Today completed! 🔥');
+   showToast(habit.cadence==='weekly'?'Weekly session logged! 🔥':'Today completed! 🔥');
  }catch(error){
    pendingCheckins.delete(id);
    renderDashboard();
@@ -466,9 +493,10 @@ function renderDetail(){
   const h=selectedHabit();if(!h){selectedId=null;display('dashboard');return;}
   const data=evaluateHabit(h);
   el('detailHabitName').textContent=h.name;
-  el('detailStreak').innerHTML=`<em>${data.streak}-day</em> streak`;
-  el('detailSubtitle').textContent=`Complete ${h.name} to keep your streak going.`;
-  el('freezeTitle').textContent=`${data.freezes} Streak Freeze${data.freezes===1?'':'s'} left`;
+  el('detailStreak').innerHTML=h.cadence==='weekly'?`<em>${data.streak}-week</em> streak`:`<em>${data.streak}-day</em> streak`;
+  el('detailSubtitle').textContent=h.cadence==='weekly'?`${data.weeklyCount} of ${data.weeklyTarget} sessions completed this week. Each successful week adds to your streak.`:`Complete ${h.name} to keep your streak going.`;
+  el('freezeTitle').textContent=h.cadence==='weekly'?'Weekly goal · no daily freezes':`${data.freezes} Streak Freeze${data.freezes===1?'':'s'} left`;
+  el('freezeTitle').closest('.freeze-box').hidden=h.cadence==='weekly';
   drawCalendar(h,data);
 }
 function drawCalendar(h,data){
@@ -496,13 +524,34 @@ function showModal(edit=false){
  modalEditingId=edit?selectedId:null;
  el('modalTitle').textContent=edit?'Edit habit':'New habit';el('saveHabit').textContent=edit?'Save changes':'Create habit';
  el('habitName').value=edit?(selectedHabit()?.name||''):'';
+ el('habitCadence').value=edit?(selectedHabit()?.cadence||'daily'):'daily';
+ el('habitWeeklyTarget').value=String(edit?(selectedHabit()?.weeklyTarget||2):2);
+ el('habitWeeklyOptions').hidden=el('habitCadence').value!=='weekly';
  el('editOnly').hidden=!edit;el('modalBackdrop').hidden=false;el('habitName').focus();
 }
 function hideModal(){el('modalBackdrop').hidden=true;modalEditingId=null;}
-async function saveHabit(event){event.preventDefault();const name=el('habitName').value.trim();if(!name)return;const editing=modalEditingId;hideModal();await withBusy(async()=>{
- if(editing){await runTransaction(db,async tx=>{const ref=habitDoc(editing);if(!(await tx.get(ref)).exists())throw Error('Habit not found');tx.update(ref,{name});});showToast('Habit renamed');}
- else{await addDoc(habitCollection(),{name,createdDate:todayKey(),completions:[],freezeDates:[],freezeProcessedThrough:yesterdayKey(),createdAt:Date.now(),order:habits.length?Math.max(...habits.map((h,i)=>h.order??i))+1:0});showToast('Habit created!');}
-});}
+async function saveHabit(event){
+ event.preventDefault();
+ const name=el('habitName').value.trim();if(!name)return;
+ const cadence=el('habitCadence').value==='weekly'?'weekly':'daily';
+ const weeklyTarget=Math.max(1,Math.min(7,Number(el('habitWeeklyTarget').value)||2));
+ const editing=modalEditingId;hideModal();
+ await withBusy(async()=>{
+  if(editing){
+   await runTransaction(db,async tx=>{
+    const ref=habitDoc(editing),snap=await tx.get(ref);
+    if(!snap.exists())throw Error('Habit not found');
+    tx.update(ref,{name,cadence,weeklyTarget});
+   });
+   showToast('Habit updated');
+  }else{
+   await addDoc(habitCollection(),{name,cadence,weeklyTarget,createdDate:todayKey(),completions:[],
+    freezeDates:[],freezeProcessedThrough:yesterdayKey(),createdAt:Date.now(),
+    order:habits.length?Math.max(...habits.map((h,i)=>h.order??i))+1:0});
+   showToast('Habit created!');
+  }
+ });
+}
 async function removeHabit(){const h=selectedHabit();if(!h)return;if(!confirm(`Delete “${h.name}” and all its check-in history? This cannot be undone.`))return;hideModal();await withBusy(async()=>{await deleteDoc(habitDoc(h.id));selectedId=null;display('dashboard');showToast('Habit deleted');});}
 function exportBackup(){if(!user)return;const data={app:'my-streaks',version:1,exportedAt:new Date().toISOString(),habits:habits.map(({name,createdDate,completions})=>({name,createdDate,completions}))};const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`my-streaks-backup-${todayKey()}.json`;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);showToast('Backup downloaded');}
 async function importBackup(file){if(!file||!user)return;let data;try{data=JSON.parse(await file.text());}catch{showToast('That is not a valid JSON file');return;}
@@ -791,6 +840,7 @@ el('detailScrim').addEventListener('click',closeHabit);
 
 el('editHabitBtn').addEventListener('click',()=>showModal(true));
 el('habitForm').addEventListener('submit',saveHabit);
+el('habitCadence').addEventListener('change',()=>{el('habitWeeklyOptions').hidden=el('habitCadence').value!=='weekly';});
 el('closeModal').addEventListener('click',hideModal);el('cancelModal').addEventListener('click',hideModal);
 el('modalBackdrop').addEventListener('click',e=>{if(e.target===el('modalBackdrop'))hideModal();});
 el('deleteHabit').addEventListener('click',removeHabit);
