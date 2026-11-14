@@ -170,27 +170,31 @@ function evaluateHabit(habit,asOf=todayKey()){
  return {streak,freezes:Math.max(0,2-spent),active,states,lastCompleted,doneToday:completed.has(asOf)&&!frozen.has(asOf)};
 }
 function evaluateWeeklyHabit(habit,asOf=todayKey()){
- // Streak is the number of real sessions across consecutive qualifying weeks.
- // This week remains provisional until Sunday ends; skipped days are rest,
- // never daily freezes.
  const target=Math.max(1,Math.min(7,habit.weeklyTarget||2));
  const completed=[...new Set((habit.completions||[]).filter(k=>k<=asOf))].sort();
  const done=new Set(completed),states=new Map(completed.map(k=>[k,'done']));
  const currentWeek=weekStart(asOf),firstWeek=weekStart(habit.createdDate||asOf);
- const counts=new Map();
+ const counts=new Map(),protectedWeeks=[],usedMonths=new Set();
  for(const day of completed){const week=weekStart(day);counts.set(week,(counts.get(week)||0)+1);}
  let streak=0,week=firstWeek,guard=0;
  while(week<=currentWeek&&guard++<6000){
-   const count=counts.get(week)||0;
-   if(week!==currentWeek&&count<target)streak=0;
-   else streak+=count;
+   const count=counts.get(week)||0,isCurrent=week===currentWeek;
+   const partialFirstWeek=week===firstWeek&&(habit.createdDate||asOf)>week;
+   if(!isCurrent&&!partialFirstWeek&&count<target){
+     // Weekly protection is spent at the END of an unsuccessful week.
+     // The calendar month is determined by that Sunday's date.
+     const month=addDays(week,6).slice(0,7);
+     if(streak>0&&!usedMonths.has(month)){
+       usedMonths.add(month);protectedWeeks.push(week);streak+=count;
+     }else streak=0;
+   }else streak+=count;
    week=addDays(week,7);
  }
- const weekCount=counts.get(currentWeek)||0;
- return {streak,freezes:0,active:streak>0,states,
-   lastCompleted:completed.at(-1)||null,doneToday:done.has(asOf),
-   weeklyCount:weekCount,weeklyTarget:target,
-   restDaysRemaining:Math.max(0,7-target),weeklyComplete:weekCount>=target};
+ const weekCount=counts.get(currentWeek)||0,month=asOf.slice(0,7);
+ return {streak,freezes:usedMonths.has(month)?0:1,active:streak>0,
+   states,lastCompleted:completed.at(-1)||null,doneToday:done.has(asOf),
+   weeklyCount:weekCount,weeklyTarget:target,restDaysRemaining:Math.max(0,7-target),
+   weeklyComplete:weekCount>=target,protectedWeeks};
 }
 function yesterdayKey(){return addDays(todayKey(),-1);}
 const freezeReconciling=new Set();
@@ -492,18 +496,18 @@ function renderDetail(){
   const h=selectedHabit();if(!h){selectedId=null;display('dashboard');return;}
   const data=evaluateHabit(h);
   el('detailHabitName').textContent=h.name;
-  el('detailStreak').innerHTML=`<em>${data.streak}-day</em> streak`;
+  el('detailStreak').innerHTML=`<em>${data.streak} ${h.cadence==='weekly'?'session':'day'}</em> streak`;
   el('detailSubtitle').textContent=h.cadence==='weekly'?`${data.weeklyCount} of ${data.weeklyTarget} minimum sessions this week. Every session grows your streak; days off are allowed.`:`Complete ${h.name} to keep your streak going.`;
   const weekly=h.cadence==='weekly';
   el('freezeTitle').textContent=weekly?
-    (7-data.weeklyTarget)+' flexible rest days per week':
+    `${data.freezes} monthly Streak Freeze${data.freezes===1?'':'s'} left`:
     `${data.freezes} Streak Freeze${data.freezes===1?'':'s'} left`;
   const freezeBox=el('freezeTitle').closest('.freeze-box');
   freezeBox.hidden=false;
   freezeBox.classList.toggle('weekly-rest-box',weekly);
   const explanation=freezeBox.querySelector('p');
   if(explanation)explanation.textContent=weekly?
-    'Train on any '+data.weeklyTarget+' days to meet your minimum. Extra workouts increase your streak. Rest days never use daily freezes.':
+    'Meet your '+data.weeklyTarget+'-session goal by Sunday. One unsuccessful week per month can be protected automatically with a blue flame. Resets on the 1st; rest days are free.':
     'Every Monday you get 2 Streak Freezes. They protect your streak if you miss a day.';
   drawCalendar(h,data);
 }
@@ -520,8 +524,9 @@ function drawCalendar(h,data){
     const status=data.states.get(key); const future=key>realToday;
     const classes=['calendar-day',outside?'outside':'',status==='done'?'done':status==='freeze'?'freeze':'empty',key===realToday?'today':'',future?'future':''].filter(Boolean).join(' ');
     const icon = !outside ? `<svg class="day-flame" aria-hidden="true" viewBox="0 0 24 24"><use href="#flame-${status==='done'?'solid':'outline'}"></use></svg>` : '';
+    const protectedWeek=h.cadence==='weekly'&&data.protectedWeeks?.includes(weekStart(key))&&date.getDay()===0;
     const label = status==='done'?'Completed':status==='freeze'?'Streak freeze':future?'Future day':'Not completed';
-    html+=`<div class="${classes}" aria-label="${key}: ${label}" title="${escapeHTML(key)} • ${label}"><span class="number">${date.getDate()}</span>${icon}</div>`;
+    html+=`<div class="${classes}" aria-label="${key}: ${label}" title="${escapeHTML(key)} • ${label}"><span class="number">${date.getDate()}</span>${icon}${protectedWeek?'<svg class="weekly-freeze-mark" viewBox="0 0 24 24" aria-label="Protected week"><use href="#flame-outline"></use></svg>':''}</div>`;
   }
   el('calendarDays').innerHTML=html;
 }
