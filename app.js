@@ -494,8 +494,17 @@ function renderDetail(){
   el('detailHabitName').textContent=h.name;
   el('detailStreak').innerHTML=`<em>${data.streak}-day</em> streak`;
   el('detailSubtitle').textContent=h.cadence==='weekly'?`${data.weeklyCount} of ${data.weeklyTarget} minimum sessions this week. Every session grows your streak; days off are allowed.`:`Complete ${h.name} to keep your streak going.`;
-  el('freezeTitle').textContent=h.cadence==='weekly'?'Weekly goal · '+(7-data.weeklyTarget)+' allowed rest days per week':`${data.freezes} Streak Freeze${data.freezes===1?'':'s'} left`;
-  el('freezeTitle').closest('.freeze-box').hidden=h.cadence==='weekly';
+  const weekly=h.cadence==='weekly';
+  el('freezeTitle').textContent=weekly?
+    (7-data.weeklyTarget)+' flexible rest days per week':
+    `${data.freezes} Streak Freeze${data.freezes===1?'':'s'} left`;
+  const freezeBox=el('freezeTitle').closest('.freeze-box');
+  freezeBox.hidden=false;
+  freezeBox.classList.toggle('weekly-rest-box',weekly);
+  const explanation=freezeBox.querySelector('p');
+  if(explanation)explanation.textContent=weekly?
+    'Train on any '+data.weeklyTarget+' days to meet your minimum. Extra workouts increase your streak. Rest days never use daily freezes.':
+    'Every Monday you get 2 Streak Freezes. They protect your streak if you miss a day.';
   drawCalendar(h,data);
 }
 function drawCalendar(h,data){
