@@ -85,7 +85,24 @@ const todayKey = () => dateKey(new Date());
 const parseKey = key => { const [y,m,d] = key.split('-').map(Number); return new Date(y,m-1,d,12); };
 const addDays = (key, n) => { const d = parseKey(key); d.setDate(d.getDate()+n); return dateKey(d); };
 const weekStart = key => { const d=parseKey(key); const dow=(d.getDay()+6)%7; return addDays(key,-dow); };
-function showToast(message){ const t=el('toast');t.textContent=message;t.classList.add('shown');clearTimeout(showToast.timer);showToast.timer=setTimeout(()=>t.classList.remove('shown'),3400); }
+function showToast(message){
+ const t=el('toast');
+ const text=String(message);
+ // Reuse the exact shared SVG flame from the habit cards.
+ if(text.includes('🔥')){
+   t.textContent=text.replace(/🔥/g,'').trim();
+   t.append(' ');
+   const icon=document.createElementNS('http://www.w3.org/2000/svg','svg');
+   icon.setAttribute('class','toast-shared-flame');
+   icon.setAttribute('viewBox','0 0 24 24');
+   icon.setAttribute('aria-hidden','true');
+   const use=document.createElementNS('http://www.w3.org/2000/svg','use');
+   use.setAttribute('href','#flame-solid');
+   icon.appendChild(use);t.appendChild(icon);
+ }else t.textContent=text;
+ t.classList.add('shown');clearTimeout(showToast.timer);
+ showToast.timer=setTimeout(()=>t.classList.remove('shown'),3400);
+}
 function setSync(message, online=false){ el('syncState').textContent=message; el('syncState').classList.toggle('online',online); }
 let workspace=null;
 function display(view){
