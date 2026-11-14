@@ -2142,6 +2142,22 @@
     window.addEventListener('scroll',()=>{if(documentRange)drawDocumentSelection();},{passive:true});
     window.addEventListener('resize',()=>{if(documentRange)drawDocumentSelection();});
     function longestFor(h){
+      if(h.cadence==='weekly'){
+        const done=new Set(h.completions||[]),target=Math.max(1,Math.min(7,h.weeklyTarget||2));
+        const counts=new Map();
+        for(const day of done){
+          const monday=key(weekStart(parse(day)));
+          counts.set(monday,(counts.get(monday)||0)+1);
+        }
+        let best=0,current=0,week=key(weekStart(parse(h.createdDate||localDay()))),guard=0;
+        const currentWeek=key(weekStart(new Date()));
+        while(week<=currentWeek&&guard++<6000){
+          if((counts.get(week)||0)>=target){current++;best=Math.max(best,current);}
+          else current=0;
+          week=key(shift(parse(week),7));
+        }
+        return best;
+      }
       const done=new Set(h.completions||[]),freeze=new Set(h.freezeDates||[]);
       const all=[...done,...freeze].sort();if(!all.length)return 0;
       const start=parse(all[0]),end=new Date();end.setHours(12,0,0,0);
@@ -2166,7 +2182,7 @@
       return bars;
     }
     function calendarMonths(h){
-      const done=new Set(h.completions||[]),freeze=new Set(h.freezeDates||[]);
+      const done=new Set(h.completions||[]),freeze=new Set(h.cadence==='weekly'?[]:(h.freezeDates||[]));
       let html='';
       for(let back=2;back>=0;back--){
         const start=new Date();start.setDate(1);start.setMonth(start.getMonth()-back);
@@ -2198,7 +2214,7 @@
       const chosen=selectedHabit==='all'?habits:habits.filter(h=>h.id===selectedHabit);
       const longest=Math.max(0,...chosen.map(longestFor));
       const total=chosen.reduce((n,h)=>n+(h.completions||[]).length,0);
-      const freezes=chosen.reduce((n,h)=>n+(h.freezeDates||[]).length,0);
+      const freezes=chosen.reduce((n,h)=>n+(h.cadence==='weekly'?0:(h.freezeDates||[]).length),0);
       const breadth=habits.filter(h=>(h.completions||[]).length>0).length;
       const awards=[
         {title:'First Spark',detail:'Your first completed day',icon:'flame',goal:1,progress:total,tier:'THE BEGINNING'},
@@ -2285,22 +2301,23 @@
       const chosen=all?habits:habits.filter(h=>h.id===selectedHabit);
       const h=chosen[0]||habits[0];
       const completed=chosen.reduce((n,r)=>n+(r.completions||[]).length,0);
-      const freezeCount=chosen.reduce((n,r)=>n+(r.freezeDates||[]).length,0);
+      const freezeCount=chosen.reduce((n,r)=>n+(r.cadence==='weekly'?0:(r.freezeDates||[]).length),0);
       const longest=Math.max(0,...chosen.map(longestFor));
       const current=all?chosen.filter(x=>evaluateHabit(x).streak>0).length:evaluateHabit(h).streak;
+      const weeklyHabit=!all&&h.cadence==='weekly';
       const cards=[
-        {label:all?'Active streaks':'Current streak',number:current,icon:flame,hint:all?'Habits with an active streak':'Your ongoing run'},
-        {label:all?'Best streak':'Longest streak',number:longest,icon:badgeArt.crown,hint:'Your personal best'},
+        {label:all?'Active streaks':'Current streak',number:current,icon:flame,hint:all?'Habits with an active streak':weeklyHabit?'Consecutive successful weeks':'Your ongoing run'},
+        {label:all?'Best streak':'Longest streak',number:longest,icon:badgeArt.crown,hint:weeklyHabit?'Longest run of successful weeks':'Your personal best'},
         {label:'Days completed',number:completed,icon:badgeArt.calendar,hint:all?'Across all habits':'Every check-in counts'},
         {label:'Freeze days',number:freezeCount,icon:badgeArt.freeze,hint:'Days your streak was protected'}
       ];
-      $('insightContextNote').textContent=all?'A calm overview of all your habits. Every check-in counts; there is no daily completion quota.':'A closer look at '+h.name+'.';
+      $('insightContextNote').textContent=all?'A calm overview of all your habits. Every check-in counts; there is no daily completion quota.':weeklyHabit?'A closer look at '+h.name+'. Weekly goal: '+(h.weeklyTarget||2)+' sessions; no daily streak freezes.':'A closer look at '+h.name+'.';
       $('insightStatGrid').innerHTML=cards.map((x,i)=>
         '<div class="insight-stat-card"><span class="insight-stat-kicker">'+safe(x.label)+'</span><div class="insight-stat-main"><strong>'+x.number+'</strong><span class="insight-stat-icon '+(i===3?'icy':'')+'">'+x.icon+'</span></div><small>'+safe(x.hint)+'</small></div>'
       ).join('');
       // All Habits is an aggregate of check-ins, not a synthetic streak.
       const combined={completions:[...new Set(chosen.flatMap(x=>x.completions||[]))],
-        freezeDates:[...new Set(chosen.flatMap(x=>x.freezeDates||[]))]};
+        freezeDates:[...new Set(chosen.filter(x=>x.cadence!=='weekly').flatMap(x=>x.freezeDates||[]))]};
       const chart=all?weeklyChartAll(chosen):weeklyChart(h);
       $('insightActivityChart').innerHTML=chart;
       $('insightHeatmap').innerHTML=calendarMonths(all?combined:h);
