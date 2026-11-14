@@ -170,28 +170,27 @@ function evaluateHabit(habit,asOf=todayKey()){
  return {streak,freezes:Math.max(0,2-spent),active,states,lastCompleted,doneToday:completed.has(asOf)&&!frozen.has(asOf)};
 }
 function evaluateWeeklyHabit(habit,asOf=todayKey()){
+ // Streak is the number of real sessions across consecutive qualifying weeks.
+ // This week remains provisional until Sunday ends; skipped days are rest,
+ // never daily freezes.
  const target=Math.max(1,Math.min(7,habit.weeklyTarget||2));
- const completed=new Set(habit.completions.filter(k=>k<=asOf));
- const states=new Map([...completed].map(k=>[k,'done']));
- const currentWeek=weekStart(asOf);
- const startWeek=weekStart(habit.createdDate||asOf);
+ const completed=[...new Set((habit.completions||[]).filter(k=>k<=asOf))].sort();
+ const done=new Set(completed),states=new Map(completed.map(k=>[k,'done']));
+ const currentWeek=weekStart(asOf),firstWeek=weekStart(habit.createdDate||asOf);
  const counts=new Map();
- for(const date of completed){
-   const week=weekStart(date);
-   counts.set(week,(counts.get(week)||0)+1);
- }
- let streak=0,week=startWeek,guard=0;
+ for(const day of completed){const week=weekStart(day);counts.set(week,(counts.get(week)||0)+1);}
+ let streak=0,week=firstWeek,guard=0;
  while(week<=currentWeek&&guard++<6000){
    const count=counts.get(week)||0;
-   const current=week===currentWeek;
-   if(count>=target)streak++;
-   else if(!current)streak=0;
+   if(week!==currentWeek&&count<target)streak=0;
+   else streak+=count;
    week=addDays(week,7);
  }
  const weekCount=counts.get(currentWeek)||0;
- return {streak,freezes:0,active:streak>0,states,lastCompleted:[...completed].sort().at(-1)||null,
-   doneToday:completed.has(asOf),weeklyCount:weekCount,weeklyTarget:target,
-   weeklyComplete:weekCount>=target};
+ return {streak,freezes:0,active:streak>0,states,
+   lastCompleted:completed.at(-1)||null,doneToday:done.has(asOf),
+   weeklyCount:weekCount,weeklyTarget:target,
+   restDaysRemaining:Math.max(0,7-target),weeklyComplete:weekCount>=target};
 }
 function yesterdayKey(){return addDays(todayKey(),-1);}
 const freezeReconciling=new Set();
@@ -264,7 +263,7 @@ function renderDashboard(){
      '<div class="habit-card-head"><h3>'+escapeHTML(h.name)+'</h3>'+progress+
      (layoutMode==='calendar'?'<span class="mini-streak"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#flame-solid"></use></svg>'+info.streak+'</span>':'')+'</div>'+
      (layoutMode==='calendar'?smallCalendar(h,info):
-     '<div class="card-bottom"><span class="card-streak"><svg class="card-flame" viewBox="0 0 24 24" aria-hidden="true"><use href="#flame-solid"></use></svg> '+info.streak+(weekly?'<small class="habit-week-unit">wk</small>':'')+'</span><span class="card-arrow">↗</span></div>')+
+     '<div class="card-bottom"><span class="card-streak"><svg class="card-flame" viewBox="0 0 24 24" aria-hidden="true"><use href="#flame-solid"></use></svg> '+info.streak+'</span><span class="card-arrow">↗</span></div>')+
      '</div>';
  }).join('');
  el('emptyState').hidden=habits.length!==0;
@@ -493,9 +492,9 @@ function renderDetail(){
   const h=selectedHabit();if(!h){selectedId=null;display('dashboard');return;}
   const data=evaluateHabit(h);
   el('detailHabitName').textContent=h.name;
-  el('detailStreak').innerHTML=h.cadence==='weekly'?`<em>${data.streak}-week</em> streak`:`<em>${data.streak}-day</em> streak`;
-  el('detailSubtitle').textContent=h.cadence==='weekly'?`${data.weeklyCount} of ${data.weeklyTarget} sessions completed this week. Each successful week adds to your streak.`:`Complete ${h.name} to keep your streak going.`;
-  el('freezeTitle').textContent=h.cadence==='weekly'?'Weekly goal · no daily freezes':`${data.freezes} Streak Freeze${data.freezes===1?'':'s'} left`;
+  el('detailStreak').innerHTML=`<em>${data.streak}-day</em> streak`;
+  el('detailSubtitle').textContent=h.cadence==='weekly'?`${data.weeklyCount} of ${data.weeklyTarget} minimum sessions this week. Every session grows your streak; days off are allowed.`:`Complete ${h.name} to keep your streak going.`;
+  el('freezeTitle').textContent=h.cadence==='weekly'?'Weekly goal · '+(7-data.weeklyTarget)+' allowed rest days per week':`${data.freezes} Streak Freeze${data.freezes===1?'':'s'} left`;
   el('freezeTitle').closest('.freeze-box').hidden=h.cadence==='weekly';
   drawCalendar(h,data);
 }
