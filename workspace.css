@@ -1689,3 +1689,37 @@ html[data-theme="light"] .checklist-block-menu .block-color-menu-header{
  font:inherit;
  color:inherit;
 }
+
+/* mobilegrip42: only the active checklist row shows its editing actions.
+   Leave the writing surface clean while scrolling other rows. */
+#toast .toast-shared-flame{
+ display:inline-block;width:18px;height:18px;
+ vertical-align:-3px;color:#ff621e;fill:currentColor;
+}
+@media(max-width:799px) and (hover:none){
+ .checklist-page .checklist-line-tools{
+  min-width:46px!important;width:46px!important;
+  margin-left:-48px!important;gap:0!important;
+ }
+ .checklist-page .checklist-handle{
+  display:grid!important;width:23px!important;height:29px!important;
+  font-size:18px!important;
+ }
+ .checklist-page .checklist-insert{
+  width:23px!important;height:29px!important;
+ }
+ .checklist-page .checklist-line:not(.block-is-selected):not(:focus-within) .checklist-insert,
+ .checklist-page .checklist-line:not(.block-is-selected):not(:focus-within) .checklist-handle{
+  opacity:0!important;visibility:hidden!important;pointer-events:none!important;
+ }
+ .checklist-page .checklist-line:focus-within .checklist-insert,
+ .checklist-page .checklist-line:focus-within .checklist-handle,
+ .checklist-page .checklist-line.block-is-selected .checklist-insert,
+ .checklist-page .checklist-line.block-is-selected .checklist-handle{
+  opacity:1!important;visibility:visible!important;pointer-events:auto!important;
+ }
+ .checklist-page .checklist-blocks.block-menu-is-open .checklist-line:not(.block-is-selected) .checklist-insert,
+ .checklist-page .checklist-blocks.block-menu-is-open .checklist-line:not(.block-is-selected) .checklist-handle{
+  opacity:0!important;visibility:hidden!important;pointer-events:none!important;
+ }
+}
