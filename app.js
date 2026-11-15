@@ -265,13 +265,21 @@ function renderDashboard(){
    const shown=pendingCheckins.has(h.id)?{...h,completions:[...new Set([...h.completions,todayKey()])]}:h;
    const info=evaluateHabit(shown);
    const weekly=h.cadence==='weekly';
+   // Color reflects check-in/freeze status; the numeric streak is unchanged.
+   const previousWeek=weekStart(addDays(weekStart(todayKey()),-1));
+   const recentlyProtected=weekly
+     ? info.weeklyCount===0 && (info.protectedWeeks||[]).includes(previousWeek)
+     : info.states.get(yesterdayKey())==='freeze';
+   const flameStatus=info.doneToday?'done':recentlyProtected?'freeze':'pending';
+   const flameSymbol=flameStatus==='freeze'?'outline':'solid';
+   const flameTitle=flameStatus==='done'?'Completed today':flameStatus==='freeze'?'Streak protected by freeze':'Not completed today';
    const progress=weekly?'<span class="habit-weekly-progress">'+info.weeklyCount+'/'+info.weeklyTarget+' this week</span>':'';
    return '<div class="habit-card'+(info.doneToday?' completed-today':'')+'" data-id="'+escapeHTML(h.id)+'" data-done="'+info.doneToday+'" role="button" tabindex="0" aria-label="'+escapeHTML(h.name)+(layoutMode==='calendar'?' — tap to edit calendar':info.doneToday?' — hold to edit calendar':' — hold to check in')+'">'+
      '<span class="hold-progress" aria-hidden="true"></span>'+
      '<div class="habit-card-head"><h3>'+escapeHTML(h.name)+'</h3>'+progress+
-     (layoutMode==='calendar'?'<span class="mini-streak"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#flame-solid"></use></svg>'+info.streak+'</span>':'')+'</div>'+
+     (layoutMode==='calendar'?'<span class="mini-streak" title="'+flameTitle+'"><svg class="streak-flame--'+flameStatus+'" viewBox="0 0 24 24" aria-hidden="true"><use href="#flame-'+flameSymbol+'"></use></svg>'+info.streak+'</span>':'')+'</div>'+
      (layoutMode==='calendar'?smallCalendar(h,info):
-     '<div class="card-bottom"><span class="card-streak"><svg class="card-flame" viewBox="0 0 24 24" aria-hidden="true"><use href="#flame-solid"></use></svg> '+info.streak+'</span><span class="card-arrow">↗</span></div>')+
+     '<div class="card-bottom"><span class="card-streak" title="'+flameTitle+'"><svg class="card-flame streak-flame--'+flameStatus+'" viewBox="0 0 24 24" aria-hidden="true"><use href="#flame-'+flameSymbol+'"></use></svg> '+info.streak+'</span><span class="card-arrow">↗</span></div>')+
      '</div>';
  }).join('');
  el('emptyState').hidden=habits.length!==0;
