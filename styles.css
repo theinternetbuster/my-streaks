@@ -2145,7 +2145,7 @@ body:has(#loginPanel:not([hidden])) .shell,
 .habit-card .card-flame.streak-flame--freeze,.habit-card .mini-streak svg.streak-flame--freeze{color:#569df8;fill:none}
 html[data-theme="light"] .habit-card .card-flame.streak-flame--pending,html[data-theme="light"] .habit-card .mini-streak svg.streak-flame--pending{color:#9299a7;fill:#9299a7}
 
-/* A single-tone, subtly notched flame for the streak counter, regardless of status. */
+/* Consistent shared solid flame in all streak counters; only its color changes. */
 .habit-card .card-flame.streak-flame--pending,.habit-card .mini-streak svg.streak-flame--pending{color:#999aa2;fill:currentColor}
 .habit-card .card-flame.streak-flame--done,.habit-card .mini-streak svg.streak-flame--done{color:#ff6724;fill:currentColor}
 .habit-card .card-flame.streak-flame--freeze,.habit-card .mini-streak svg.streak-flame--freeze{color:#539af5;fill:currentColor}
