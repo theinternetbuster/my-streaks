@@ -276,9 +276,9 @@ function renderDashboard(){
    return '<div class="habit-card'+(info.doneToday?' completed-today':'')+'" data-id="'+escapeHTML(h.id)+'" data-done="'+info.doneToday+'" role="button" tabindex="0" aria-label="'+escapeHTML(h.name)+(layoutMode==='calendar'?' — tap to edit calendar':info.doneToday?' — hold to edit calendar':' — hold to check in')+'">'+
      '<span class="hold-progress" aria-hidden="true"></span>'+
      '<div class="habit-card-head"><h3>'+escapeHTML(h.name)+'</h3>'+progress+
-     (layoutMode==='calendar'?'<span class="mini-streak" title="'+flameTitle+'"><svg class="streak-flame--'+flameStatus+'" viewBox="0 0 24 24" aria-hidden="true"><use href="#flame-dashboard"></use></svg>'+info.streak+'</span>':'')+'</div>'+
+     (layoutMode==='calendar'?'<span class="mini-streak" title="'+flameTitle+'"><svg class="streak-flame--'+flameStatus+'" viewBox="0 0 24 24" aria-hidden="true"><use href="#flame-solid"></use></svg>'+info.streak+'</span>':'')+'</div>'+
      (layoutMode==='calendar'?smallCalendar(h,info):
-     '<div class="card-bottom"><span class="card-streak" title="'+flameTitle+'"><svg class="card-flame streak-flame--'+flameStatus+'" viewBox="0 0 24 24" aria-hidden="true"><use href="#flame-dashboard"></use></svg> '+info.streak+'</span><span class="card-arrow">↗</span></div>')+
+     '<div class="card-bottom"><span class="card-streak" title="'+flameTitle+'"><svg class="card-flame streak-flame--'+flameStatus+'" viewBox="0 0 24 24" aria-hidden="true"><use href="#flame-solid"></use></svg> '+info.streak+'</span><span class="card-arrow">↗</span></div>')+
      '</div>';
  }).join('');
  el('emptyState').hidden=habits.length!==0;
