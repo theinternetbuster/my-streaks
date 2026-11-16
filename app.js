@@ -236,6 +236,19 @@ async function reconcileFreezeLedger(id){
 function habitCollection(){ return collection(db,'users',user.uid,'habits'); }
 function habitDoc(id){ return doc(db,'users',user.uid,'habits',id); }
 function selectedHabit(){ return habits.find(h=>h.id===selectedId); }
+// Share pending completions across dashboard, detail and editor.
+function visibleHabit(h){
+ if(!h)return h;
+ const pending=pendingCheckins.get(h.id);
+ return pending&&!h.completions.includes(pending)
+   ?{...h,completions:[...h.completions,pending].sort()}
+   :h;
+}
+function refreshHabitViews(id){
+ if(selectedId===id&&!el('detail').hidden)renderDetail();
+ if(editorHabitId===id&&!el('calendarEditor').hidden)renderCalendarEditor();
+ renderDashboard();
+}
 
 function smallCalendar(h,info){
  const now=new Date(),year=now.getFullYear(),month=now.getMonth();
@@ -262,7 +275,7 @@ function renderDashboard(){
  el('layoutToggleBtn').title=layoutMode==='calendar'?'Compact cards':'Calendar cards';
  el('layoutToggleBtn').setAttribute('aria-pressed',String(layoutMode==='calendar'));
  grid.innerHTML=habits.map(h=>{
-   const shown=pendingCheckins.has(h.id)?{...h,completions:[...new Set([...h.completions,todayKey()])]}:h;
+   const shown=visibleHabit(h);
    const info=evaluateHabit(shown);
    const weekly=h.cadence==='weekly';
    // Color reflects check-in/freeze status; the numeric streak is unchanged.
@@ -312,7 +325,7 @@ function closeCalendarEditor(){
 }
 function renderCalendarEditor(){
  const h=habits.find(h=>h.id===editorHabitId);if(!h){closeCalendarEditor();return;}
- const info=evaluateHabit(h),m=editorMonth||new Date(new Date().getFullYear(),new Date().getMonth(),1);
+ const info=evaluateHabit(visibleHabit(h)),m=editorMonth||new Date(new Date().getFullYear(),new Date().getMonth(),1);
  el('calendarEditorTitle').textContent=h.name;
  el('editorMonthTitle').textContent=m.toLocaleDateString('en-US',{month:'long',year:'numeric'});
  el('editorNextMonth').disabled=new Date(m.getFullYear(),m.getMonth()+1,1)>new Date(new Date().getFullYear(),new Date().getMonth(),1);
@@ -324,7 +337,7 @@ function renderCalendarEditor(){
   const freeze=state==='freeze';
   const previewKey=editorHabitId+':'+key;
   const done=freeze?false:(editorPreview.has(previewKey)?editorPreview.get(previewKey):state==='done');
-  const locked=!inMonth||key>todayKey()||freeze;
+  const locked=!inMonth||key>todayKey()||freeze||pendingCheckins.get(editorHabitId)===key;
   const cls=[done?'done':freeze?'freeze':'empty',!inMonth?'outside':''].filter(Boolean).join(' ');
   const flame=inMonth?'<svg viewBox="0 0 24 24" aria-hidden="true"><use href="#flame-'+(done?'solid':'outline')+'"></use></svg>':'';
   html+='<button type="button" class="editor-day '+cls+'" data-date="'+key+'" aria-label="'+key+': '+(freeze?'freeze locked':done?'completed':'not completed')+'" aria-pressed="'+done+'" '+(locked?'disabled':'')+'><span>'+d.getDate()+'</span>'+flame+'</button>';
@@ -460,7 +473,7 @@ async function checkInHabit(id){
  if(!habit||evaluateHabit(habit).doneToday)return;
  const key=todayKey();
  pendingCheckins.set(id,key);
- renderDashboard(); // The completed card and streak number appear at the end of the hold.
+ refreshHabitViews(id); // Update every calendar instantly, without waiting for Firebase.
  try{
    await runTransaction(db,async tx=>{
      const ref=habitDoc(id),snapshot=await tx.get(ref);
@@ -471,7 +484,7 @@ async function checkInHabit(id){
    showToast(habit.cadence==='weekly'?'Weekly session logged! 🔥':'Today completed! 🔥');
  }catch(error){
    pendingCheckins.delete(id);
-   renderDashboard();
+   refreshHabitViews(id);
    showToast(errorMessage(error));
  }
 }
@@ -505,7 +518,7 @@ function closeHabit(){
 }
 function renderDetail(){
   const h=selectedHabit();if(!h){selectedId=null;display('dashboard');return;}
-  const data=evaluateHabit(h);
+  const data=evaluateHabit(visibleHabit(h));
   el('detailHabitName').textContent=h.name;
   el('detailStreak').innerHTML=`<em>${data.streak} ${h.cadence==='weekly'?'session':'day'}</em> streak`;
   el('detailSubtitle').textContent=h.cadence==='weekly'?`${data.weeklyCount} of ${data.weeklyTarget} minimum sessions this week. Every session grows your streak; days off are allowed.`:`Complete ${h.name} to keep your streak going.`;
