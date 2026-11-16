@@ -337,7 +337,7 @@ function renderCalendarEditor(){
   const freeze=state==='freeze';
   const previewKey=editorHabitId+':'+key;
   const done=freeze?false:(editorPreview.has(previewKey)?editorPreview.get(previewKey):state==='done');
-  const locked=!inMonth||key>todayKey()||freeze||pendingCheckins.get(editorHabitId)===key;
+  const locked=!inMonth||key>todayKey()||freeze;
   const cls=[done?'done':freeze?'freeze':'empty',!inMonth?'outside':''].filter(Boolean).join(' ');
   const flame=inMonth?'<svg viewBox="0 0 24 24" aria-hidden="true"><use href="#flame-'+(done?'solid':'outline')+'"></use></svg>':'';
   html+='<button type="button" class="editor-day '+cls+'" data-date="'+key+'" aria-label="'+key+': '+(freeze?'freeze locked':done?'completed':'not completed')+'" aria-pressed="'+done+'" '+(locked?'disabled':'')+'><span>'+d.getDate()+'</span>'+flame+'</button>';
@@ -349,7 +349,7 @@ function toggleEditorDate(key){
  const id=editorHabitId,habit=habits.find(h=>h.id===id);
  if(!habit||evaluateHabit(habit).states.get(key)==='freeze')return;
  const previewKey=id+':'+key;
- const current=editorPreview.has(previewKey)?editorPreview.get(previewKey):habit.completions.includes(key);
+ const current=editorPreview.has(previewKey)?editorPreview.get(previewKey):visibleHabit(habit).completions.includes(key);
  editorPreview.set(previewKey,!current);
  renderCalendarEditor();
  clearTimeout(editorSaveTimers.get(previewKey));
@@ -363,6 +363,8 @@ async function saveEditorDate(id,key){
  editorInflight.add(previewKey);
  let saved=false;
  try{
+  const checkinSave=pendingCheckinSaves.get(id);
+  if(checkinSave)await checkinSave;
   await runTransaction(db,async tx=>{
    const ref=habitDoc(id),snap=await tx.get(ref);
    if(!snap.exists())throw Error('Habit no longer exists');
@@ -374,6 +376,7 @@ async function saveEditorDate(id,key){
    tx.update(ref,{completions:[...dates].sort()});
   });
   saved=true;
+  if(!desired&&pendingCheckins.get(id)===key)pendingCheckins.delete(id);
  }catch(error){showToast(errorMessage(error));}
  finally{
   editorInflight.delete(previewKey);
@@ -386,6 +389,7 @@ async function saveEditorDate(id,key){
    if(current && current.completions.includes(key)===desired)editorPreview.delete(previewKey);
   }
   if(editorHabitId===id)renderCalendarEditor();
+  if(saved)renderDashboard();
  }
 }
 function renderReorderList(){
@@ -455,6 +459,8 @@ async function saveReorderedHabits(){
  });
 }
 const pendingCheckins=new Map();
+// Calendar edits can wait for the check-in transaction rather than locking today.
+const pendingCheckinSaves=new Map();
 let holdDelayTimer=null;
 function stopHold(cancelClick=false){
  clearTimeout(holdDelayTimer);
@@ -475,17 +481,22 @@ async function checkInHabit(id){
  pendingCheckins.set(id,key);
  refreshHabitViews(id); // Update every calendar instantly, without waiting for Firebase.
  try{
-   await runTransaction(db,async tx=>{
+   const checkinSave=runTransaction(db,async tx=>{
      const ref=habitDoc(id),snapshot=await tx.get(ref);
      if(!snapshot.exists())throw Error('Habit no longer exists');
      const dates=Array.isArray(snapshot.data().completions)?snapshot.data().completions:[];
      if(!dates.includes(key))tx.update(ref,{completions:[...dates,key].sort()});
    });
+   pendingCheckinSaves.set(id,checkinSave);
+   await checkinSave;
    showToast(habit.cadence==='weekly'?'Weekly session logged! 🔥':'Today completed! 🔥');
  }catch(error){
    pendingCheckins.delete(id);
    refreshHabitViews(id);
    showToast(errorMessage(error));
+ }finally{
+   pendingCheckinSaves.delete(id);
+   if(editorHabitId===id&&!el('calendarEditor').hidden)renderCalendarEditor();
  }
 }
 async function quickDeleteHabit(id){
