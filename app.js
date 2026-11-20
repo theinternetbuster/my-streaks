@@ -319,7 +319,7 @@ function openCalendarEditor(id){
 function closeCalendarEditor(){
  const overlay=el('calendarEditor');if(overlay.hidden)return;
  const finish=()=>{overlay.hidden=true;overlay.classList.remove('closing');document.body.classList.remove('calendar-editor-open');editorHabitId=null;};
- if(window.matchMedia('(max-width:799px) and (prefers-reduced-motion: no-preference)').matches){
+ if(window.matchMedia(window.MyStreaksIPadLayout?'(max-width:1366px) and (prefers-reduced-motion: no-preference)':'(max-width:799px) and (prefers-reduced-motion: no-preference)').matches){
   overlay.classList.add('closing');clearTimeout(editorCloseTimer);editorCloseTimer=setTimeout(finish,280);
  }else finish();
 }
@@ -516,7 +516,7 @@ function openHabit(id){
 }
 function closeHabit(){
  if(el('detail').hidden)return;
- if(window.matchMedia('(min-width:800px), (prefers-reduced-motion: reduce)').matches){
+ if(window.matchMedia(window.MyStreaksIPadLayout?'(min-width:1367px), (prefers-reduced-motion: reduce)':'(min-width:800px), (prefers-reduced-motion: reduce)').matches){
    selectedId=null;renderDashboard();display('dashboard');return;
  }
  el('detail').classList.add('closing');
@@ -686,7 +686,7 @@ const accountSections=[
  ['accountBackupBtn','accountBackupDetail','Backup & restore'],
  ['accountReorderBtn','accountReorderDetail','Rearrange habits']
 ];
-const desktopSettings=window.matchMedia('(min-width:800px)');
+const desktopSettings=window.matchMedia(window.MyStreaksIPadLayout?'(min-width:1367px)':'(min-width:800px)');
 function showAccountSection(which,navigate=true){
  const selected=accountSections.find(x=>x[0]===which)||accountSections[0];
  for(const [buttonId,detailId] of accountSections){
