@@ -291,7 +291,7 @@
     const dateScrim=document.createElement('div');
     dateScrim.className='checklist-date-scrim';dateScrim.hidden=true;
     document.body.appendChild(dateScrim);
-    const isMobileDate=()=>window.matchMedia('(max-width:799px)').matches;
+    const isMobileDate=()=>!!window.MyStreaksIPadLayout||window.matchMedia('(max-width:799px)').matches;
     const dateMenu=document.createElement('div');
     dateMenu.className='checklist-date-menu';
     dateMenu.setAttribute('role','dialog');
