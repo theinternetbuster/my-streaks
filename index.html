@@ -16,8 +16,15 @@
   <link rel="icon" type="image/svg+xml" href="app-icon.svg" />
   <meta name="description" content="A private streak tracker with weekly freezes and cloud sync." />
   <title>My Streaks</title>
-  <link rel="stylesheet" href="styles.css?v=20261115-flame49" />
-  <link rel="stylesheet" href="workspace.css?v=20261115-flame49" />
+  <script>
+    // iPadOS Safari may identify itself as a Mac. Only Apple touch tablets use
+    // the existing iOS layout; desktop computers retain the desktop experience.
+    window.MyStreaksIPadLayout=/iPad/i.test(navigator.userAgent) ||
+      (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
+    if(window.MyStreaksIPadLayout)document.documentElement.classList.add('ipad-ios-layout');
+  </script>
+  <link rel="stylesheet" href="styles.css?v=20261120-ipad-layout" />
+  <link rel="stylesheet" href="workspace.css?v=20261120-ipad-layout" />
   <style id="critical-landing-styles">
 /* Critical inline fallback is scoped to logged-out view so signed-in themes are unchanged. */
 [hidden]{display:none!important}
@@ -1381,7 +1388,32 @@ body:has(#loginPanel:not([hidden])) .shell,
     .calendar-day{position:relative}
     .calendar-day .weekly-freeze-mark{position:absolute;right:2px;bottom:2px;width:15px;height:15px;fill:none;stroke:#4596f1;stroke-width:1.8;pointer-events:none}
   </style>
-  <script defer src="workspace.js?v=20261115-flame49"></script>
-  <script type="module" src="app.js?v=20261115-editor-unlock"></script>
+  <script>
+    // Reuse the phone styles on iPads, regardless of their wider CSS viewport.
+    // Changing media conditions in memory affects only this iPad session and
+    // keeps the actual desktop CSS files untouched.
+    if(window.MyStreaksIPadLayout){
+      const extendMobileStyles=rules=>{
+        for(const rule of rules){
+          if(rule.type===CSSRule.MEDIA_RULE){
+            const before=rule.media.mediaText;
+            const after=before
+              .replace(/max-width\s*:\s*799px/g,'max-width: 1366px')
+              .replace(/max-width\s*:\s*800px/g,'max-width: 1366px')
+              .replace(/min-width\s*:\s*800px/g,'min-width: 1367px');
+            if(after!==before)rule.media.mediaText=after;
+          }
+          if(rule.cssRules)extendMobileStyles(rule.cssRules);
+        }
+      };
+      for(const sheet of document.styleSheets){
+        try{extendMobileStyles(sheet.cssRules);}catch(error){
+          console.warn('iPad stylesheet adjustment unavailable',sheet.href,error);
+        }
+      }
+    }
+  </script>
+  <script defer src="workspace.js?v=20261120-ipad-layout"></script>
+  <script type="module" src="app.js?v=20261120-ipad-layout"></script>
 </body>
 </html>
