@@ -21,7 +21,7 @@ const cleanBlocks=raw=>Array.isArray(raw)&&raw.length?raw.slice(0,12).map((b,i)=
 function start({db,doc,onSnapshot,setDoc}){
  const root=$('focusPlansRoot'),toggle=$('checklistViewToggle');
  if(!root||!toggle)return {setUser(){},dispose(){}};
- let user=null,unsub=null,plan={blocks:cleanBlocks(defaults),days:{}},ready=false,dirty=false,editing=false,active=null,activeSince=0,saveQueue=Promise.resolve(),saveTimer=null,tickTimer=null,lastSnapshot='';
+ let user=null,unsub=null,plan={blocks:cleanBlocks(defaults),days:{}},ready=false,dirty=false,editing=false,active=null,activeSince=0,overtime=false,saveQueue=Promise.resolve(),saveTimer=null,tickTimer=null,lastSnapshot='';
  const record=()=>{const d=day();if(!plan.days[d])plan.days[d]={};return plan.days[d];};
  const entry=(id)=>{const r=record();if(!r[id])r[id]={seconds:0,done:false};return r[id];};
  const normalize=raw=>{
@@ -41,7 +41,7 @@ function start({db,doc,onSnapshot,setDoc}){
   const now=Date.now(),elapsed=Math.max(0,Math.floor((now-activeSince)/1000));
   if(elapsed>0){entry(active).seconds+=elapsed;activeSince+=elapsed*1000;dirty=true;}
  }
- function stop(save=true){if(!active)return;flushActive();active=null;if(save)scheduleSave(true);}
+ function stop(save=true){if(!active)return;flushActive();active=null;overtime=false;if(save)scheduleSave(true);}
  function scheduleSave(immediate=false){
   if(!user||!ready)return;
   dirty=true;clearTimeout(saveTimer);
@@ -106,7 +106,7 @@ function start({db,doc,onSnapshot,setDoc}){
   if(action==='finish'){stop();render();return;}
   if(!b)return;
   if(action==='toggle'){
-   if(active===id){stop();}else{stop();active=id;activeSince=Date.now();}
+   if(active===id){stop();}else{stop();active=id;activeSince=Date.now();overtime=entry(id).seconds>=b.minutes*60;}
    scheduleSave();render();return;
   }
   if(action==='done'){
@@ -131,7 +131,7 @@ function start({db,doc,onSnapshot,setDoc}){
  const onHidden=()=>{if(document.visibilityState==='hidden'){stop();}else if(!root.hidden)render();};
  document.addEventListener('visibilitychange',onHidden);
  window.addEventListener('pagehide',()=>stop());
- tickTimer=setInterval(()=>{if(active&&!root.hidden){flushActive();render();if(entry(active).seconds>=plan.blocks.find(b=>b.id===active).minutes*60){stop();render();}else if(entry(active).seconds%10===0)scheduleSave();}},1000);
+ tickTimer=setInterval(()=>{if(active&&!root.hidden){flushActive();render();if(!overtime&&entry(active).seconds>=plan.blocks.find(b=>b.id===active).minutes*60){stop();render();}else if(entry(active).seconds%10===0)scheduleSave();}},1000);
  function setUser(next){
   stop(false);clearTimeout(saveTimer);if(unsub)unsub();unsub=null;user=next;ready=false;dirty=false;active=null;editing=false;
   plan={blocks:cleanBlocks(defaults),days:{}};
