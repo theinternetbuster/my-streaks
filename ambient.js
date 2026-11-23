@@ -41,7 +41,12 @@
   html.dataset.ambientPreview=preview?'true':'false';
   // The preview uses its own dark environment, even in daytime or light mode.
   const modal=$('ambientPreviewModal');
-  if(modal)modal.hidden=!preview;
+  if(modal){
+   modal.hidden=!preview;
+   modal.dataset.previewLevel=allow?settings.mode:'off';
+   modal.dataset.previewStars=String(allow&&settings.stars);
+   modal.dataset.previewGlow=String(allow&&settings.glow);
+  }
   syncControls();
  }
  function syncControls(){
@@ -49,6 +54,8 @@
   const stars=$('ambientStarsSetting'),glow=$('ambientGlowSetting');
   if(stars){stars.checked=settings.stars;stars.disabled=settings.mode==='off';}
   if(glow){glow.checked=settings.glow;glow.disabled=settings.mode==='off';}
+  const previewButton=$('ambientPreviewBtn');
+  if(previewButton)previewButton.disabled=settings.mode==='off'||reduced.matches;
   const status=$('ambientPreviewDescription');
   if(status)status.textContent=settings.mode==='off'
     ?'Turn on Subtle or Enhanced to see the decorative effects.'
@@ -81,7 +88,10 @@
   $('ambientPreviewClose')?.addEventListener('click',closePreview);
   $('ambientPreviewModal')?.addEventListener('click',e=>{if(e.target.id==='ambientPreviewModal')closePreview();});
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&preview){e.stopPropagation();closePreview();}},true);
-  document.addEventListener('visibilitychange',()=>{if(document.hidden)closePreview();});
+  document.addEventListener('visibilitychange',()=>{
+   document.documentElement.classList.toggle('ambient-paused',document.hidden);
+   if(document.hidden)closePreview();
+  });
   reduced.addEventListener?.('change',apply);
   // Observe theme changes from Firebase settings, or the device's appearance.
   const observer=new MutationObserver(muts=>{if(muts.some(m=>m.attributeName==='data-theme'))apply();});
