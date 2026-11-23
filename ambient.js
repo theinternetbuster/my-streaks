@@ -15,10 +15,13 @@
   const hour=new Date().getHours();
   return hour>=20||hour<6;
  }
- function fieldHTML(previewScene=false){
-  const embers=Array.from({length:10},(_,i)=>{
-   const x=[6,23,42,62,81,94,13,54,87,34][i],y=[16,35,57,24,71,47,82,12,63,90][i],delay=[-5,-12,-19,-4,-27,-9,-16,-31,-2,-21][i],dur=[22,30,26,33,24,28,35,25,31,29][i];
-   return '<span class="ambient-ember ambient-ember-'+i+'" style="--ember-x:'+x+'%;--ember-y:'+y+'%;--ember-delay:'+delay+'s;--ember-duration:'+dur+'s"></span>';
+ function fieldHTML(){
+  // Fixed positions avoid expensive JS animation or random layout changes on render.
+  const x=[6,23,42,62,81,94,13,54,87,34,72,17,49,91,28,65,4,80,38,57,96,11];
+  const y=[16,35,57,24,71,47,82,12,63,90,39,76,8,51,20,88,48,95,69,31,6,58];
+  const embers=x.map((position,i)=>{
+   const duration=21+(i*7%15),delay=-(i*11%37);
+   return '<span class="ambient-ember ambient-ember-'+i+'" style="--ember-x:'+position+'%;--ember-y:'+y[i]+'%;--ember-delay:'+delay+'s;--ember-duration:'+duration+'s"></span>';
   }).join('');
   const stars=Array.from({length:3},(_,i)=>
    '<span class="ambient-star ambient-star-'+i+'" style="--star-delay:'+[-8,-23,-40][i]+'s"></span>').join('');
@@ -27,7 +30,7 @@
  function initializeScene(){
   const field=$('ambientField'),previewField=$('ambientPreviewField');
   if(field)field.innerHTML=fieldHTML();
-  if(previewField)previewField.innerHTML=fieldHTML(true);
+  if(previewField)previewField.innerHTML=fieldHTML();
  }
  function effectiveEnabled(){return settings.mode!=='off'&&!reduced.matches;}
  function apply(){
@@ -56,6 +59,7 @@
   if(glow){glow.checked=settings.glow;glow.disabled=settings.mode==='off';}
   const previewButton=$('ambientPreviewBtn');
   if(previewButton)previewButton.disabled=settings.mode==='off'||reduced.matches;
+  // The sample cards are always visible; their motion respects Reduce Motion.
   const status=$('ambientPreviewDescription');
   if(status)status.textContent=settings.mode==='off'
     ?'Turn on Subtle or Enhanced to see the decorative effects.'
