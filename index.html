@@ -24,7 +24,7 @@
     if(window.MyStreaksIPadLayout)document.documentElement.classList.add('ipad-ios-layout');
   </script>
   <link rel="stylesheet" href="styles.css?v=20261120-ipad-layout" />
-  <link rel="stylesheet" href="focus.css?v=20261123-focus02" />
+  <link rel="stylesheet" href="focus.css?v=20261123-focus03" />
   <link rel="stylesheet" href="workspace.css?v=20261120-ipad-layout" />
   <style id="critical-landing-styles">
 /* Critical inline fallback is scoped to logged-out view so signed-in themes are unchanged. */
@@ -947,7 +947,7 @@ body:has(#loginPanel:not([hidden])) .shell,
       <section id="checklistPanel" class="workspace-page checklist-page" hidden>
         <div class="workspace-eyebrow">YOUR SPACE</div>
         <div class="workspace-heading"><div><h1>Checklist<span class="workspace-heading-period">.</span></h1><p>A simple place for the things on your mind.</p></div><button type="button" id="checklistAdd" class="checklist-new" title="New paragraph" aria-label="Add a new paragraph">＋ New line</button></div>
-        <div id="checklistViewToggle" class="focus-view-toggle" data-current="notes" role="tablist" aria-label="Checklist views"><button type="button" data-checklist-view="notes" role="tab" aria-selected="true">My Checklist</button><button type="button" data-checklist-view="focus" role="tab" aria-selected="false">Focus Plans</button></div><div id="checklistOriginal"><div class="checklist-document"><div class="checklist-document-top"><span><svg viewBox="0 0 24 24"><use href="#flame-solid"></use></svg> MY CHECKLIST</span><span id="checklistSyncStatus">Ready</span></div><div id="checklistBlocks" class="checklist-blocks"></div><button type="button" id="checklistEmpty" class="checklist-hint" aria-label="Start a new blank line"></button><button type="button" id="checklistAddBottom" class="checklist-add-block"><span>＋</span> Add a block</button></div>
+        <div id="checklistViewToggle" class="focus-view-toggle" data-current="notes" role="tablist" aria-label="Checklist views"><span class="focus-toggle-highlight" aria-hidden="true"></span><button type="button" data-checklist-view="notes" role="tab" aria-selected="true">My Checklist</button><button type="button" data-checklist-view="focus" role="tab" aria-selected="false">Focus Plans</button></div><div id="checklistOriginal"><div class="checklist-document"><div class="checklist-document-top"><span><svg viewBox="0 0 24 24"><use href="#flame-solid"></use></svg> MY CHECKLIST</span><span id="checklistSyncStatus">Ready</span></div><div id="checklistBlocks" class="checklist-blocks"></div><button type="button" id="checklistEmpty" class="checklist-hint" aria-label="Start a new blank line"></button><button type="button" id="checklistAddBottom" class="checklist-add-block"><span>＋</span> Add a block</button></div>
         <div id="checklistSlashMenu" class="checklist-slash-menu" role="menu" aria-label="Insert block" hidden></div>
         <p class="checklist-help">Just type to begin · Press <kbd>/</kbd> for headings, tasks, and lists</p></div><section id="focusPlansRoot" class="focus-plans-root" aria-label="German Focus Plan" hidden></section><span id="focusSyncLabel" class="focus-sync-label" aria-live="polite"></span>
       </section>
@@ -1415,9 +1415,9 @@ body:has(#loginPanel:not([hidden])) .shell,
       }
     }
   </script>
-  <script defer src="achievements.js?v=20261123-focus02"></script>
-  <script defer src="focus.js?v=20261123-focus02"></script>
-  <script defer src="workspace.js?v=20261123-focus02"></script>
-  <script type="module" src="app.js?v=20261123-focus02"></script>
+  <script defer src="achievements.js?v=20261123-focus03"></script>
+  <script defer src="focus.js?v=20261123-focus03"></script>
+  <script defer src="workspace.js?v=20261123-focus03"></script>
+  <script type="module" src="app.js?v=20261123-focus03"></script>
 </body>
 </html>
