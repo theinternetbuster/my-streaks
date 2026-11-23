@@ -15,7 +15,7 @@
   function start({db,doc,onSnapshot,setDoc,getHabits,evaluateHabit,onTabChange}){
     const root=$('checklistBlocks');
     if(!root)return null;
-    let focusInstance=null;
+    let focusInstance=null,achievementInstance=null;
     let tab='home',user=null,unsub=null,insightUnsub=null,blocks=[],dirty=false,saveTimer=null,selectedHabit='all',insightSection='overview',insightSelectionPending=false,
         slashFor=null,slashMatches=types,slashSelected=0,sortable=null,saveSerial=0,listenerEpoch=0;
     let pendingWrite=Promise.resolve(),editRevision=0;
@@ -109,7 +109,7 @@
       if(unsub){unsub();unsub=null;}
       if(insightUnsub){insightUnsub();insightUnsub=null;}
       clearTimeout(saveTimer);editRevision++;
-      user=next;focusInstance?.setUser(next);blocks=[];dirty=false;saveSerial++;clearDocumentSelection();resetHistory();selectedHabit='all';insightSection='overview';insightSelectionPending=false;
+      user=next;focusInstance?.setUser(next);achievementInstance?.setUser(next);blocks=[];dirty=false;saveSerial++;clearDocumentSelection();resetHistory();selectedHabit='all';insightSection='overview';insightSelectionPending=false;
       tab=['insights','checklist'].includes(new URLSearchParams(location.search).get('view'))?
         new URLSearchParams(location.search).get('view'):'home';
       updateNav();
@@ -2280,6 +2280,7 @@
     }
     function chooseInsightSection(which){
       insightSection=which==='achievements'?'achievements':'overview';
+      if(insightSection==='achievements')achievementInstance?.markRead();
       renderInsightTabs();renderInsights();
     }
     function renderPicker(habits){
@@ -2363,8 +2364,9 @@
         return '<div class="insight-week"><div class="insight-week-vertical"><span class="insight-week-bar" style="height:'+height+'%" title="'+count+' check-ins across all habits"></span></div><span class="insight-week-label">'+monday.toLocaleDateString('en-US',{month:'short',day:'numeric'})+'</span></div>';
       }).join('');
     }
-    function onHabitsChange(){if(tab==='insights')renderInsights();}
-    function dispose(){focusInstance?.dispose();if(unsub)unsub();if(insightUnsub)insightUnsub();clearTimeout(saveTimer);if(sortable)sortable.destroy();}
+    function onHabitsChange(){achievementInstance?.onHabitsChange();if(tab==='insights')renderInsights();}
+    function dispose(){focusInstance?.dispose();achievementInstance?.dispose();if(unsub)unsub();if(insightUnsub)insightUnsub();clearTimeout(saveTimer);if(sortable)sortable.destroy();}
+    try{achievementInstance=window.MyStreaksAchievements?.start({db,doc,onSnapshot,setDoc,getHabits,evaluateHabit})||null;}catch(error){console.error('Achievement celebrations initialization failed',error);}
     // Focus Plans uses its own Firestore document, separate from checklist notes.
     try{focusInstance=window.MyStreaksFocus?.start({db,doc,onSnapshot,setDoc})||null;}catch(error){console.error('Focus Plans initialization failed',error);}
     // Deep links should initialize consistently once the account loads.
