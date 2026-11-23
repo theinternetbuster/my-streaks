@@ -3,9 +3,10 @@
 'use strict';
 const $=id=>document.getElementById(id);
 const awards=[{id:'first',name:'First Spark',at:1,field:'total'},{id:'week',name:'One Week Strong',at:7,field:'best'},{id:'rhythm',name:'Two-Week Rhythm',at:14,field:'best'},{id:'month',name:'Thirty-Day Flame',at:30,field:'best'},{id:'century',name:'Century Club',at:100,field:'best'},{id:'fifty',name:'Every Day Counts',at:50,field:'total'},{id:'freeze',name:'Room for Life',at:1,field:'freezes'},{id:'many',name:'Many Paths',at:3,field:'breadth'}];
-function start({db,doc,onSnapshot,setDoc,getHabits,evaluateHabit,longestFor,weeklyProtectedFor}){
+function start({db,doc,onSnapshot,setDoc,getHabits,evaluateHabit,longestFor,weeklyProtectedFor,visuals={}}){
  const sheet=$('achievementCelebration'),dot=$('achievementUnreadDot');
  if(!sheet||!dot)return {setUser(){},onHabitsChange(){},markRead(){},openDetail(){},isUnlocked(){return false},dispose(){}};
+ const awardIcons={first:'flame',week:'sunrise',rhythm:'star',month:'crown',century:'gem',fifty:'calendar',freeze:'freeze',many:'layers'};
  let user=null,unsub=null,ready=false,habitsReady=false,pendingInitial=false,ledger=null,queue=[],showing=false,timer=null,saveQueue=Promise.resolve(),lastPreview=null;
  const clone=x=>JSON.parse(JSON.stringify(x));
  function measures(){
@@ -28,6 +29,16 @@ function start({db,doc,onSnapshot,setDoc,getHabits,evaluateHabit,longestFor,week
  }
  function markRead(){if(!ledger||!ledger.unread)return;ledger.unread=false;refreshDot();commit();}
  function close(){clearTimeout(timer);sheet.hidden=true;showing=false;lastPreview=null;sheet.classList.remove('preview-celebration');setTimeout(showNext,180);}
+ function setAwardVisual(id){
+  sheet.dataset.award=id;
+  const node=sheet.querySelector('.achievement-celebration-medal');
+  if(!node)return;
+  const svg=visuals[awardIcons[id]];
+  node.innerHTML=svg||'✦';
+  // Restart the reveal when an achievement card is opened again.
+  node.style.animation='none';void node.offsetWidth;node.style.animation='';
+  sheet.classList.remove('award-revealing');void sheet.offsetWidth;sheet.classList.add('award-revealing');
+ }
  sheet.addEventListener('click',e=>{if(e.target.closest('[data-celebration-close]')||e.target===sheet)close();});
  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!sheet.hidden)close();});
  function isUnlocked(id){return !!ledger?.unlocked?.[id];}
@@ -35,6 +46,7 @@ function start({db,doc,onSnapshot,setDoc,getHabits,evaluateHabit,longestFor,week
   const a=awards[Number(index)];if(!a)return;
   clearTimeout(timer);queue=[];showing=true;lastPreview=a.id;
   const unlocked=isUnlocked(a.id)||((measures()[a.field]||0)>=a.at);
+  setAwardVisual(a.id);
   $('achievementCelebrationKicker').textContent=unlocked?'YOUR ACHIEVEMENT':'MILESTONE TO DISCOVER';
   $('achievementCelebrationName').textContent=a.name;
   $('achievementCelebrationText').textContent=unlocked?'A milestone you earned. Replay this moment whenever you like.':'Keep showing up at your own pace. This badge will unlock when you reach its milestone.';
@@ -46,6 +58,7 @@ function start({db,doc,onSnapshot,setDoc,getHabits,evaluateHabit,longestFor,week
   if(showing||!queue.length||!user)return;
   showing=true;sheet.classList.remove('preview-celebration');
   const x=queue.shift(),large=x.kind==='unlock';
+  setAwardVisual(x.id||'first');
   $('achievementCelebrationKicker').textContent=large?'ACHIEVEMENT UNLOCKED':'MILESTONE REACHED AGAIN';
   $('achievementCelebrationName').textContent=x.name;
   $('achievementCelebrationText').textContent=large?'A milestone worth remembering. Your effort adds up.':'You found your rhythm again. Keep moving at your own pace.';
@@ -53,7 +66,7 @@ function start({db,doc,onSnapshot,setDoc,getHabits,evaluateHabit,longestFor,week
   sheet.hidden=false;
   if(navigator.vibrate&&large)navigator.vibrate(25);
   if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){sheet.classList.add('reduce-celebration');}else sheet.classList.remove('reduce-celebration');
-  timer=setTimeout(close,large?3600:2300);
+  timer=setTimeout(close,large?7200:4800);
  }
  function initializeExisting(){
   if(!user||!habitsReady||!pendingInitial||ready)return;
@@ -76,7 +89,7 @@ function start({db,doc,onSnapshot,setDoc,getHabits,evaluateHabit,longestFor,week
    const value=scores[a.field]||0;
    if(value>=a.at&&!ledger.unlocked[a.id]){
     ledger.unlocked[a.id]=true;
-    newEvents.push({name:a.name,kind:'unlock'});
+    newEvents.push({id:a.id,name:a.name,kind:'unlock'});
    }
   }
   // A repeat 14-completion streak is recognized once per genuinely new run,
@@ -86,7 +99,7 @@ function start({db,doc,onSnapshot,setDoc,getHabits,evaluateHabit,longestFor,week
    const armed=ledger.rearmed?.[id]??false;
    if(count<14&&prev>=14){ledger.rearmed[id]=true;}
    if(count>=14&&prev<14&&armed&&ledger.unlocked.rhythm){
-    newEvents.push({name:'Two-Week Rhythm',kind:'repeat'});
+    newEvents.push({id:'rhythm',name:'Two-Week Rhythm',kind:'repeat'});
     ledger.rearmed[id]=false;
    }
   }
