@@ -2176,7 +2176,7 @@
        for(const day of eligible){const ww=key(weekStart(parse(day)));counts.set(ww,(counts.get(ww)||0)+1);}
        let current=baseline,best=current,week=initialWeek,guard=0;
        while(week<=currentWeek&&guard++<6000){
-         const count=counts.get(week)||0,onboarding=week===earningWeek||(week===periodWeek&&period>week);
+         const count=counts.get(week)||0,onboarding=week===earningWeek||week===periodWeek;
          if(week!==currentWeek&&!onboarding&&count<target){
            const month=key(shift(parse(week),6)).slice(0,7);
            if(current>0&&!usedMonths.has(month)){usedMonths.add(month);protectedWeeks.push(week);current+=count;}
