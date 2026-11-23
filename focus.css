@@ -135,3 +135,32 @@ html[data-theme="light"] .focus-view-toggle button[aria-selected="true"]{color:#
 .focus-time-adjust-actions button{flex:1;min-width:95px;border:1px solid #6669;background:transparent;color:#fff;padding:12px 9px;border-radius:12px;cursor:pointer;font-weight:650}
 .focus-time-adjust-actions button[data-focus="saveadjust"]{background:#f07838;border-color:#f07838;color:#fff}
 .focus-time-adjust-actions button[data-focus="resetadjust"]{color:#ffb6aa}
+
+/* Actual study-time progress, with completion remaining a separate indicator. */
+.focus-segment{position:relative;overflow:hidden;background:color-mix(in srgb,var(--segment) 20%,transparent)}
+.focus-segment-fill{position:absolute;inset:0 auto 0 0;height:100%;background:var(--segment);border-radius:inherit;transition:width .38s ease}
+.focus-segment.completed{background:color-mix(in srgb,var(--segment) 20%,transparent)}
+/* Use the active appearance theme throughout every secondary surface. */
+html[data-theme="light"] .focus-edit-dialog,
+html[data-theme="light"] .focus-time-adjust-card{background:#fff;color:#242a39;border-color:#dce0e8;box-shadow:0 24px 70px #252c3c3b}
+html[data-theme="light"] .focus-edit-dialog>p,
+html[data-theme="light"] .focus-time-adjust-card p{color:#657083;opacity:1}
+html[data-theme="light"] .focus-edit-row input,
+html[data-theme="light"] .focus-time-adjust-input input{background:#f5f6f9;color:#242a39;border-color:#d8dce4}
+html[data-theme="light"] .focus-edit-head button{color:#495162}
+html[data-theme="light"] .focus-edit-actions button,
+html[data-theme="light"] .focus-time-adjust-actions button{color:#303848;border-color:#d8dce4}
+html[data-theme="light"] .focus-edit-actions button:last-child,
+html[data-theme="light"] .focus-time-adjust-actions button[data-focus="saveadjust"]{color:#fff}
+html[data-theme="light"] .focus-time-adjust-quick button{background:#f1f3f7;color:#2b3242;border-color:#dce0e7}
+html[data-theme="light"] .focus-time-adjust-actions button[data-focus="resetadjust"]{color:#bf5546}
+html[data-theme="light"] .focus-time-adjust{background:#1d253659}
+html[data-theme="light"] .focus-edit-shade{background:#1d253659}
+html[data-theme="light"] .achievement-celebration-overlay{background:#1d25366e}
+html[data-theme="light"] .achievement-celebration-card{background:radial-gradient(circle at 50% 5%,#fff6e9,#fff 58%,#f7f8fc);color:#242a39;border-color:#e7c89e;box-shadow:0 32px 85px #202b3b37}
+html[data-theme="light"] .achievement-celebration-card h2{color:#252b39}
+html[data-theme="light"] .achievement-celebration-card>p:nth-of-type(2){color:#687287}
+html[data-theme="light"] .achievement-celebration-card>p:first-of-type{color:#b76c30}
+html[data-theme="light"] .workspace-heading-icon{background:#fff6ef;color:#e96523;border-color:#f1c8aa}
+html[data-theme="light"] .insight-view-badges{background:#fff2e9;color:#c45119;border-color:#f4d2bc}
+html[data-theme="light"] .insight-view-badges:hover{background:#ffe8d8;color:#a43c10}
