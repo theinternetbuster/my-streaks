@@ -64,12 +64,13 @@ function applyHabitSnapshot(snapshot){
  setSync(snapshot.metadata.hasPendingWrites?'Saving…':'Synced',!snapshot.metadata.hasPendingWrites);
 }
 
-let editMode = false, layoutMode = 'cards', themeMode = 'system', profileName = '', unsubscribePrefs = null;
+let editMode = false, layoutMode = 'cards', themeMode = window.MyStreaksBootAppearance||'system', profileName = '', unsubscribePrefs = null;
 let sortableInstance = null, holdTimer = null, touchStart = null, suppressClickUntil = 0;
 let busy = false;
 const deviceScheme=window.matchMedia('(prefers-color-scheme: dark)');
 function applyTheme(){
  const resolved=themeMode==='system'?(deviceScheme.matches?'dark':'light'):themeMode;
+ try{localStorage.setItem('my-streaks-appearance',themeMode);}catch(_){}
  document.documentElement.dataset.theme=resolved;
  document.documentElement.style.colorScheme=resolved;
  const description=el('appearanceDescription');
@@ -175,33 +176,31 @@ function evaluateHabit(habit,asOf=todayKey()){
 function evaluateWeeklyHabit(habit,asOf=todayKey()){
  const target=Math.max(1,Math.min(7,habit.weeklyTarget||2));
  const completed=[...new Set((habit.completions||[]).filter(k=>k<=asOf))].sort();
- const done=new Set(completed),states=new Map(completed.map(k=>[k,'done']));
+ const states=new Map(completed.map(k=>[k,'done']));
  const period=habit.goalPeriodStart||(completed.length&&completed[0]<habit.createdDate?completed[0]:(habit.createdDate||asOf));
- const currentWeek=weekStart(asOf),firstWeek=weekStart(period);
- const counts=new Map(),protectedWeeks=[],usedMonths=new Set();
- for(const day of completed){if(day<period)continue;const week=weekStart(day);counts.set(week,(counts.get(week)||0)+1);}
- let streak=habit.goalPeriodStart?(habit.goalBaseline||0):0,week=firstWeek,guard=0;
+ const eligible=completed.filter(k=>k>=period),firstSession=eligible[0]||null;
+ const baseline=habit.goalPeriodStart?(habit.goalBaseline||0):0;
+ const firstWeek=weekStart(baseline>0?period:(firstSession||period));
+ const earningWeek=baseline===0&&firstSession?weekStart(firstSession):null;
+ const currentWeek=weekStart(asOf),counts=new Map(),protectedWeeks=[],usedMonths=new Set();
+ for(const day of eligible){const w=weekStart(day);counts.set(w,(counts.get(w)||0)+1);}
+ let streak=baseline,week=firstWeek,guard=0;
  while(week<=currentWeek&&guard++<6000){
-   const count=counts.get(week)||0,isCurrent=week===currentWeek;
-   // The first partial week is a grace period, even if its one session was
-   // backfilled later. It adds real sessions but never consumes a freeze.
-   const firstRecordedWeek=completed.find(k=>k>=period);
-   const partialFirstWeek=week===firstWeek&&period>week || (!habit.goalPeriodStart&&firstRecordedWeek&&week===weekStart(firstRecordedWeek));
-   if(!isCurrent&&!partialFirstWeek&&count<target){
-     // Weekly protection is spent at the END of an unsuccessful week.
-     // The calendar month is determined by that Sunday's date.
-     const month=addDays(week,6).slice(0,7);
-     if((streak>0||count>0)&&!usedMonths.has(month)){
-       usedMonths.add(month);protectedWeeks.push(week);streak+=count;
-     }else streak=0;
-   }else streak+=count;
-   week=addDays(week,7);
+  const count=counts.get(week)||0;
+  // The first week in which a new streak earns an actual session is a grace week.
+  const onboarding=week===earningWeek||(week===weekStart(period)&&period>week);
+  if(week!==currentWeek&&!onboarding&&count<target){
+   const month=addDays(week,6).slice(0,7);
+   if(streak>0&&!usedMonths.has(month)){usedMonths.add(month);protectedWeeks.push(week);streak+=count;}
+   else streak=0;
+  }else streak+=count;
+  week=addDays(week,7);
  }
  const weekCount=counts.get(currentWeek)||0,month=asOf.slice(0,7);
  return {streak,freezes:usedMonths.has(month)?0:1,active:streak>0,
-   states,lastCompleted:completed.at(-1)||null,doneToday:done.has(asOf),
-   weeklyCount:weekCount,weeklyTarget:target,restDaysRemaining:Math.max(0,7-target),
-   weeklyComplete:weekCount>=target,protectedWeeks};
+  states,lastCompleted:completed.at(-1)||null,doneToday:completed.includes(asOf),
+  weeklyCount:weekCount,weeklyTarget:target,restDaysRemaining:Math.max(0,7-target),
+  weeklyComplete:weekCount>=target,protectedWeeks};
 }
 function yesterdayKey(){return addDays(todayKey(),-1);}
 const freezeReconciling=new Set();
@@ -640,6 +639,7 @@ onAuthStateChanged(auth,u=>{
  clearTimeout(initialLoadTimer);
  const currentEpoch=++initialLoadEpoch;
  user=u;habits=[];selectedId=null;
+ document.documentElement.classList.remove('streaks-booting');
  try{workspace?.setUser(u);}catch(error){console.error('Workspace account sync failed',error);}
  stopHold();
  if(unsubscribePrefs){unsubscribePrefs();unsubscribePrefs=null;}
