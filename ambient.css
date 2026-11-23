@@ -37,7 +37,7 @@ html[data-ambient-glow="true"]:not([data-ambient="off"]) .focus-activity.is-runn
 .ambient-level-picker{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-bottom:17px}
 .ambient-level-picker label{position:relative;cursor:pointer}
 .ambient-level-picker input{position:absolute;opacity:0;width:1px;height:1px}
-.ambient-level-picker span{display:flex;justify-content:center;align-items:center;min-height:43px;padding:8px;border:1px solid #8885;border-radius:12px;font-size:12px;font-weight:700;transition:background .2s,border-color .2s}
+.ambient-level-picker label > span{display:flex;justify-content:center;align-items:center;min-height:43px;padding:8px;border:1px solid #8885;border-radius:12px;font-size:12px;font-weight:700;transition:background .2s,border-color .2s}
 .ambient-level-picker input:checked+span{color:#fff;background:#ec7335;border-color:#ec7335;box-shadow:0 3px 12px #ee804126}
 .ambient-level-picker input:focus-visible+span{outline:2px solid #ed7839;outline-offset:3px}
 .ambient-choice{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid #8883;cursor:pointer}
