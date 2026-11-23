@@ -203,3 +203,18 @@ html[data-ambient="subtle"] .shell>#ambientField .ambient-ember:nth-child(n+8){d
 @media(min-width:900px){.ambient-visual-picker .ambient-mode-card{height:184px;min-height:184px}.ambient-mode-scene{height:91px;min-height:91px}}
 @media(max-width:420px){.ambient-visual-picker{gap:6px}.ambient-visual-picker .ambient-mode-card{padding:5px;height:163px;min-height:163px;border-radius:12px}.ambient-mode-scene{height:69px;min-height:69px}.ambient-card-title{font-size:11px}.ambient-card-description{font-size:9px}}
 @media(prefers-reduced-motion:reduce){.ambient-scene-ember,.ambient-mini-flame,.ambient-scene-halo{animation:none!important}.ambient-scene-ember{display:none!important}}
+
+
+/* Only orange completed flames glow. Gray pending/protected flames stay neutral. */
+html[data-theme="dark"][data-ambient-glow="true"]:not([data-ambient="off"]) #dashboard .habit-card[data-flame-state="done"] .streak-glow-target{
+ filter:drop-shadow(0 0 4px #ff893b75) drop-shadow(0 0 10px #ff77302e);
+}
+html[data-theme="dark"][data-ambient-glow="true"][data-ambient-night="true"] #dashboard .habit-card[data-flame-state="done"] .streak-glow-target{
+ animation:ambient-flame-breathe 8.5s ease-in-out infinite;
+}
+#dashboard .habit-card:not([data-flame-state="done"]) .streak-glow-target{
+ filter:none!important;animation:none!important;
+}
+html[data-theme="light"] #dashboard .habit-card:not([data-flame-state="done"]) .streak-glow-target{
+ filter:none!important;animation:none!important;
+}
