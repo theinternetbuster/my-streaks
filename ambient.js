@@ -17,8 +17,8 @@
  }
  function fieldHTML(previewScene=false){
   const embers=Array.from({length:10},(_,i)=>{
-   const x=[8,24,42,61,76,94,16,52,84,37][i],delay=[-5,-12,-19,-4,-27,-9,-16,-31,-2,-21][i],dur=[22,30,26,33,24,28,35,25,31,29][i];
-   return '<span class="ambient-ember ambient-ember-'+i+'" style="--ember-x:'+x+'%;--ember-delay:'+delay+'s;--ember-duration:'+dur+'s"></span>';
+   const x=[6,23,42,62,81,94,13,54,87,34][i],y=[16,35,57,24,71,47,82,12,63,90][i],delay=[-5,-12,-19,-4,-27,-9,-16,-31,-2,-21][i],dur=[22,30,26,33,24,28,35,25,31,29][i];
+   return '<span class="ambient-ember ambient-ember-'+i+'" style="--ember-x:'+x+'%;--ember-y:'+y+'%;--ember-delay:'+delay+'s;--ember-duration:'+dur+'s"></span>';
   }).join('');
   const stars=Array.from({length:3},(_,i)=>
    '<span class="ambient-star ambient-star-'+i+'" style="--star-delay:'+[-8,-23,-40][i]+'s"></span>').join('');
