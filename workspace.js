@@ -2171,9 +2171,11 @@
        let current=h.goalPeriodStart?(h.goalBaseline||0):0,best=current,week=key(weekStart(parse(h.goalPeriodStart||(done.length&&done[0]<h.createdDate?done[0]:(h.createdDate||localDay()))))),guard=0;
        const currentWeek=key(weekStart(new Date())),usedMonths=new Set(),protectedWeeks=[];
        const partialStart=h.goalPeriodStart||(done.length&&done[0]<h.createdDate?done[0]:(h.createdDate||localDay()));
+       const firstRecorded=done.find(k=>!h.goalPeriodStart||k>=h.goalPeriodStart);
+       const firstRecordedWeek=firstRecorded?key(weekStart(parse(firstRecorded))):null;
        while(week<=currentWeek&&guard++<6000){
          const count=counts.get(week)||0;
-         if(week!==currentWeek&&!(week===key(weekStart(parse(partialStart)))&&partialStart>week)&&count<target){
+         if(week!==currentWeek&&!(week===key(weekStart(parse(partialStart)))&&partialStart>week)&&!(firstRecordedWeek===week&&!h.goalPeriodStart)&&count<target){
            const month=key(shift(parse(week),6)).slice(0,7);
            if((current>0||count>0)&&!usedMonths.has(month)){usedMonths.add(month);protectedWeeks.push(week);current+=count;}
            else current=0;
