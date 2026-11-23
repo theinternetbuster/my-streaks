@@ -128,7 +128,7 @@
               blocks=nextBlocks;resetHistory();renderChecklist();
             }
           }
-          if(!snapshot.metadata?.hasPendingWrites)$('checklistSyncStatus').textContent='Saved';
+          if(!snapshot.metadata?.hasPendingWrites)$('checklistSyncStatus').textContent='';
         },error=>{
           console.error('Checklist read failed',error);
           $('checklistSyncStatus').textContent='Could not sync';
@@ -216,7 +216,7 @@
             blocks:payload,updatedAt:Date.now()
           },{merge:true});
           if(serial===saveSerial&&revision===editRevision&&user&&user.uid===thisUser){
-            dirty=false;$('checklistSyncStatus').textContent='Saved';
+            dirty=false;$('checklistSyncStatus').textContent='';
           }
         }catch(err){
           console.error('Checklist save failed',err);
