@@ -17,7 +17,7 @@ const monday=()=>{const d=new Date();d.setHours(12,0,0,0);d.setDate(d.getDate()-
 const dayAt=(d,n)=>{const c=new Date(d);c.setDate(c.getDate()+n);return [c.getFullYear(),String(c.getMonth()+1).padStart(2,'0'),String(c.getDate()).padStart(2,'0')].join('-');};
 const format=s=>{const m=Math.floor(Math.max(0,s)/60);return m>=60?Math.floor(m/60)+'h '+String(m%60).padStart(2,'0')+'m':m+'m';};
 const clock=s=>{s=Math.max(0,Math.floor(s));return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');};
-const cleanBlocks=raw=>Array.isArray(raw)&&raw.length?raw.slice(0,12).map((b,i)=>({id:/^[a-z0-9_-]{1,32}$/i.test(b.id||'')?b.id:'block'+i,name:String(b.name||'Activity').slice(0,55),minutes:Math.max(1,Math.min(240,Number(b.minutes)||20)),color:palette.includes(b.color)?b.color:palette[i%palette.length]})):defaults.map(x=>({...x}));
+const cleanBlocks=raw=>Array.isArray(raw)&&raw.length?raw.slice(0,12).map((b,i)=>({id:/^[a-z0-9_-]{1,32}$/i.test(b.id||'')?b.id:'block'+i,name:String(b.name||'Activity').slice(0,55),minutes:Math.max(1,Math.min(240,Number(b.minutes)||20)),color:/^#[0-9a-f]{6}$/i.test(b.color||'')?b.color:palette[i%palette.length]})):defaults.map(x=>({...x}));
 function start({db,doc,onSnapshot,setDoc}){
  const root=$('focusPlansRoot'),toggle=$('checklistViewToggle');
  if(!root||!toggle)return {setUser(){},dispose(){}};
@@ -147,8 +147,9 @@ function start({db,doc,onSnapshot,setDoc}){
    if(JSON.stringify(incoming)!==JSON.stringify(plan)){plan=incoming;if(!root.hidden)render();}
   },err=>{console.error('Focus Plan sync',err);$('focusSyncLabel').textContent='Sync unavailable';if(!ready){ready=true;render();}});
  }
- function dispose(){stop(false);clearTimeout(saveTimer);clearInterval(tickTimer);if(unsub)unsub();document.removeEventListener('visibilitychange',onHidden);}
- return {setUser,dispose,render};
+ function pause(){stop();if(!root.hidden)render();}
+ function dispose(){stop();clearTimeout(saveTimer);clearInterval(tickTimer);if(unsub)unsub();document.removeEventListener('visibilitychange',onHidden);}
+ return {setUser,dispose,render,pause};
 }
 window.MyStreaksFocus={start};
 })();
