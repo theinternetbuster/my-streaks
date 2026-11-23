@@ -176,7 +176,7 @@ function evaluateWeeklyHabit(habit,asOf=todayKey()){
  const target=Math.max(1,Math.min(7,habit.weeklyTarget||2));
  const completed=[...new Set((habit.completions||[]).filter(k=>k<=asOf))].sort();
  const done=new Set(completed),states=new Map(completed.map(k=>[k,'done']));
- const period=habit.goalPeriodStart||habit.createdDate||asOf;
+ const period=habit.goalPeriodStart||(completed.length&&completed[0]<habit.createdDate?completed[0]:(habit.createdDate||asOf));
  const currentWeek=weekStart(asOf),firstWeek=weekStart(period);
  const counts=new Map(),protectedWeeks=[],usedMonths=new Set();
  for(const day of completed){if(day<period)continue;const week=weekStart(day);counts.set(week,(counts.get(week)||0)+1);}
@@ -188,7 +188,7 @@ function evaluateWeeklyHabit(habit,asOf=todayKey()){
      // Weekly protection is spent at the END of an unsuccessful week.
      // The calendar month is determined by that Sunday's date.
      const month=addDays(week,6).slice(0,7);
-     if(streak>0&&!usedMonths.has(month)){
+     if((streak>0||count>0)&&!usedMonths.has(month)){
        usedMonths.add(month);protectedWeeks.push(week);streak+=count;
      }else streak=0;
    }else streak+=count;
