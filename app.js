@@ -185,7 +185,8 @@ function evaluateWeeklyHabit(habit,asOf=todayKey()){
    const count=counts.get(week)||0,isCurrent=week===currentWeek;
    // The first partial week is a grace period, even if its one session was
    // backfilled later. It adds real sessions but never consumes a freeze.
-   const partialFirstWeek=week===firstWeek&&period>week;
+   const firstRecordedWeek=completed.find(k=>k>=period);
+   const partialFirstWeek=week===firstWeek&&period>week || (!habit.goalPeriodStart&&firstRecordedWeek&&week===weekStart(firstRecordedWeek));
    if(!isCurrent&&!partialFirstWeek&&count<target){
      // Weekly protection is spent at the END of an unsuccessful week.
      // The calendar month is determined by that Sunday's date.
