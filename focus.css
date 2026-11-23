@@ -80,3 +80,27 @@ html[data-theme="light"] .focus-activity,html[data-theme="light"] .focus-stats>d
 @media(min-width:800px) and (max-width:1366px) and (pointer:coarse){
  .focus-plans-root{padding-bottom:90px}
 }
+
+
+/* Achievement celebrations are subtle after a first unlock, accessible on all devices. */
+.achievement-unread-dot{display:inline-block;vertical-align:middle;width:8px;height:8px;border-radius:50%;background:#f47a3d;box-shadow:0 0 0 3px #f47a3d1f;margin-left:7px}
+.achievement-unread-dot[hidden]{display:none!important}
+.achievement-celebration-overlay[hidden]{display:none!important}
+.achievement-celebration-overlay{position:fixed;z-index:800;inset:0;display:flex;align-items:center;justify-content:center;padding:20px;background:#05050bbb;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.achievement-celebration-card{position:relative;overflow:hidden;width:min(400px,100%);padding:36px 24px 29px;text-align:center;background:radial-gradient(circle at 50% 12%,#43301f,#1b1a26 57%,#14141c);border:1px solid #f9c16c55;border-radius:29px;box-shadow:0 30px 100px #000a;color:#fff;animation:achievement-enter .65s cubic-bezier(.18,.9,.25,1.08) both}
+.achievement-celebration-medal{width:100px;height:100px;border-radius:50%;margin:18px auto 19px;display:grid;place-items:center;background:linear-gradient(140deg,#ffeaad,#f8a928 55%,#bd621b);color:#fff4c7;font-size:58px;text-shadow:0 3px 7px #a65020;border:7px solid #c98125;box-shadow:0 0 0 9px #edb05418,0 0 54px #ffb54560;animation:achievement-glow 2s ease-in-out infinite alternate}
+.achievement-celebration-sparkle{position:absolute;left:17%;top:13%;font-size:34px;color:#ffcb66;animation:achievement-float 2s ease-in-out infinite alternate}
+.achievement-celebration-card::before,.achievement-celebration-card::after{content:"✧";position:absolute;color:#fbc16f80;font-size:27px;top:31%;right:13%;animation:achievement-float 1.8s ease-in-out infinite alternate}
+.achievement-celebration-card::after{top:57%;left:12%;right:auto;font-size:17px}
+.achievement-celebration-card>p:first-of-type{color:#e6ae65;font-size:10px;letter-spacing:.2em;font-weight:800}
+.achievement-celebration-card h2{font-size:clamp(23px,5vw,31px);margin:10px 0 12px;letter-spacing:-.04em;color:#fff}
+.achievement-celebration-card>p:nth-of-type(2){font-size:13px;line-height:1.6;color:#d6d1d3;max-width:285px;margin:0 auto 25px}
+.achievement-celebration-card button{border:0;border-radius:14px;background:#f1853e;color:#201810;font-weight:800;padding:14px 35px;min-width:160px;cursor:pointer}
+.achievement-celebration-overlay.small-celebration .achievement-celebration-card{max-width:340px;padding-top:20px}
+.achievement-celebration-overlay.small-celebration .achievement-celebration-medal{width:64px;height:64px;font-size:35px;border-width:4px;margin:12px auto}
+@keyframes achievement-enter{from{opacity:0;transform:translateY(34px) scale(.85)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes achievement-glow{from{box-shadow:0 0 0 9px #edb05418,0 0 25px #ffb54525}to{box-shadow:0 0 0 12px #edb05418,0 0 65px #ffb54577}}
+@keyframes achievement-float{from{transform:translateY(0) rotate(-6deg)}to{transform:translateY(-8px) rotate(7deg)}}
+@media(prefers-reduced-motion:reduce){.achievement-celebration-card,.achievement-celebration-medal,.achievement-celebration-sparkle,.achievement-celebration-card::before,.achievement-celebration-card::after{animation:none!important}}
+/* Hide the old checklist-only insertion shortcut when viewing Focus Plans. */
+.checklist-page:has(#focusPlansRoot:not([hidden])) #checklistAdd{visibility:hidden}
