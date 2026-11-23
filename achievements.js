@@ -5,8 +5,8 @@ const $=id=>document.getElementById(id);
 const awards=[{id:'first',name:'First Spark',at:1,field:'total'},{id:'week',name:'One Week Strong',at:7,field:'best'},{id:'rhythm',name:'Two-Week Rhythm',at:14,field:'best'},{id:'month',name:'Thirty-Day Flame',at:30,field:'best'},{id:'century',name:'Century Club',at:100,field:'best'},{id:'fifty',name:'Every Day Counts',at:50,field:'total'},{id:'freeze',name:'Room for Life',at:1,field:'freezes'},{id:'many',name:'Many Paths',at:3,field:'breadth'}];
 function start({db,doc,onSnapshot,setDoc,getHabits,evaluateHabit,longestFor,weeklyProtectedFor}){
  const sheet=$('achievementCelebration'),dot=$('achievementUnreadDot');
- if(!sheet||!dot)return {setUser(){},onHabitsChange(){},markRead(){},dispose(){}};
- let user=null,unsub=null,ready=false,habitsReady=false,pendingInitial=false,ledger=null,queue=[],showing=false,timer=null,saveQueue=Promise.resolve();
+ if(!sheet||!dot)return {setUser(){},onHabitsChange(){},markRead(){},openDetail(){},isUnlocked(){return false},dispose(){}};
+ let user=null,unsub=null,ready=false,habitsReady=false,pendingInitial=false,ledger=null,queue=[],showing=false,timer=null,saveQueue=Promise.resolve(),lastPreview=null;
  const clone=x=>JSON.parse(JSON.stringify(x));
  function measures(){
    const habits=getHabits();
@@ -27,12 +27,24 @@ function start({db,doc,onSnapshot,setDoc,getHabits,evaluateHabit,longestFor,week
   saveQueue=saveQueue.catch(()=>{}).then(()=>setDoc(doc(db,'users',uid,'settings','achievementCelebrations'),data,{merge:false})).catch(e=>console.error('Achievement sync error',e));
  }
  function markRead(){if(!ledger||!ledger.unread)return;ledger.unread=false;refreshDot();commit();}
- function close(){clearTimeout(timer);sheet.hidden=true;showing=false;setTimeout(showNext,180);}
+ function close(){clearTimeout(timer);sheet.hidden=true;showing=false;lastPreview=null;sheet.classList.remove('preview-celebration');setTimeout(showNext,180);}
  sheet.addEventListener('click',e=>{if(e.target.closest('[data-celebration-close]')||e.target===sheet)close();});
  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!sheet.hidden)close();});
+ function isUnlocked(id){return !!ledger?.unlocked?.[id];}
+ function openDetail(index){
+  const a=awards[Number(index)];if(!a)return;
+  clearTimeout(timer);queue=[];showing=true;lastPreview=a.id;
+  const unlocked=isUnlocked(a.id)||((measures()[a.field]||0)>=a.at);
+  $('achievementCelebrationKicker').textContent=unlocked?'YOUR ACHIEVEMENT':'MILESTONE TO DISCOVER';
+  $('achievementCelebrationName').textContent=a.name;
+  $('achievementCelebrationText').textContent=unlocked?'A milestone you earned. Replay this moment whenever you like.':'Keep showing up at your own pace. This badge will unlock when you reach its milestone.';
+  sheet.classList.add('preview-celebration');sheet.classList.toggle('small-celebration',!unlocked);
+  sheet.hidden=false;
+  // A detail view remains open until dismissed, unlike automatic celebrations.
+ }
  function showNext(){
   if(showing||!queue.length||!user)return;
-  showing=true;
+  showing=true;sheet.classList.remove('preview-celebration');
   const x=queue.shift(),large=x.kind==='unlock';
   $('achievementCelebrationKicker').textContent=large?'ACHIEVEMENT UNLOCKED':'MILESTONE REACHED AGAIN';
   $('achievementCelebrationName').textContent=x.name;
@@ -102,7 +114,10 @@ function start({db,doc,onSnapshot,setDoc,getHabits,evaluateHabit,longestFor,week
      initializeExisting();
      return;
     }
-    ready=true;refreshDot();return;
+    ready=true;refreshDot();
+    // If data changed while the achievement listener was initializing,
+    // reconcile against its saved baseline once, after loading.
+    onHabitsChange();return;
    }
    if(snap.metadata?.hasPendingWrites)return;
    const r=snap.data();
@@ -112,7 +127,7 @@ function start({db,doc,onSnapshot,setDoc,getHabits,evaluateHabit,longestFor,week
   },e=>console.error('Achievement sync',e));
  }
  function dispose(){if(unsub)unsub();clearTimeout(timer);}
- return {setUser,onHabitsChange,markRead,dispose};
+ return {setUser,onHabitsChange,markRead,openDetail,isUnlocked,dispose};
 }
 window.MyStreaksAchievements={start};
 })();
