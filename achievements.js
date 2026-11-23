@@ -41,11 +41,15 @@ function start({db,doc,onSnapshot,setDoc,getHabits,evaluateHabit,longestFor,week
  }
  sheet.addEventListener('click',e=>{if(e.target.closest('[data-celebration-close]')||e.target===sheet)close();});
  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!sheet.hidden)close();});
- function isUnlocked(id){return !!ledger?.unlocked?.[id];}
+ function isUnlocked(id){
+  // Many Paths reflects the recorded history, not an irreversible award.
+  if(id==='many')return measures().breadth>=3;
+  return !!ledger?.unlocked?.[id];
+ }
  function openDetail(index){
   const a=awards[Number(index)];if(!a)return;
   clearTimeout(timer);queue=[];showing=true;lastPreview=a.id;
-  const unlocked=isUnlocked(a.id)||((measures()[a.field]||0)>=a.at);
+  const unlocked=isUnlocked(a.id)||(a.id!=='many'&&(measures()[a.field]||0)>=a.at);
   setAwardVisual(a.id);
   $('achievementCelebrationKicker').textContent=unlocked?'YOUR ACHIEVEMENT':'MILESTONE TO DISCOVER';
   $('achievementCelebrationName').textContent=a.name;
@@ -75,7 +79,7 @@ function start({db,doc,onSnapshot,setDoc,getHabits,evaluateHabit,longestFor,week
   for(const a of awards)if((m[a.field]||0)>=a.at)unlocked[a.id]=true;
   const rearmed={};
   if(unlocked.rhythm)for(const [id,count] of Object.entries(m.streaks))if(count<14)rearmed[id]=true;
-  ledger={unlocked,unread:false,rearmed,last:m};
+  ledger={unlocked,celebrated:{...unlocked},unread:false,rearmed,last:m};
   pendingInitial=false;ready=true;refreshDot();commit();
  }
  function onHabitsChange(){
@@ -85,11 +89,21 @@ function start({db,doc,onSnapshot,setDoc,getHabits,evaluateHabit,longestFor,week
   const scores=measures();
   const old=ledger.last||{total:0,breadth:0,freezes:0,best:0,streaks:{}};
   const newEvents=[];
+  let corrected=false;
+  // Correct accidental/unmarked check-ins: Many Paths is valid only while
+  // three distinct habits still have recorded completions. Other lifetime
+  // milestones remain earned if a genuine streak later ends.
+  if(scores.breadth<3&&ledger.unlocked.many){ledger.unlocked.many=false;corrected=true;}
   for(const a of awards){
    const value=scores[a.field]||0;
    if(value>=a.at&&!ledger.unlocked[a.id]){
-    ledger.unlocked[a.id]=true;
-    newEvents.push({id:a.id,name:a.name,kind:'unlock'});
+    ledger.unlocked[a.id]=true;corrected=true;
+    // Never replay a first-time unlock just because a test entry was undone
+    // and then re-added. The badge itself can always be previewed.
+    if(!ledger.celebrated?.[a.id]){
+      ledger.celebrated[a.id]=true;
+      newEvents.push({id:a.id,name:a.name,kind:'unlock'});
+    }
    }
   }
   // A repeat 14-completion streak is recognized once per genuinely new run,
@@ -109,7 +123,7 @@ function start({db,doc,onSnapshot,setDoc,getHabits,evaluateHabit,longestFor,week
    queue.push(newEvents.find(e=>e.kind==='unlock')||newEvents[0]);
    if(newEvents.length>1)queue[queue.length-1].name=newEvents.length+' achievements earned';
    refreshDot();commit();showNext();
-  }else if(JSON.stringify(old)!==JSON.stringify(scores))commit();
+  }else if(corrected||JSON.stringify(old)!==JSON.stringify(scores))commit();
  }
  function setUser(next){
   clearTimeout(timer);sheet.hidden=true;queue=[];showing=false;
@@ -121,7 +135,7 @@ function start({db,doc,onSnapshot,setDoc,getHabits,evaluateHabit,longestFor,week
    if(!ready){
     if(snap.exists()){
      const r=snap.data();
-     ledger={unlocked:r.unlocked||{},unread:!!r.unread,rearmed:r.rearmed||{},last:r.last||measures()};
+     ledger={unlocked:r.unlocked||{},celebrated:r.celebrated||{...(r.unlocked||{})},unread:!!r.unread,rearmed:r.rearmed||{},last:r.last||measures()};
     }else{
      pendingInitial=true;
      initializeExisting();
