@@ -21,7 +21,7 @@ const cleanBlocks=raw=>Array.isArray(raw)&&raw.length?raw.slice(0,12).map((b,i)=
 function start({db,doc,onSnapshot,setDoc}){
  const root=$('focusPlansRoot'),toggle=$('checklistViewToggle');
  if(!root||!toggle)return {setUser(){},dispose(){}};
- let user=null,unsub=null,plan={blocks:cleanBlocks(defaults),days:{}},ready=false,dirty=false,editing=false,active=null,activeSince=0,overtime=false,saveQueue=Promise.resolve(),saveTimer=null,tickTimer=null,lastSnapshot='';
+ let user=null,unsub=null,plan={blocks:cleanBlocks(defaults),days:{}},ready=false,dirty=false,editing=false,adjusting=null,active=null,activeSince=0,overtime=false,saveQueue=Promise.resolve(),saveTimer=null,tickTimer=null,lastSnapshot='';
  const record=()=>{const d=day();if(!plan.days[d])plan.days[d]={};return plan.days[d];};
  const entry=(id)=>{const r=record();if(!r[id])r[id]={seconds:0,done:false};return r[id];};
  const normalize=raw=>{
@@ -74,17 +74,24 @@ function start({db,doc,onSnapshot,setDoc}){
     '<div class="focus-activities">'+blocks.map(b=>row(b,today[b.id]||{seconds:0,done:false})).join('')+'</div>'+
     '<div class="focus-encouragement"><span>✦</span><p>'+escape(message)+'</p><button type="button" data-focus="finish">Finish for now</button></div>'+
     '<section class="focus-week"><div class="focus-week-heading"><h3>This week</h3><strong>'+format(weekly)+' focused</strong></div><div class="focus-week-bars">'+week.map((w,i)=>'<div class="focus-week-day"><div class="focus-bar-track"><div class="focus-bar-fill" style="height:'+Math.max(2,Math.min(100,w.seconds/(Math.max(3600,...week.map(v=>v.seconds)))*100))+'%"></div></div><span>'+['M','T','W','T','F','S','S'][i]+'</span></div>').join('')+'</div><p>Recorded timer time only. Untimed check-offs add no minutes.</p></section>'+
-    (editing?editUI():'');
+    (editing?editUI():'')+(adjusting?adjustUI():'');
  }
  function row(b,r){
   const running=active===b.id,seconds=Math.floor(r.seconds||0),target=b.minutes*60,remaining=Math.max(0,target-seconds);
   const percent=Math.min(100,seconds/target*100);
-  return '<article class="focus-activity'+(r.done?' is-done':'')+'" style="--activity-color:'+b.color+'"><div class="focus-activity-heading"><span class="focus-activity-stripe"></span><div class="focus-activity-name"><strong>'+escape(b.name)+'</strong><small>'+b.minutes+'m planned · '+format(seconds)+' studied'+(seconds>target?' · extra time':'')+'</small></div><button type="button" class="focus-done" data-focus="done" data-id="'+b.id+'" aria-label="'+(r.done?'Mark unfinished':'Mark complete')+'">'+(r.done?'✓':'○')+'</button></div><div class="focus-activity-bar"><span style="width:'+percent+'%"></span></div><div class="focus-activity-controls"><span class="focus-time">'+(remaining?clock(remaining)+' left': 'Plan time reached')+'</span><button type="button" data-focus="toggle" data-id="'+b.id+'">'+(running?'Pause':'▶ '+(seconds?'Continue':'Start'))+'</button><button type="button" data-focus="manual" data-id="'+b.id+'" title="Record untimed study minutes">+ Time</button></div></article>';
+  return '<article class="focus-activity'+(r.done?' is-done':'')+'" style="--activity-color:'+b.color+'"><div class="focus-activity-heading"><span class="focus-activity-stripe"></span><div class="focus-activity-name"><strong>'+escape(b.name)+'</strong><small>'+b.minutes+'m planned · '+format(seconds)+' studied'+(seconds>target?' · extra time':'')+'</small></div><button type="button" class="focus-done" data-focus="done" data-id="'+b.id+'" aria-label="'+(r.done?'Mark unfinished':'Mark complete')+'">'+(r.done?'✓':'○')+'</button></div><div class="focus-activity-bar"><span style="width:'+percent+'%"></span></div><div class="focus-activity-controls"><span class="focus-time">'+(remaining?clock(remaining)+' left': 'Plan time reached')+'</span><button type="button" data-focus="toggle" data-id="'+b.id+'">'+(running?'Pause':'▶ '+(seconds?'Continue':'Start'))+'</button><button type="button" data-focus="manual" data-id="'+b.id+'" title="Add, correct, or reset recorded study minutes">Edit time</button></div></article>';
  }
  function editUI(){
   return '<div class="focus-edit-shade"><div class="focus-edit-dialog" role="dialog" aria-modal="true" aria-label="Edit German plan"><div class="focus-edit-head"><h3>Edit study plan</h3><button data-focus="close">✕</button></div><p>Choose activities, minutes and colors. Changes apply to future study; already recorded time stays saved.</p>'+
   plan.blocks.map(b=>'<div class="focus-edit-row"><input type="text" maxlength="55" value="'+escape(b.name)+'" data-field="name" data-id="'+b.id+'" aria-label="Activity name"><input type="number" min="1" max="240" value="'+b.minutes+'" data-field="minutes" data-id="'+b.id+'" aria-label="Planned minutes"><input type="color" value="'+b.color+'" data-field="color" data-id="'+b.id+'" aria-label="Activity color"><button data-focus="remove" data-id="'+b.id+'" aria-label="Remove activity">×</button></div>').join('')+
   '<div class="focus-edit-actions"><button data-focus="add">+ Add section</button><button data-focus="saveedit">Save plan</button></div></div></div>';
+ }
+
+ function adjustUI(){
+  const b=plan.blocks.find(x=>x.id===adjusting);
+  if(!b)return '';
+  const mins=Math.round((entry(b.id).seconds||0)/60*10)/10;
+  return '<div class="focus-time-adjust" role="presentation"><div class="focus-time-adjust-card" role="dialog" aria-modal="true" aria-label="Adjust study time"><h3>Edit study time</h3><p>'+escape(b.name)+' · Today only. Set your actual minutes, add more, or reset a test session.</p><div class="focus-time-adjust-input"><input id="focusAdjustMinutes" aria-label="Actual minutes studied" type="number" min="0" max="1440" step="0.1" value="'+mins+'"><span>min</span></div><div class="focus-time-adjust-quick"><button type="button" data-focus="lessfive">− 5 min</button><button type="button" data-focus="morefive">+ 5 min</button></div><div class="focus-time-adjust-actions"><button type="button" data-focus="canceladjust">Cancel</button><button type="button" data-focus="resetadjust">Reset today</button><button type="button" data-focus="saveadjust">Save</button></div></div></div>';
  }
  function editSave(){
   const blocks=plan.blocks.map(b=>({...b}));
@@ -99,12 +106,16 @@ function start({db,doc,onSnapshot,setDoc}){
  root.addEventListener('click',e=>{
   const button=e.target.closest('button[data-focus]');if(!button||!user||!ready)return;
   const action=button.dataset.focus,id=button.dataset.id,b=plan.blocks.find(x=>x.id===id);
-  if(action==='edit'){stop();editing=true;render();return;}
+  if(action==='edit'){stop();adjusting=null;editing=true;render();return;}
   if(action==='close'){editing=false;render();return;}
   if(action==='saveedit'){editSave();return;}
   if(action==='add'){editSave();if(plan.blocks.length>=12)return;plan.blocks.push({id:'x'+Date.now().toString(36),name:'New activity',minutes:20,color:palette[plan.blocks.length%palette.length]});editing=true;render();return;}
   if(action==='remove'){if(plan.blocks.length===1)return;plan.blocks=plan.blocks.filter(x=>x.id!==id);scheduleSave();render();return;}
   if(action==='finish'){stop();render();return;}
+  if(action==='canceladjust'){adjusting=null;render();return;}
+  if(action==='lessfive'||action==='morefive'){const field=$('focusAdjustMinutes');if(field)field.value=String(Math.max(0,Number(field.value||0)+(action==='morefive'?5:-5)));return;}
+  if(action==='saveadjust'){const value=Number($('focusAdjustMinutes')?.value);if(!Number.isFinite(value)||value<0||value>1440){alert('Enter a valid number of minutes from 0 to 1440.');return;}entry(adjusting).seconds=Math.round(value*60);adjusting=null;scheduleSave(true);render();return;}
+  if(action==='resetadjust'){if(!confirm('Reset this activity’s recorded time for today to zero? This will not change any other dates.'))return;entry(adjusting).seconds=0;entry(adjusting).done=false;adjusting=null;scheduleSave(true);render();return;}
   if(!b)return;
   if(action==='toggle'){
    if(active===id){stop();}else{stop();active=id;activeSince=Date.now();overtime=entry(id).seconds>=b.minutes*60;}
@@ -115,10 +126,8 @@ function start({db,doc,onSnapshot,setDoc}){
    entry(id).done=!entry(id).done;scheduleSave();render();return;
   }
   if(action==='manual'){
-   stop();const answer=prompt('How many actual additional minutes did you study for '+b.name+'?','0');
-   if(answer===null)return;
-   const min=Number(answer);if(!Number.isFinite(min)||min<0||min>600){alert('Enter a number between 0 and 600.');return;}
-   entry(id).seconds+=Math.round(min*60);scheduleSave();render();
+   stop();adjusting=id;render();
+
   }
  });
  toggle.addEventListener('click',e=>{
@@ -134,7 +143,7 @@ function start({db,doc,onSnapshot,setDoc}){
  window.addEventListener('pagehide',()=>stop());
  tickTimer=setInterval(()=>{if(active&&!root.hidden){flushActive();render();if(!overtime&&entry(active).seconds>=plan.blocks.find(b=>b.id===active).minutes*60){stop();render();}else if(entry(active).seconds%10===0)scheduleSave();}},1000);
  function setUser(next){
-  stop(false);clearTimeout(saveTimer);if(unsub)unsub();unsub=null;user=next;ready=false;dirty=false;active=null;editing=false;
+  stop(false);clearTimeout(saveTimer);if(unsub)unsub();unsub=null;user=next;ready=false;dirty=false;active=null;editing=false;adjusting=null;
   plan={blocks:cleanBlocks(defaults),days:{}};
   if(!user){root.innerHTML='';return;}
   const uid=user.uid;
