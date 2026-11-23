@@ -84,6 +84,7 @@
     }
     function selectTab(next,{history:pushHistory=true,silent=false}={}){
       if(!['home','insights','checklist'].includes(next)||!user)return;
+      if(next!=='checklist')focusInstance?.pause?.();
       tab=next;updateNav();closeSlash();
       if(pushHistory){
         const url='/my-streaks/'+(tab==='home'?'':'?view='+tab);
@@ -2366,7 +2367,7 @@
     }
     function onHabitsChange(){achievementInstance?.onHabitsChange();if(tab==='insights')renderInsights();}
     function dispose(){focusInstance?.dispose();achievementInstance?.dispose();if(unsub)unsub();if(insightUnsub)insightUnsub();clearTimeout(saveTimer);if(sortable)sortable.destroy();}
-    try{achievementInstance=window.MyStreaksAchievements?.start({db,doc,onSnapshot,setDoc,getHabits,evaluateHabit})||null;}catch(error){console.error('Achievement celebrations initialization failed',error);}
+    try{achievementInstance=window.MyStreaksAchievements?.start({db,doc,onSnapshot,setDoc,getHabits,evaluateHabit,longestFor,weeklyProtectedFor:h=>h.cadence==='weekly'?protectedWeeklyHistory(h).protectedWeeks.length:0})||null;}catch(error){console.error('Achievement celebrations initialization failed',error);}
     // Focus Plans uses its own Firestore document, separate from checklist notes.
     try{focusInstance=window.MyStreaksFocus?.start({db,doc,onSnapshot,setDoc})||null;}catch(error){console.error('Focus Plans initialization failed',error);}
     // Deep links should initialize consistently once the account loads.
