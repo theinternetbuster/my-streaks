@@ -42,8 +42,8 @@
     if(window.MyStreaksIPadLayout)document.documentElement.classList.add('ipad-ios-layout');
   </script>
   <link rel="stylesheet" href="styles.css?v=20261120-ipad-layout" />
-  <link rel="stylesheet" href="ambient.css?v=20261123-ambient03" />
-  <link rel="stylesheet" href="focus.css?v=20261123-ambient03" />
+  <link rel="stylesheet" href="ambient.css?v=20261123-ambient04" />
+  <link rel="stylesheet" href="focus.css?v=20261123-ambient04" />
   <link rel="stylesheet" href="workspace.css?v=20261120-ipad-layout" />
   <style id="critical-landing-styles">
 /* Critical inline fallback is scoped to logged-out view so signed-in themes are unchanged. */
@@ -1087,10 +1087,20 @@ body:has(#loginPanel:not([hidden])) .shell,
               <fieldset class="theme-picker"><legend>Theme</legend><div class="theme-segment" role="radiogroup" aria-label="Appearance"><span class="theme-thumb" aria-hidden="true"></span><label><input type="radio" name="appearanceMode" value="light"/><span>Light</span></label><label><input type="radio" name="appearanceMode" value="system" checked/><span>Device</span></label><label><input type="radio" name="appearanceMode" value="dark"/><span>Dark</span></label></div><p class="theme-description" id="appearanceDescription">Automatically match your device appearance.</p></fieldset>
  <section class="ambient-settings" aria-labelledby="ambientSettingsHeading">
  <h4 id="ambientSettingsHeading">Ambient effects</h4><p>Quiet atmosphere for your progress. Decorative only, never changes streaks.</p>
- <div class="ambient-level-picker" role="radiogroup" aria-label="Animation intensity">
- <label><input type="radio" name="ambientMode" value="off"><span>Off</span></label>
- <label><input type="radio" name="ambientMode" value="subtle" checked><span>Subtle</span></label>
- <label><input type="radio" name="ambientMode" value="enhanced"><span>Enhanced</span></label></div>
+ <div class="ambient-level-picker ambient-visual-picker" role="radiogroup" aria-label="Animation intensity">
+ <label class="ambient-visual-option"><input type="radio" name="ambientMode" value="off"><span class="ambient-mode-card">
+ <span class="ambient-mode-scene ambient-scene-off" aria-hidden="true"><span class="ambient-scene-halo"></span><svg viewBox="0 0 24 24" class="ambient-mini-flame"><use href="#flame-solid"></use></svg></span>
+ <span class="ambient-card-title">Off<span class="ambient-selected-check" aria-hidden="true">✓</span></span><span class="ambient-card-description">A completely still, clean interface.</span>
+ </span></label>
+ <label class="ambient-visual-option"><input type="radio" name="ambientMode" value="subtle" checked><span class="ambient-mode-card">
+ <span class="ambient-mode-scene ambient-scene-subtle" aria-hidden="true"><span class="ambient-scene-halo"></span><i class="ambient-scene-ember" style="--mini-x:18%;--mini-y:75%;--mini-delay:0s"></i><i class="ambient-scene-ember" style="--mini-x:65%;--mini-y:55%;--mini-delay:-1.3s"></i><i class="ambient-scene-ember" style="--mini-x:40%;--mini-y:26%;--mini-delay:-2.6s"></i><svg viewBox="0 0 24 24" class="ambient-mini-flame"><use href="#flame-solid"></use></svg></span>
+ <span class="ambient-card-title">Subtle<span class="ambient-selected-check" aria-hidden="true">✓</span></span><span class="ambient-card-description">Soft drifting embers, a calm atmosphere.</span>
+ </span></label>
+ <label class="ambient-visual-option"><input type="radio" name="ambientMode" value="enhanced"><span class="ambient-mode-card">
+ <span class="ambient-mode-scene ambient-scene-enhanced" aria-hidden="true"><span class="ambient-scene-halo"></span><i class="ambient-scene-ember" style="--mini-x:18%;--mini-y:75%;--mini-delay:0s"></i><i class="ambient-scene-ember" style="--mini-x:65%;--mini-y:55%;--mini-delay:-1.3s"></i><i class="ambient-scene-ember" style="--mini-x:40%;--mini-y:26%;--mini-delay:-2.6s"></i><i class="ambient-scene-ember" style="--mini-x:83%;--mini-y:83%;--mini-delay:-3.9000000000000004s"></i><i class="ambient-scene-ember" style="--mini-x:28%;--mini-y:35%;--mini-delay:-5.2s"></i><i class="ambient-scene-ember" style="--mini-x:76%;--mini-y:12%;--mini-delay:-6.5s"></i><i class="ambient-scene-ember" style="--mini-x:51%;--mini-y:92%;--mini-delay:-7.800000000000001s"></i><i class="ambient-scene-ember" style="--mini-x:12%;--mini-y:49%;--mini-delay:-9.1s"></i><svg viewBox="0 0 24 24" class="ambient-mini-flame"><use href="#flame-solid"></use></svg></span>
+ <span class="ambient-card-title">Enhanced<span class="ambient-selected-check" aria-hidden="true">✓</span></span><span class="ambient-card-description">More embers and a richer warm glow.</span>
+ </span></label>
+</div>
  <label class="ambient-choice"><input id="ambientStarsSetting" type="checkbox" checked><span><strong>Nighttime shooting stars</strong><small>Occasional stars between 8 PM and 6 AM when dark mode is on.</small></span></label>
  <label class="ambient-choice"><input id="ambientGlowSetting" type="checkbox" checked><span><strong>Living flame glow</strong><small>Warm streak flames and active Focus Plan sections.</small></span></label>
  <div class="ambient-preview-action"><button id="ambientPreviewBtn" type="button">✦ Preview night effects</button><small id="ambientPreviewDescription">Test the atmosphere any time of day.</small></div>
@@ -1452,10 +1462,10 @@ body:has(#loginPanel:not([hidden])) .shell,
       }
     }
   </script>
-  <script defer src="ambient.js?v=20261123-ambient03"></script>
-  <script defer src="achievements.js?v=20261123-ambient03"></script>
-  <script defer src="focus.js?v=20261123-ambient03"></script>
-  <script defer src="workspace.js?v=20261123-ambient03"></script>
-  <script type="module" src="app.js?v=20261123-ambient03"></script>
+  <script defer src="ambient.js?v=20261123-ambient04"></script>
+  <script defer src="achievements.js?v=20261123-ambient04"></script>
+  <script defer src="focus.js?v=20261123-ambient04"></script>
+  <script defer src="workspace.js?v=20261123-ambient04"></script>
+  <script type="module" src="app.js?v=20261123-ambient04"></script>
 </body>
 </html>
