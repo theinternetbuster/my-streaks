@@ -104,3 +104,34 @@ html[data-theme="light"] .focus-activity,html[data-theme="light"] .focus-stats>d
 @media(prefers-reduced-motion:reduce){.achievement-celebration-card,.achievement-celebration-medal,.achievement-celebration-sparkle,.achievement-celebration-card::before,.achievement-celebration-card::after{animation:none!important}}
 /* Hide the old checklist-only insertion shortcut when viewing Focus Plans. */
 .checklist-page:has(#focusPlansRoot:not([hidden])) #checklistAdd{visibility:hidden}
+
+/* Consistent glass segmented control — shared mobile and desktop behavior. */
+.focus-view-toggle{position:relative;isolation:isolate;width:min(100%,390px);max-width:390px;margin:18px auto 26px;background:#24252b;border:1px solid #3e3f47;border-radius:18px;padding:5px;box-shadow:inset 0 1px #ffffff0a}
+.focus-toggle-highlight{position:absolute;z-index:0;left:5px;top:5px;bottom:5px;width:calc((100% - 10px)/2);background:#f47630;border-radius:13px;box-shadow:0 4px 14px #0002;transform:translateX(0);transition:transform .34s cubic-bezier(.22,.85,.25,1)}
+.focus-view-toggle[data-current="focus"] .focus-toggle-highlight{transform:translateX(100%)}
+.focus-view-toggle button,.focus-view-toggle button[aria-selected="true"]{position:relative;z-index:1;opacity:1;color:#d4d5dc;background:transparent;border:0;box-shadow:none;transition:color .24s}
+.focus-view-toggle button[aria-selected="true"]{color:#fff}
+html[data-theme="light"] .focus-view-toggle{background:#e9ebf0;border-color:#d9dce3}
+html[data-theme="light"] .focus-view-toggle button{color:#586070}
+html[data-theme="light"] .focus-view-toggle button[aria-selected="true"]{color:#fff}
+@media(max-width:799px){.focus-view-toggle{margin:15px 0 22px;width:100%;max-width:none}}
+@media(prefers-reduced-motion:reduce){.focus-toggle-highlight{transition:none}}
+/* Achievement cards act as buttons and show a full-size medal detail. */
+.achievement-card[data-achievement-index]{cursor:pointer}
+.achievement-card[data-achievement-index]:focus-visible{outline:2px solid #f47630;outline-offset:3px}
+.achievement-celebration-overlay.preview-celebration .achievement-celebration-card{animation:achievement-enter .55s cubic-bezier(.18,.9,.25,1.08) both}
+.achievement-celebration-overlay.preview-celebration .achievement-celebration-card button{background:#ee8b4a}
+.achievement-celebration-overlay.preview-celebration .achievement-celebration-card{max-width:430px}
+.achievement-celebration-overlay.preview-celebration #achievementCelebrationText{max-width:325px}
+.focus-time-adjust{position:fixed;z-index:310;inset:0;display:flex;align-items:center;justify-content:center;padding:15px;background:#070810b8;backdrop-filter:blur(5px)}
+.focus-time-adjust-card{width:min(420px,100%);background:#262630;border:1px solid #7775;border-radius:24px;padding:25px;color:#fff;box-shadow:0 22px 80px #0008}
+.focus-time-adjust-card h3{font-size:24px;margin:0 0 8px}
+.focus-time-adjust-card p{font-size:13px;color:#b9bac6;line-height:1.6}
+.focus-time-adjust-input{display:flex;align-items:center;gap:8px;margin:18px 0}
+.focus-time-adjust-input input{width:100%;min-width:0;font-size:26px;font-weight:750;background:#353541;color:#fff;border:1px solid #6669;border-radius:13px;padding:12px}
+.focus-time-adjust-quick{display:flex;gap:8px;margin:0 0 24px}
+.focus-time-adjust-quick button{flex:1;color:#fff;background:#373741;border:1px solid #7775;border-radius:10px;padding:10px;cursor:pointer}
+.focus-time-adjust-actions{display:flex;flex-wrap:wrap;gap:8px}
+.focus-time-adjust-actions button{flex:1;min-width:95px;border:1px solid #6669;background:transparent;color:#fff;padding:12px 9px;border-radius:12px;cursor:pointer;font-weight:650}
+.focus-time-adjust-actions button[data-focus="saveadjust"]{background:#f07838;border-color:#f07838;color:#fff}
+.focus-time-adjust-actions button[data-focus="resetadjust"]{color:#ffb6aa}
