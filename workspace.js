@@ -2259,8 +2259,8 @@
     function renderAchievements(habits){
       const items=achievementItems(habits);
       $('insightAchievementGrid').innerHTML=items.map((a,i)=>{
-        const unlocked=a.progress>=a.goal;
-        return '<article class="achievement-card '+(unlocked?'unlocked':'locked')+'" style="--badge-delay:'+Math.min(i*55,400)+'ms">'+
+        const unlocked=achievementInstance?.isUnlocked?.(['first','week','rhythm','month','century','fifty','freeze','many'][i])||(a.progress>=a.goal);
+        return '<article role="button" tabindex="0" aria-label="View '+safe(a.title)+' achievement" data-achievement-index="'+i+'" class="achievement-card '+(unlocked?'unlocked':'locked')+'" style="--badge-delay:'+Math.min(i*55,400)+'ms">'+
           '<div class="achievement-card-top"><span class="achievement-tier">'+safe(a.tier)+'</span><span class="achievement-state">'+(unlocked?'UNLOCKED':'TO DISCOVER')+'</span></div>'+
           '<div class="achievement-emblem achievement-emblem-'+safe(a.icon)+'">'+badgeArt[a.icon]+'</div>'+
           '<h3>'+safe(a.title)+'</h3><p>'+safe(a.detail)+'</p>'+
@@ -2268,6 +2268,8 @@
           '</article>';
       }).join('');
     }
+    $('insightAchievementGrid').addEventListener('click',e=>{const card=e.target.closest('[data-achievement-index]');if(card)achievementInstance?.openDetail(card.dataset.achievementIndex);});
+    $('insightAchievementGrid').addEventListener('keydown',e=>{if(e.key!=='Enter'&&e.key!==' ')return;const card=e.target.closest('[data-achievement-index]');if(!card)return;e.preventDefault();achievementInstance?.openDetail(card.dataset.achievementIndex);});
     function renderInsightTabs(){
       const achievements=insightSection==='achievements';
       $('insightOverview').hidden=achievements;
