@@ -164,3 +164,44 @@ html[data-theme="light"] .achievement-celebration-card>p:first-of-type{color:#b7
 html[data-theme="light"] .workspace-heading-icon{background:#fff6ef;color:#e96523;border-color:#f1c8aa}
 html[data-theme="light"] .insight-view-badges{background:#fff2e9;color:#c45119;border-color:#f4d2bc}
 html[data-theme="light"] .insight-view-badges:hover{background:#ffe8d8;color:#a43c10}
+
+
+/* Distinct achievement emblems and staged unlock reveal. */
+.achievement-celebration-medal{position:relative;isolation:isolate;transform-origin:50% 50%;border-width:5px}
+.achievement-celebration-medal svg{width:54px;height:54px;display:block;filter:drop-shadow(0 2px 2px #0004);stroke-linecap:round;stroke-linejoin:round}
+.achievement-celebration-overlay[data-award="first"]{--award-accent:#ff7436;--award-glow:#ff6c2d44;--award-bg:#66301c}
+.achievement-celebration-overlay[data-award="week"]{--award-accent:#f6ba67;--award-glow:#ffbb7159;--award-bg:#6c4827}
+.achievement-celebration-overlay[data-award="rhythm"]{--award-accent:#b898f9;--award-glow:#ae90ef4a;--award-bg:#48306a}
+.achievement-celebration-overlay[data-award="month"]{--award-accent:#edb950;--award-glow:#ffcf5b55;--award-bg:#6a4d18}
+.achievement-celebration-overlay[data-award="century"]{--award-accent:#7bdbd1;--award-glow:#5bcdbb50;--award-bg:#1b5d61}
+.achievement-celebration-overlay[data-award="fifty"]{--award-accent:#75a3fa;--award-glow:#608af255;--award-bg:#294e81}
+.achievement-celebration-overlay[data-award="freeze"]{--award-accent:#7ebdff;--award-glow:#56b6ff55;--award-bg:#15476b}
+.achievement-celebration-overlay[data-award="many"]{--award-accent:#eab28b;--award-glow:#d8a17644;--award-bg:#65432f}
+.achievement-celebration-overlay[data-award] .achievement-celebration-medal{background:radial-gradient(circle at 38% 22%,color-mix(in srgb,var(--award-accent) 75%,white),var(--award-accent) 70%,var(--award-bg));color:#fff;border-color:color-mix(in srgb,var(--award-accent) 65%,#b47f3c);box-shadow:0 0 0 9px var(--award-glow),0 0 70px var(--award-glow)}
+.achievement-celebration-overlay[data-award] .achievement-celebration-card>p:first-of-type{color:var(--award-accent)}
+.achievement-celebration-overlay.award-revealing .achievement-celebration-card{animation:award-card-reveal 1.05s cubic-bezier(.16,.86,.28,1) both}
+.achievement-celebration-overlay.award-revealing .achievement-celebration-medal{animation:award-medal-reveal 2.2s cubic-bezier(.15,.87,.27,1.2) both}
+.achievement-celebration-overlay.award-revealing[data-award="first"] .achievement-celebration-medal svg{animation:award-flame 2s ease-out both}
+.achievement-celebration-overlay.award-revealing[data-award="week"] .achievement-celebration-medal svg{animation:award-sunrise 2.1s ease-out both}
+.achievement-celebration-overlay.award-revealing[data-award="rhythm"] .achievement-celebration-medal svg{animation:award-star 2.1s ease-out both}
+.achievement-celebration-overlay.award-revealing[data-award="month"] .achievement-celebration-medal svg{animation:award-crown 2.2s ease-out both}
+.achievement-celebration-overlay.award-revealing[data-award="century"] .achievement-celebration-medal svg{animation:award-gem 2.2s ease-out both}
+.achievement-celebration-overlay.award-revealing[data-award="fifty"] .achievement-celebration-medal svg{animation:award-calendar 2.1s ease-out both}
+.achievement-celebration-overlay.award-revealing[data-award="freeze"] .achievement-celebration-medal svg{animation:award-freeze 2.2s ease-out both}
+.achievement-celebration-overlay.award-revealing[data-award="many"] .achievement-celebration-medal svg{animation:award-layers 2.1s ease-out both}
+.achievement-celebration-overlay.award-revealing .achievement-celebration-card h2{animation:award-title 2.1s ease-out both}
+.achievement-celebration-overlay.award-revealing .achievement-celebration-card>p:nth-of-type(2){animation:award-copy 2.6s ease-out both}
+.achievement-celebration-overlay.award-revealing .achievement-celebration-card>button{animation:award-copy 2.9s ease-out both}
+@keyframes award-card-reveal{0%{opacity:0;transform:translateY(32px) scale(.94);filter:blur(5px)}65%{opacity:1;filter:blur(0)}100%{opacity:1;transform:none;filter:none}}
+@keyframes award-medal-reveal{0%{opacity:0;transform:scale(.32) rotate(-22deg);filter:blur(9px)}42%{opacity:1;transform:scale(1.22) rotate(7deg);filter:blur(0)}72%{transform:scale(.94) rotate(-3deg)}100%{transform:scale(1) rotate(0)}}
+@keyframes award-title{0%,50%{opacity:0;transform:translateY(16px)}100%{opacity:1;transform:none}}
+@keyframes award-copy{0%,58%{opacity:0;transform:translateY(10px)}100%{opacity:1;transform:none}}
+@keyframes award-flame{0%{opacity:0;transform:translateY(20px) scale(.4)}60%{opacity:1;transform:translateY(-7px) scale(1.18)}100%{transform:none}}
+@keyframes award-sunrise{0%{opacity:0;transform:translateY(35px)}65%{opacity:1;transform:translateY(-6px)}100%{transform:none}}
+@keyframes award-star{0%{opacity:0;transform:rotate(-130deg) scale(.2)}70%{opacity:1;transform:rotate(20deg) scale(1.12)}100%{transform:none}}
+@keyframes award-crown{0%{opacity:0;transform:translateY(-28px) rotate(10deg)}62%{opacity:1;transform:translateY(7px)}100%{transform:none}}
+@keyframes award-gem{0%{opacity:0;transform:rotateY(110deg) scale(.5)}70%{opacity:1;transform:rotateY(-15deg)}100%{transform:none}}
+@keyframes award-calendar{0%{opacity:0;transform:translateX(-26px) scale(.7)}65%{opacity:1;transform:translateX(5px)}100%{transform:none}}
+@keyframes award-freeze{0%{opacity:0;transform:scale(1.5);filter:blur(7px)}70%{opacity:1;filter:blur(0);transform:scale(.9)}100%{transform:none}}
+@keyframes award-layers{0%{opacity:0;transform:translateY(25px) scale(.7)}55%{opacity:1;transform:translateY(-8px) scale(1.07)}100%{transform:none}}
+@media(prefers-reduced-motion:reduce){.achievement-celebration-overlay.award-revealing .achievement-celebration-card,.achievement-celebration-overlay.award-revealing .achievement-celebration-medal,.achievement-celebration-overlay.award-revealing .achievement-celebration-medal svg,.achievement-celebration-overlay.award-revealing .achievement-celebration-card h2,.achievement-celebration-overlay.award-revealing .achievement-celebration-card p,.achievement-celebration-overlay.award-revealing .achievement-celebration-card button{animation:none!important}}
