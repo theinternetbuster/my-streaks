@@ -188,7 +188,7 @@ function evaluateWeeklyHabit(habit,asOf=todayKey()){
  while(week<=currentWeek&&guard++<6000){
   const count=counts.get(week)||0;
   // The first week in which a new streak earns an actual session is a grace week.
-  const onboarding=week===earningWeek||(week===weekStart(period)&&period>week);
+  const onboarding=week===earningWeek||week===weekStart(period);
   if(week!==currentWeek&&!onboarding&&count<target){
    const month=addDays(week,6).slice(0,7);
    if(streak>0&&!usedMonths.has(month)){usedMonths.add(month);protectedWeeks.push(week);streak+=count;}
