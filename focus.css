@@ -205,3 +205,20 @@ html[data-theme="light"] .insight-view-badges:hover{background:#ffe8d8;color:#a4
 @keyframes award-freeze{0%{opacity:0;transform:scale(1.5);filter:blur(7px)}70%{opacity:1;filter:blur(0);transform:scale(.9)}100%{transform:none}}
 @keyframes award-layers{0%{opacity:0;transform:translateY(25px) scale(.7)}55%{opacity:1;transform:translateY(-8px) scale(1.07)}100%{transform:none}}
 @media(prefers-reduced-motion:reduce){.achievement-celebration-overlay.award-revealing .achievement-celebration-card,.achievement-celebration-overlay.award-revealing .achievement-celebration-medal,.achievement-celebration-overlay.award-revealing .achievement-celebration-medal svg,.achievement-celebration-overlay.award-revealing .achievement-celebration-card h2,.achievement-celebration-overlay.award-revealing .achievement-celebration-card p,.achievement-celebration-overlay.award-revealing .achievement-celebration-card button{animation:none!important}}
+
+
+/* Visual consistency: Focus Plans uses the same solid card language as Home. */
+.focus-language-code{display:inline-block;vertical-align:baseline;margin-left:5px;font:750 .53em/1 'Outfit',system-ui,sans-serif;letter-spacing:.025em;color:inherit;opacity:.82}
+html[data-theme="dark"] .focus-stats>div,
+html[data-theme="dark"] .focus-activity,
+html[data-theme="dark"] .focus-week{
+ background:#242426;border-color:#38383e;
+}
+html[data-theme="dark"] .focus-encouragement{background:#29292c;border:1px solid #3b3a40}
+html[data-theme="dark"] .focus-activity.is-done{
+ border-color:color-mix(in srgb,var(--activity-color) 60%,#38383e);
+ background:linear-gradient(145deg,color-mix(in srgb,var(--activity-color) 9%,#242426),#242426 65%);
+}
+html[data-theme="dark"] .focus-stats>div{box-shadow:inset 0 1px #ffffff06}
+html[data-theme="light"] .focus-week{background:#fff;border-color:#e2e5eb}
+html[data-theme="light"] .focus-encouragement{background:#f4f5f8;border:1px solid #e3e5eb}
