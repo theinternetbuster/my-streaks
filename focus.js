@@ -71,7 +71,7 @@ function start({db,doc,onSnapshot,setDoc}){
     return '<span class="focus-segment" style="flex:'+b.minutes+';--segment:'+b.color+'" title="'+escape(b.name)+' · '+format(seconds)+' recorded"><span class="focus-segment-fill" style="width:'+portion+'%"></span></span>';
   }).join('');
   const message=finished===blocks.length?'Gut gemacht! Your plan is complete for today.':actual>0?'You have already made progress. Keep going, or finish for now.':'Start anywhere. You can pause and return whenever you need.';
-  root.innerHTML='<div class="focus-topline"><div><span class="focus-eyebrow">YOUR STUDY SPACE</span><h2>German Practice <span aria-hidden="true">🇩🇪</span></h2><p>One section at a time, at your pace.</p></div><button type="button" class="focus-edit-trigger" data-focus="edit">Edit plan</button></div>'+
+  root.innerHTML='<div class="focus-topline"><div><span class="focus-eyebrow">YOUR STUDY SPACE</span><h2>German Practice <span class="focus-language-code" aria-label="German language">DE</span></h2><p>One section at a time, at your pace.</p></div><button type="button" class="focus-edit-trigger" data-focus="edit">Edit plan</button></div>'+
     '<div class="focus-stats"><div><small>Planned today</small><strong>'+format(planned)+'</strong></div><div><small>Studied today</small><strong>'+format(actual)+'</strong></div><div><small>This week</small><strong>'+format(weekly)+'</strong></div></div>'+
     '<div class="focus-timeline">'+progress+'</div><div class="focus-summary"><span>'+finished+' / '+blocks.length+' sections complete</span><span>'+format(actual)+' recorded</span></div>'+
     '<div class="focus-activities">'+blocks.map(b=>row(b,today[b.id]||{seconds:0,done:false})).join('')+'</div>'+
