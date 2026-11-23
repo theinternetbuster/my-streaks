@@ -3,6 +3,48 @@
 'use strict';
 const $=id=>document.getElementById(id);
 const awards=[{id:'first',name:'First Spark',at:1,field:'total'},{id:'week',name:'One Week Strong',at:7,field:'best'},{id:'rhythm',name:'Two-Week Rhythm',at:14,field:'best'},{id:'month',name:'Thirty-Day Flame',at:30,field:'best'},{id:'century',name:'Century Club',at:100,field:'best'},{id:'fifty',name:'Every Day Counts',at:50,field:'total'},{id:'freeze',name:'Room for Life',at:1,field:'freezes'},{id:'many',name:'Many Paths',at:3,field:'breadth'}];
+const awardMessages={
+ "first": {
+  "earned": "One check-in started something new. Every lasting habit begins with a single day.",
+  "locked": "Complete your first habit check-in to light your first spark.",
+  "repeat": "Another beginning, another opportunity to build momentum."
+ },
+ "week": {
+  "earned": "Seven days of showing up. You've built a rhythm worth recognizing.",
+  "locked": "Reach a seven-day streak with one habit to earn this milestone.",
+  "repeat": "A full week again. You've returned to your rhythm."
+ },
+ "rhythm": {
+  "earned": "Fourteen days of effort. Your consistency is becoming a pattern.",
+  "locked": "Reach a fourteen-day streak with one habit to unlock this badge.",
+  "repeat": "Two weeks again! You've found your rhythm after starting fresh."
+ },
+ "month": {
+  "earned": "Thirty days of commitment. One day at a time has become a month of progress.",
+  "locked": "Build a thirty-day streak with one habit to earn this crown.",
+  "repeat": "Another month of momentum. That's a milestone worth noticing."
+ },
+ "century": {
+  "earned": "One hundred days. Your small, repeated actions have added up to something remarkable.",
+  "locked": "Reach a one-hundred-day streak with one habit to discover this gem.",
+  "repeat": "A hundred days again. What an accomplishment."
+ },
+ "fifty": {
+  "earned": "Fifty check-ins, fifty times you chose to follow through. Each one counts.",
+  "locked": "Record fifty habit completions across your habits to unlock this achievement.",
+  "repeat": "Your efforts continue to add up, one check-in at a time."
+ },
+ "freeze": {
+  "earned": "You kept your progress through an imperfect day. Flexibility is part of consistency.",
+  "locked": "Have a streak protected by a freeze to earn this achievement.",
+  "repeat": "Another reminder that consistency can include some flexibility."
+ },
+ "many": {
+  "earned": "Progress in three different habits. You're building more than one good routine.",
+  "locked": "Record at least one completion in three different habits to earn this badge.",
+  "repeat": "Three routines with real check-ins. Your efforts are taking shape."
+ }
+};
 function start({db,doc,onSnapshot,setDoc,getHabits,evaluateHabit,longestFor,weeklyProtectedFor,visuals={}}){
  const sheet=$('achievementCelebration'),dot=$('achievementUnreadDot');
  if(!sheet||!dot)return {setUser(){},onHabitsChange(){},markRead(){},openDetail(){},isUnlocked(){return false},dispose(){}};
@@ -53,7 +95,7 @@ function start({db,doc,onSnapshot,setDoc,getHabits,evaluateHabit,longestFor,week
   setAwardVisual(a.id);
   $('achievementCelebrationKicker').textContent=unlocked?'YOUR ACHIEVEMENT':'MILESTONE TO DISCOVER';
   $('achievementCelebrationName').textContent=a.name;
-  $('achievementCelebrationText').textContent=unlocked?'A milestone you earned. Replay this moment whenever you like.':'Keep showing up at your own pace. This badge will unlock when you reach its milestone.';
+  $('achievementCelebrationText').textContent=awardMessages[a.id][unlocked?'earned':'locked'];
   sheet.classList.add('preview-celebration');sheet.classList.toggle('small-celebration',!unlocked);
   sheet.hidden=false;
   // A detail view remains open until dismissed, unlike automatic celebrations.
@@ -65,7 +107,7 @@ function start({db,doc,onSnapshot,setDoc,getHabits,evaluateHabit,longestFor,week
   setAwardVisual(x.id||'first');
   $('achievementCelebrationKicker').textContent=large?'ACHIEVEMENT UNLOCKED':'MILESTONE REACHED AGAIN';
   $('achievementCelebrationName').textContent=x.name;
-  $('achievementCelebrationText').textContent=large?'A milestone worth remembering. Your effort adds up.':'You found your rhythm again. Keep moving at your own pace.';
+  $('achievementCelebrationText').textContent=awardMessages[x.id]?.[large?'earned':'repeat']||'Every step forward counts.';
   sheet.classList.toggle('small-celebration',!large);
   sheet.hidden=false;
   if(navigator.vibrate&&large)navigator.vibrate(25);
