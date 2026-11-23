@@ -288,12 +288,12 @@ function renderDashboard(){
    const flameStatus=info.doneToday?'done':recentlyProtected?'freeze':'pending';
    const flameTitle=flameStatus==='done'?'Completed today':flameStatus==='freeze'?'Streak protected by freeze':'Not completed today';
    const progress=weekly?'<span class="habit-weekly-progress">'+info.weeklyCount+'/'+info.weeklyTarget+' this week</span>':'';
-   return '<div class="habit-card'+(info.doneToday?' completed-today':'')+'" data-id="'+escapeHTML(h.id)+'" data-done="'+info.doneToday+'" role="button" tabindex="0" aria-label="'+escapeHTML(h.name)+(layoutMode==='calendar'?' — tap to edit calendar':info.doneToday?' — hold to edit calendar':' — hold to check in')+'">'+
+   return '<div class="habit-card'+(info.doneToday?' completed-today':'')+'" data-has-streak="'+(info.streak>0)+'" data-id="'+escapeHTML(h.id)+'" data-done="'+info.doneToday+'" role="button" tabindex="0" aria-label="'+escapeHTML(h.name)+(layoutMode==='calendar'?' — tap to edit calendar':info.doneToday?' — hold to edit calendar':' — hold to check in')+'">'+
      '<span class="hold-progress" aria-hidden="true"></span>'+
      '<div class="habit-card-head"><h3>'+escapeHTML(h.name)+'</h3>'+progress+
-     (layoutMode==='calendar'?'<span class="mini-streak" title="'+flameTitle+'"><svg class="streak-flame--'+flameStatus+'" viewBox="0 0 24 24" aria-hidden="true"><use href="#flame-solid"></use></svg>'+info.streak+'</span>':'')+'</div>'+
+     (layoutMode==='calendar'?'<span class="mini-streak" title="'+flameTitle+'"><svg class="streak-glow-target streak-flame--'+flameStatus+'" viewBox="0 0 24 24" aria-hidden="true"><use href="#flame-solid"></use></svg>'+info.streak+'</span>':'')+'</div>'+
      (layoutMode==='calendar'?smallCalendar(h,info):
-     '<div class="card-bottom"><span class="card-streak" title="'+flameTitle+'"><svg class="card-flame streak-flame--'+flameStatus+'" viewBox="0 0 24 24" aria-hidden="true"><use href="#flame-solid"></use></svg> '+info.streak+'</span><span class="card-arrow">↗</span></div>')+
+     '<div class="card-bottom"><span class="card-streak" title="'+flameTitle+'"><svg class="card-flame streak-glow-target streak-flame--'+flameStatus+'" viewBox="0 0 24 24" aria-hidden="true"><use href="#flame-solid"></use></svg> '+info.streak+'</span><span class="card-arrow">↗</span></div>')+
      '</div>';
  }).join('');
  el('emptyState').hidden=habits.length!==0;
@@ -667,6 +667,7 @@ onAuthStateChanged(auth,u=>{
     layoutMode=prefs.layout==='calendar'?'calendar':'cards';
     document.querySelectorAll('input[name="appearanceMode"]').forEach(input=>input.checked=input.value===themeMode);
     applyTheme();showProfile();if(!el('dashboard').hidden)renderDashboard();
+    window.MyStreaksAmbient?.setSettings({mode:prefs.ambientMode??'subtle',stars:prefs.ambientStars!==false,glow:prefs.ambientGlow!==false},true);
  },err=>console.error('Settings sync issue',err));
  unsubscribe=onSnapshot(habitCollection(),snapshot=>{
    if(currentEpoch!==initialLoadEpoch)return;
@@ -807,6 +808,11 @@ desktopSettings.addEventListener?.('change',()=>{
 });
 
 document.querySelectorAll('input[name="appearanceMode"]').forEach(input=>input.addEventListener('change',()=>{if(!input.checked)return;themeMode=input.value;applyTheme();savePreference({appearance:themeMode});}));
+document.addEventListener('my-streaks-ambient-change',event=>{
+ if(!user)return;
+ const s=event.detail;
+ savePreference({ambientMode:s.mode,ambientStars:s.stars,ambientGlow:s.glow});
+});
 for(const [buttonId] of accountSections)el(buttonId).addEventListener('click',()=>showAccountSection(buttonId));
 document.addEventListener('keydown',event=>{
  if(event.key==='Escape'){
