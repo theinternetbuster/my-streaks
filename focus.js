@@ -45,22 +45,23 @@ function start({db,doc,onSnapshot,setDoc}){
  function scheduleSave(immediate=false){
   if(!user||!ready)return;
   dirty=true;clearTimeout(saveTimer);
-  saveTimer=setTimeout(()=>{
+  const write=()=>{
    if(!user)return;
    const uid=user.uid,payload=JSON.parse(JSON.stringify(plan));
-   const text=JSON.stringify(payload);lastSnapshot=text;
+   lastSnapshot=JSON.stringify(payload);
    saveQueue=saveQueue.catch(()=>{}).then(()=>setDoc(doc(db,'users',uid,'settings','focusPlans'),payload,{merge:false})).then(()=>{
     if(user?.uid===uid){$('focusSyncLabel').textContent='Saved';dirty=false;}
    }).catch(e=>{$('focusSyncLabel').textContent='Save failed';console.error('Focus plan save error',e);});
    $('focusSyncLabel').textContent='Saving…';
-  },immediate?0:500);
+  };
+  if(immediate)write();else saveTimer=setTimeout(write,500);
  }
  function render(){
   if(!user||!ready)return;
   if(active)flushActive();
   const today=record(),blocks=plan.blocks;
   const planned=blocks.reduce((a,b)=>a+b.minutes*60,0);
-  const actual=blocks.reduce((a,b)=>a+(today[b.id]?.seconds||0),0);
+  const actual=Object.values(today).reduce((a,r)=>a+(r.seconds||0),0);
   const finished=blocks.filter(b=>today[b.id]?.done).length;
   const mondayDate=monday(),week=Array.from({length:7},(_,i)=>{const d=dayAt(mondayDate,i);return {date:d,seconds:Object.values(plan.days[d]||{}).reduce((a,r)=>a+(r.seconds||0),0)};});
   const weekly=week.reduce((a,x)=>a+x.seconds,0);
