@@ -1,0 +1,78 @@
+/* Ambient Effects: isolated visual enhancement for My Streaks. */
+#dashboard{position:relative;isolation:isolate}
+#dashboard>#ambientField{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+#dashboard>.page-heading,#dashboard>.dashboard-toolbar,#dashboard>#habitEditToolbar,
+#dashboard>#habitGrid,#dashboard>#emptyState,#dashboard>.site-footer{position:relative;z-index:1}
+.ambient-field{isolation:isolate;overflow:hidden;pointer-events:none}
+.ambient-ember{position:absolute;left:var(--ember-x);top:105%;width:4px;height:4px;border-radius:50%;background:#ff9c55;box-shadow:0 0 8px 3px #fa7b3b54,0 0 19px 8px #f97a2b19;opacity:0;animation:ambient-float var(--ember-duration,25s) linear infinite;animation-delay:var(--ember-delay,0s);will-change:transform,opacity}
+.ambient-ember:nth-child(3n){width:2px;height:2px;background:#ffd1a1}
+.ambient-ember:nth-child(4n){width:3px;height:3px}
+@keyframes ambient-float{0%,7%{opacity:0;transform:translate3d(-12px,35px,0)}14%{opacity:.35}46%{opacity:.24}83%{opacity:.16}100%{opacity:0;transform:translate3d(32px,-490px,0)}}
+.ambient-star{position:absolute;top:14%;left:-40%;height:2px;width:105px;border-radius:99px;background:linear-gradient(90deg,transparent,#9a9acf44 45%,#e5e8ffcf 95%,white);box-shadow:0 0 9px #cad3ff70;transform:rotate(18deg);opacity:0;animation:ambient-shoot 46s linear infinite;animation-delay:var(--star-delay,0s);will-change:transform,opacity}
+.ambient-star-1{top:30%;animation-duration:59s;width:77px;transform:rotate(14deg)}
+.ambient-star-2{top:8%;animation-duration:71s;width:91px;transform:rotate(23deg)}
+@keyframes ambient-shoot{0%,52%,57%,100%{opacity:0;transform:translate3d(-25vw,-80px,0) rotate(18deg)}53%{opacity:.82}56.5%{opacity:0;transform:translate3d(130vw,220px,0) rotate(18deg)}}
+html[data-ambient="off"] #ambientField,html[data-ambient="off"] .ambient-preview-scene .ambient-field{display:none}
+html[data-ambient="subtle"] #ambientField .ambient-ember:nth-child(n+5){display:none}
+html[data-ambient="subtle"] #ambientField .ambient-star:nth-last-child(-n+2){display:none}
+html[data-ambient="subtle"] #ambientField .ambient-ember{opacity:0;filter:saturate(.8)}
+html[data-ambient="enhanced"] #ambientField .ambient-ember{filter:saturate(1.1)}
+/* Stars are strictly nighttime + dark appearance on the real home screen. */
+html:not([data-ambient-night="true"]) #ambientField .ambient-star,
+html:not([data-ambient-stars="true"]) #ambientField .ambient-star{display:none}
+html[data-theme="light"] #ambientField .ambient-ember{filter:saturate(.6);opacity:.18}
+html:not([data-ambient-glow="true"]) #dashboard .streak-glow-target{filter:none!important;animation:none!important}
+html[data-ambient-glow="true"][data-ambient-night="true"] #dashboard .streak-glow-target{filter:drop-shadow(0 0 4px #fa783c85) drop-shadow(0 0 12px #fc752936);animation:ambient-flame-breathe 8.5s ease-in-out infinite}
+html[data-ambient-glow="true"][data-ambient-night="true"] #dashboard .habit-card:nth-child(2n) .streak-glow-target{animation-delay:-3.4s}
+html[data-ambient-glow="true"][data-ambient-night="true"] #dashboard .habit-card:nth-child(3n) .streak-glow-target{animation-delay:-5.2s}
+html[data-ambient-glow="true"][data-theme="light"] #dashboard .streak-glow-target{filter:drop-shadow(0 1px 2px #f17b3736)}
+@keyframes ambient-flame-breathe{0%,100%{filter:drop-shadow(0 0 4px #fa783c55) drop-shadow(0 0 9px #fc75292a)}50%{filter:drop-shadow(0 0 6px #ff9a57b5) drop-shadow(0 0 17px #fb72265c)}}
+/* Existing Focus Plan timers: subtle activity-color lighting only while running. */
+html[data-ambient-glow="true"]:not([data-ambient="off"]) .focus-activity.is-running{border-color:color-mix(in srgb,var(--activity-color) 52%,transparent);box-shadow:0 0 18px color-mix(in srgb,var(--activity-color) 18%,transparent);transition:box-shadow .4s,border-color .4s}
+html[data-ambient-glow="true"]:not([data-ambient="off"]) .focus-activity.is-running .focus-activity-bar span{box-shadow:0 0 11px color-mix(in srgb,var(--activity-color) 35%,transparent)}
+/* Appearance page. */
+.ambient-settings{margin-top:28px;padding-top:24px;border-top:1px solid #8884}
+.ambient-settings h4{font-size:17px;font-weight:750;letter-spacing:-.02em;margin:0 0 5px}
+.ambient-settings>p{font-size:12px;line-height:1.5;opacity:.68;margin:0 0 19px}
+.ambient-level-picker{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-bottom:17px}
+.ambient-level-picker label{position:relative;cursor:pointer}
+.ambient-level-picker input{position:absolute;opacity:0;width:1px;height:1px}
+.ambient-level-picker span{display:flex;justify-content:center;align-items:center;min-height:43px;padding:8px;border:1px solid #8885;border-radius:12px;font-size:12px;font-weight:700;transition:background .2s,border-color .2s}
+.ambient-level-picker input:checked+span{color:#fff;background:#ec7335;border-color:#ec7335;box-shadow:0 3px 12px #ee804126}
+.ambient-level-picker input:focus-visible+span{outline:2px solid #ed7839;outline-offset:3px}
+.ambient-choice{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid #8883;cursor:pointer}
+.ambient-choice input{accent-color:#f0793c;width:18px;height:18px;flex:none}
+.ambient-choice span{display:flex;flex-direction:column;gap:5px}
+.ambient-choice strong{font-size:13px}
+.ambient-choice small{font-size:11px;opacity:.65;line-height:1.4}
+.ambient-preview-action{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:17px}
+.ambient-preview-action button{background:#ef7739;border:0;color:#fff;border-radius:12px;padding:12px 16px;font-weight:750;font-size:12px;cursor:pointer}
+.ambient-preview-action button:disabled{opacity:.4;cursor:not-allowed}
+.ambient-preview-action small{font-size:11px;opacity:.62;line-height:1.45}
+html[data-theme="light"] .ambient-level-picker span{border-color:#d9dee5;color:#414858;background:#fff}
+html[data-theme="light"] .ambient-level-picker input:checked+span{color:#fff;background:#f07837;border-color:#f07837}
+/* Temporary preview scene. Never changes the user's actual appearance setting. */
+#ambientPreviewModal[hidden]{display:none!important}
+#ambientPreviewModal{position:fixed;inset:0;z-index:1200;background:#050710d9;backdrop-filter:blur(9px);display:flex;justify-content:center;align-items:center;padding:16px;overscroll-behavior:contain}
+.ambient-preview-card{position:relative;overflow:hidden;isolation:isolate;width:min(630px,100%);min-height:380px;border:1px solid #5c5460;border-radius:26px;color:#fff;background:radial-gradient(circle at 50% 82%,#29202a,#11141d 62%,#0b0d17);box-shadow:0 32px 100px #0009;padding:25px;display:flex;flex-direction:column}
+.ambient-preview-card>.ambient-field{position:absolute;inset:0;z-index:0}
+.ambient-preview-content{position:relative;z-index:1;display:flex;flex-direction:column;flex:1}
+.ambient-preview-heading{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.ambient-preview-heading h2{font-size:21px;margin:0}
+.ambient-preview-close{border:1px solid #ddd4;border-radius:11px;color:#fff;background:#ffffff19;padding:9px 13px;cursor:pointer}
+.ambient-preview-caption{color:#adb1bf;font-size:12px;margin:8px 0 20px}
+.ambient-preview-habits{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:auto 0}
+.ambient-preview-habit{border-radius:17px;background:#1e202bcc;border:1px solid #383c49;padding:17px;min-height:110px}
+.ambient-preview-habit>strong{font-size:14px}
+.ambient-preview-number{display:flex;align-items:center;gap:8px;font-size:27px;font-weight:750;margin-top:24px}
+.ambient-preview-number svg{width:26px;height:26px;color:#ff7434;fill:#ff7434;filter:drop-shadow(0 0 6px #ff81378a)}
+.ambient-preview-number svg{animation:ambient-flame-breathe 8s ease-in-out infinite}
+.ambient-preview-note{text-align:center;color:#aeb4c4;font-size:11px;margin-top:25px}
+#ambientPreviewModal[data-preview-level="subtle"] .ambient-ember:nth-child(n+5){display:none}
+#ambientPreviewModal[data-preview-level="subtle"] .ambient-star:nth-last-child(-n+2){display:none}
+#ambientPreviewModal[data-preview-stars="false"] .ambient-star{display:none}
+#ambientPreviewModal[data-preview-glow="false"] .ambient-preview-number svg{filter:none;animation:none}
+#ambientPreviewModal[data-preview-glow="false"] .ambient-ember{display:none}
+@media(max-width:799px){.ambient-preview-card{min-height:390px;padding:22px 17px}.ambient-preview-habit{padding:13px}.ambient-preview-number{margin-top:18px}}
+@media(prefers-reduced-motion:reduce){.ambient-ember,.ambient-star,.ambient-preview-number svg,.streak-glow-target{animation:none!important;will-change:auto!important}}
+@media(hover:none){.ambient-ember,.ambient-star{will-change:auto}}
