@@ -99,3 +99,46 @@ html[data-ambient="off"] .focus-activity.is-running{box-shadow:none}
 @media(prefers-reduced-motion:reduce){
  #ambientPreviewModal .ambient-ember,#ambientPreviewModal .ambient-star{display:none!important}
 }
+
+/* v03: Ambient atmosphere sits behind all three application pages, not only Home. */
+.shell{isolation:isolate}
+.shell>#ambientField{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;contain:layout paint}
+.shell>section{position:relative;z-index:1}
+body.desktop-settings-route .shell>#ambientField{display:none!important}
+html[data-ambient="off"] .shell>#ambientField{display:none!important}
+/* Distribute warm embers across the whole viewport instead of below the fold. */
+.shell>#ambientField .ambient-ember{
+ top:var(--ember-y,50%);left:var(--ember-x,50%);
+ width:3px;height:3px;opacity:0;
+ box-shadow:0 0 7px 2px #ffa45d75,0 0 17px 6px #fa813f28;
+ animation:ambient-drift-v3 var(--ember-duration,24s) ease-in-out infinite;
+ animation-delay:var(--ember-delay,0s)
+}
+@keyframes ambient-drift-v3{
+ 0%,100%{opacity:0;transform:translate3d(-14px,18px,0)}
+ 14%{opacity:.48}50%{opacity:.7;transform:translate3d(9px,-55px,0)}
+ 84%{opacity:.32}94%{opacity:0;transform:translate3d(21px,-102px,0)}
+}
+html[data-ambient="subtle"] .shell>#ambientField .ambient-ember:nth-child(n+8){display:none}
+html[data-ambient="enhanced"] .shell>#ambientField .ambient-ember{width:4px;height:4px;box-shadow:0 0 11px 4px #ffa45d8a,0 0 22px 8px #fa813f30}
+html[data-ambient="subtle"] .shell>#ambientField .ambient-ember{filter:saturate(.95)}
+html[data-theme="light"] .shell>#ambientField .ambient-ember{
+ background:#e49c54;box-shadow:0 0 5px 2px #e9ad6955;filter:saturate(.65);
+}
+html[data-theme="light"] .shell>#ambientField .ambient-star{display:none!important}
+/* Keep stars a nighttime-only accent, rather than competing with daily check-ins. */
+html:not([data-ambient-night="true"]) .shell>#ambientField .ambient-star,
+html:not([data-ambient-stars="true"]) .shell>#ambientField .ambient-star{display:none!important}
+/* Active streak flames retain soft warmth during daytime dark mode. */
+html[data-theme="dark"][data-ambient-glow="true"]:not([data-ambient="off"]) #dashboard .habit-card[data-has-streak="true"] .streak-glow-target{
+ filter:drop-shadow(0 0 4px #ff893b75) drop-shadow(0 0 10px #ff77302e);
+}
+html[data-theme="dark"][data-ambient-glow="true"][data-ambient-night="true"] #dashboard .habit-card[data-has-streak="true"] .streak-glow-target{
+ animation:ambient-flame-breathe 8.5s ease-in-out infinite;
+}
+html[data-theme="dark"][data-ambient-glow="true"] #dashboard .habit-card:not([data-has-streak="true"]) .streak-glow-target{
+ filter:none!important;animation:none!important;
+}
+html.ambient-paused .shell>#ambientField .ambient-ember,
+html.ambient-paused .shell>#ambientField .ambient-star{animation-play-state:paused!important}
+@media(prefers-reduced-motion:reduce){.shell>#ambientField .ambient-ember,.shell>#ambientField .ambient-star{animation:none!important;display:none!important}}
