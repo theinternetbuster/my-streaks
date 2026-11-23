@@ -48,7 +48,9 @@ function start({db,doc,onSnapshot,setDoc,getHabits,evaluateHabit,longestFor,week
   // Bootstrap only after the habit snapshot arrives, never from an empty loading state.
   const m=measures(),unlocked={};
   for(const a of awards)if((m[a.field]||0)>=a.at)unlocked[a.id]=true;
-  ledger={unlocked,unread:false,rearmed:{},last:m};
+  const rearmed={};
+  if(unlocked.rhythm)for(const [id,count] of Object.entries(m.streaks))if(count<14)rearmed[id]=true;
+  ledger={unlocked,unread:false,rearmed,last:m};
   pendingInitial=false;ready=true;refreshDot();commit();
  }
  function onHabitsChange(){
