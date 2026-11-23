@@ -222,3 +222,33 @@ html[data-theme="dark"] .focus-activity.is-done{
 html[data-theme="dark"] .focus-stats>div{box-shadow:inset 0 1px #ffffff06}
 html[data-theme="light"] .focus-week{background:#fff;border-color:#e2e5eb}
 html[data-theme="light"] .focus-encouragement{background:#f4f5f8;border:1px solid #e3e5eb}
+
+
+/* Match the Insights segmented control without a second highlight layer. */
+.insight-section-tabs.focus-view-toggle{
+ width:min(100%,366px);max-width:100%;height:auto;
+ margin:0 0 26px;border-radius:100px;background:#202023;
+ border:1px solid #414147;padding:5px;gap:0;
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));box-shadow:none;
+}
+.insight-section-tabs.focus-view-toggle .focus-toggle-highlight{display:none}
+.insight-section-tabs.focus-view-toggle button,
+.insight-section-tabs.focus-view-toggle button[aria-selected="true"]{
+ display:inline-flex;align-items:center;justify-content:center;gap:9px;
+ padding:11px 8px;min-width:0;border-radius:100px;
+ font:750 13px 'DM Sans',sans-serif;background:transparent!important;
+ color:#a5a5af;box-shadow:none!important;
+}
+.insight-section-tabs.focus-view-toggle button.active,
+.insight-section-tabs.focus-view-toggle button[aria-selected="true"]{color:#ff915c}
+html[data-theme="light"] .insight-section-tabs.focus-view-toggle{
+ background:#f4f5f8;border-color:#dfe3ea
+}
+html[data-theme="light"] .insight-section-tabs.focus-view-toggle button:not(.active){color:#596478}
+html[data-theme="light"] .insight-section-tabs.focus-view-toggle button.active{color:#be5019}
+@media(max-width:440px){
+ .insight-section-tabs.focus-view-toggle{width:100%;margin:0 0 26px}
+ .insight-section-tabs.focus-view-toggle button{padding:11px 5px;font-size:12px}
+}
+/* Sync remains functional; show warnings, not routine Saved text. */
+#checklistSyncStatus:empty,#focusSyncLabel:empty{display:none}
