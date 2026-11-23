@@ -76,3 +76,26 @@ html[data-theme="light"] .ambient-level-picker input:checked+span{color:#fff;bac
 @media(max-width:799px){.ambient-preview-card{min-height:390px;padding:22px 17px}.ambient-preview-habit{padding:13px}.ambient-preview-number{margin-top:18px}}
 @media(prefers-reduced-motion:reduce){.ambient-ember,.ambient-star,.ambient-preview-number svg,.streak-glow-target{animation:none!important;will-change:auto!important}}
 @media(hover:none){.ambient-ember,.ambient-star{will-change:auto}}
+
+
+/* Active streaks only; inactive gray flames stay calm. */
+html[data-ambient-glow="true"][data-ambient-night="true"] #dashboard .habit-card:not([data-has-streak="true"]) .streak-glow-target{
+ animation:none!important;filter:none!important
+}
+/* Give the temporary preview its own faster, immediately visible demonstration. */
+#ambientPreviewModal .ambient-ember{animation-duration:11s;animation-delay:var(--ember-delay);box-shadow:0 0 10px 4px #fb873a66}
+#ambientPreviewModal .ambient-star{animation-name:ambient-preview-shoot;animation-duration:9s;animation-delay:-1s}
+#ambientPreviewModal .ambient-star-1{animation-delay:-4.5s;animation-duration:12s}
+#ambientPreviewModal .ambient-star-2{animation-delay:-8s;animation-duration:15s}
+@keyframes ambient-preview-shoot{
+ 0%,20%,100%{opacity:0;transform:translate3d(-25vw,-70px,0) rotate(18deg)}
+ 25%{opacity:.9}
+ 60%,75%{opacity:0;transform:translate3d(115vw,150px,0) rotate(18deg)}
+}
+#ambientPreviewModal[data-preview-glow="false"] .ambient-ember{display:block}
+html.ambient-paused .ambient-ember,html.ambient-paused .ambient-star,
+html.ambient-paused .streak-glow-target{animation-play-state:paused!important}
+html[data-ambient="off"] .focus-activity.is-running{box-shadow:none}
+@media(prefers-reduced-motion:reduce){
+ #ambientPreviewModal .ambient-ember,#ambientPreviewModal .ambient-star{display:none!important}
+}
