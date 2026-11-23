@@ -15,6 +15,7 @@
   function start({db,doc,onSnapshot,setDoc,getHabits,evaluateHabit,onTabChange}){
     const root=$('checklistBlocks');
     if(!root)return null;
+    let focusInstance=null;
     let tab='home',user=null,unsub=null,insightUnsub=null,blocks=[],dirty=false,saveTimer=null,selectedHabit='all',insightSection='overview',insightSelectionPending=false,
         slashFor=null,slashMatches=types,slashSelected=0,sortable=null,saveSerial=0,listenerEpoch=0;
     let pendingWrite=Promise.resolve(),editRevision=0;
@@ -108,7 +109,7 @@
       if(unsub){unsub();unsub=null;}
       if(insightUnsub){insightUnsub();insightUnsub=null;}
       clearTimeout(saveTimer);editRevision++;
-      user=next;blocks=[];dirty=false;saveSerial++;clearDocumentSelection();resetHistory();selectedHabit='all';insightSection='overview';insightSelectionPending=false;
+      user=next;focusInstance?.setUser(next);blocks=[];dirty=false;saveSerial++;clearDocumentSelection();resetHistory();selectedHabit='all';insightSection='overview';insightSelectionPending=false;
       tab=['insights','checklist'].includes(new URLSearchParams(location.search).get('view'))?
         new URLSearchParams(location.search).get('view'):'home';
       updateNav();
@@ -2363,7 +2364,9 @@
       }).join('');
     }
     function onHabitsChange(){if(tab==='insights')renderInsights();}
-    function dispose(){if(unsub)unsub();if(insightUnsub)insightUnsub();clearTimeout(saveTimer);if(sortable)sortable.destroy();}
+    function dispose(){focusInstance?.dispose();if(unsub)unsub();if(insightUnsub)insightUnsub();clearTimeout(saveTimer);if(sortable)sortable.destroy();}
+    // Focus Plans uses its own Firestore document, separate from checklist notes.
+    try{focusInstance=window.MyStreaksFocus?.start({db,doc,onSnapshot,setDoc})||null;}catch(error){console.error('Focus Plans initialization failed',error);}
     // Deep links should initialize consistently once the account loads.
     updateNav();
     return {setUser,selectTab,onHabitsChange,renderInsights,renderChecklist,tab:()=>tab,dispose};
