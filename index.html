@@ -17,6 +17,24 @@
   <meta name="description" content="A private streak tracker with weekly freezes and cloud sync." />
   <title>My Streaks</title>
   <script>
+    // Restore the last chosen appearance before stylesheets and Firebase load.
+    try{
+      const saved=localStorage.getItem('my-streaks-appearance');
+      window.MyStreaksBootAppearance=['light','dark','system'].includes(saved)?saved:'system';
+    }catch(_){window.MyStreaksBootAppearance='system';}
+    const initialTheme=window.MyStreaksBootAppearance==='system'
+      ?(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light')
+      :window.MyStreaksBootAppearance;
+    document.documentElement.dataset.theme=initialTheme;
+    document.documentElement.style.colorScheme=initialTheme;
+    document.documentElement.classList.add('streaks-booting');
+  </script>
+  <style>
+    html.streaks-booting[data-theme="light"],html.streaks-booting[data-theme="light"] body{background:#f7f8fc!important;color:#202638}
+    html.streaks-booting[data-theme="dark"],html.streaks-booting[data-theme="dark"] body{background:#000!important}
+    html.streaks-booting #loginPanel{visibility:hidden!important}
+  </style>
+  <script>
     // iPadOS Safari may identify itself as a Mac. Only Apple touch tablets use
     // the existing iOS layout; desktop computers retain the desktop experience.
     window.MyStreaksIPadLayout=/iPad/i.test(navigator.userAgent) ||
@@ -24,7 +42,7 @@
     if(window.MyStreaksIPadLayout)document.documentElement.classList.add('ipad-ios-layout');
   </script>
   <link rel="stylesheet" href="styles.css?v=20261120-ipad-layout" />
-  <link rel="stylesheet" href="focus.css?v=20261123-polish05" />
+  <link rel="stylesheet" href="focus.css?v=20261123-weekly-theme06" />
   <link rel="stylesheet" href="workspace.css?v=20261120-ipad-layout" />
   <style id="critical-landing-styles">
 /* Critical inline fallback is scoped to logged-out view so signed-in themes are unchanged. */
@@ -1415,9 +1433,9 @@ body:has(#loginPanel:not([hidden])) .shell,
       }
     }
   </script>
-  <script defer src="achievements.js?v=20261123-polish05"></script>
-  <script defer src="focus.js?v=20261123-polish05"></script>
-  <script defer src="workspace.js?v=20261123-polish05"></script>
-  <script type="module" src="app.js?v=20261123-polish05"></script>
+  <script defer src="achievements.js?v=20261123-weekly-theme06"></script>
+  <script defer src="focus.js?v=20261123-weekly-theme06"></script>
+  <script defer src="workspace.js?v=20261123-weekly-theme06"></script>
+  <script type="module" src="app.js?v=20261123-weekly-theme06"></script>
 </body>
 </html>
