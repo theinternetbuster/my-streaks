@@ -3,19 +3,19 @@
 'use strict';
 const $=id=>document.getElementById(id);
 const awards=[{id:'first',name:'First Spark',at:1,field:'total'},{id:'week',name:'One Week Strong',at:7,field:'best'},{id:'rhythm',name:'Two-Week Rhythm',at:14,field:'best'},{id:'month',name:'Thirty-Day Flame',at:30,field:'best'},{id:'century',name:'Century Club',at:100,field:'best'},{id:'fifty',name:'Every Day Counts',at:50,field:'total'},{id:'freeze',name:'Room for Life',at:1,field:'freezes'},{id:'many',name:'Many Paths',at:3,field:'breadth'}];
-function start({db,doc,onSnapshot,setDoc,getHabits,evaluateHabit}){
+function start({db,doc,onSnapshot,setDoc,getHabits,evaluateHabit,longestFor,weeklyProtectedFor}){
  const sheet=$('achievementCelebration'),dot=$('achievementUnreadDot');
  if(!sheet||!dot)return {setUser(){},onHabitsChange(){},markRead(){},dispose(){}};
- let user=null,unsub=null,ready=false,ledger=null,queue=[],showing=false,timer=null,saveQueue=Promise.resolve(),lastSnapshot='';
+ let user=null,unsub=null,ready=false,habitsReady=false,pendingInitial=false,ledger=null,queue=[],showing=false,timer=null,saveQueue=Promise.resolve();
  const clone=x=>JSON.parse(JSON.stringify(x));
  function measures(){
    const habits=getHabits();
    const total=habits.reduce((n,h)=>n+(h.completions||[]).length,0);
    const breadth=habits.filter(h=>(h.completions||[]).length>0).length;
-   const freezes=habits.reduce((n,h)=>n+(h.freezeDates||[]).length,0);
+   const freezes=habits.reduce((n,h)=>n+(h.cadence==='weekly'?(weeklyProtectedFor?.(h)||0):(h.freezeDates||[]).length),0);
    // Each habit owns its streak; no summed streak across unrelated habits.
    const streaks=Object.fromEntries(habits.map(h=>[h.id,evaluateHabit(h).streak||0]));
-   const best=Math.max(0,...Object.values(streaks));
+   const best=Math.max(0,...habits.map(h=>longestFor?longestFor(h):(streaks[h.id]||0)));
    return {total,breadth,freezes,best,streaks};
  }
  function refreshDot(){
@@ -43,7 +43,17 @@ function start({db,doc,onSnapshot,setDoc,getHabits,evaluateHabit}){
   if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){sheet.classList.add('reduce-celebration');}else sheet.classList.remove('reduce-celebration');
   timer=setTimeout(close,large?3600:2300);
  }
+ function initializeExisting(){
+  if(!user||!habitsReady||!pendingInitial||ready)return;
+  // Bootstrap only after the habit snapshot arrives, never from an empty loading state.
+  const m=measures(),unlocked={};
+  for(const a of awards)if((m[a.field]||0)>=a.at)unlocked[a.id]=true;
+  ledger={unlocked,unread:false,rearmed:{},last:m};
+  pendingInitial=false;ready=true;refreshDot();commit();
+ }
  function onHabitsChange(){
+  habitsReady=true;
+  initializeExisting();
   if(!user||!ready||!ledger)return;
   const scores=measures();
   const old=ledger.last||{total:0,breadth:0,freezes:0,best:0,streaks:{}};
@@ -76,7 +86,7 @@ function start({db,doc,onSnapshot,setDoc,getHabits,evaluateHabit}){
  }
  function setUser(next){
   clearTimeout(timer);sheet.hidden=true;queue=[];showing=false;
-  if(unsub)unsub();unsub=null;user=next;ledger=null;ready=false;refreshDot();
+  if(unsub)unsub();unsub=null;user=next;ledger=null;ready=false;habitsReady=false;pendingInitial=false;refreshDot();
   if(!user)return;
   const uid=user.uid;
   unsub=onSnapshot(doc(db,'users',uid,'settings','achievementCelebrations'),snap=>{
@@ -86,11 +96,9 @@ function start({db,doc,onSnapshot,setDoc,getHabits,evaluateHabit}){
      const r=snap.data();
      ledger={unlocked:r.unlocked||{},unread:!!r.unread,rearmed:r.rearmed||{},last:r.last||measures()};
     }else{
-     // Migration: existing awards should not all pop on first installation.
-     const m=measures(),unlocked={};
-     for(const a of awards)if((m[a.field]||0)>=a.at)unlocked[a.id]=true;
-     ledger={unlocked,unread:false,rearmed:{},last:m};
-     commit();
+     pendingInitial=true;
+     initializeExisting();
+     return;
     }
     ready=true;refreshDot();return;
    }
