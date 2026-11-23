@@ -148,3 +148,6 @@ html.ambient-paused .shell>#ambientField .ambient-star{animation-play-state:paus
 html[data-ambient="subtle"] .shell>#ambientField .ambient-ember:nth-child(n+5):nth-child(-n+7){display:block}
 html[data-ambient="subtle"] .shell>#ambientField .ambient-ember:nth-child(n+8){display:none}
 html[data-ambient="enhanced"] .shell>#ambientField .ambient-ember{display:block}
+
+/* Keep ambient decoration out of sign-in and startup loading screens. */
+.shell:has(#loginPanel:not([hidden]))>#ambientField,.shell:has(#loadingPanel:not([hidden]))>#ambientField{display:none!important}
