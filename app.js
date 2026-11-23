@@ -183,6 +183,8 @@ function evaluateWeeklyHabit(habit,asOf=todayKey()){
  let streak=habit.goalPeriodStart?(habit.goalBaseline||0):0,week=firstWeek,guard=0;
  while(week<=currentWeek&&guard++<6000){
    const count=counts.get(week)||0,isCurrent=week===currentWeek;
+   // The first partial week is a grace period, even if its one session was
+   // backfilled later. It adds real sessions but never consumes a freeze.
    const partialFirstWeek=week===firstWeek&&period>week;
    if(!isCurrent&&!partialFirstWeek&&count<target){
      // Weekly protection is spent at the END of an unsuccessful week.
