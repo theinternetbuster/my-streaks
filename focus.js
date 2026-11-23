@@ -50,7 +50,7 @@ function start({db,doc,onSnapshot,setDoc}){
    const uid=user.uid,payload=JSON.parse(JSON.stringify(plan));
    lastSnapshot=JSON.stringify(payload);
    saveQueue=saveQueue.catch(()=>{}).then(()=>setDoc(doc(db,'users',uid,'settings','focusPlans'),payload,{merge:false})).then(()=>{
-    if(user?.uid===uid){$('focusSyncLabel').textContent='Saved';dirty=false;}
+    if(user?.uid===uid){$('focusSyncLabel').textContent='';dirty=false;}
    }).catch(e=>{$('focusSyncLabel').textContent='Save failed';console.error('Focus plan save error',e);});
    $('focusSyncLabel').textContent='Saving…';
   };
@@ -137,7 +137,8 @@ function start({db,doc,onSnapshot,setDoc}){
   const b=e.target.closest('button[data-checklist-view]');if(!b)return;
   if(b.dataset.checklistView==='notes'){stop();}else render();
   toggle.dataset.current=b.dataset.checklistView;
-  for(const button of toggle.querySelectorAll('button'))button.setAttribute('aria-selected',String(button===b));
+  toggle.dataset.selected=b.dataset.checklistView==='focus'?'achievements':'overview';
+  for(const button of toggle.querySelectorAll('button')){button.setAttribute('aria-selected',String(button===b));button.classList.toggle('active',button===b);}
   $('checklistOriginal').hidden=b.dataset.checklistView!=='notes';
   root.hidden=b.dataset.checklistView!=='focus';
  });
