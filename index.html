@@ -24,7 +24,7 @@
     if(window.MyStreaksIPadLayout)document.documentElement.classList.add('ipad-ios-layout');
   </script>
   <link rel="stylesheet" href="styles.css?v=20261120-ipad-layout" />
-  <link rel="stylesheet" href="focus.css?v=20261123-focus01" />
+  <link rel="stylesheet" href="focus.css?v=20261123-focus02" />
   <link rel="stylesheet" href="workspace.css?v=20261120-ipad-layout" />
   <style id="critical-landing-styles">
 /* Critical inline fallback is scoped to logged-out view so signed-in themes are unchanged. */
@@ -921,7 +921,7 @@ body:has(#loginPanel:not([hidden])) .shell,
         <div id="insightsContent">
           <div class="insight-section-tabs" data-selected="overview" role="tablist" aria-label="Insights sections">
             <button type="button" id="insightOverviewTab" role="tab" aria-controls="insightOverview" aria-selected="true" class="active"><span class="insight-tab-symbol"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l6-6 4 4 8-9"/><path d="M15 6h6v6"/></svg></span> Overview</button>
-            <button type="button" id="insightAchievementsTab" role="tab" aria-controls="insightAchievements" aria-selected="false"><span class="insight-tab-symbol"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 2 2.3 6.8L21 11l-6.7 2.2L12 20l-2.3-6.8L3 11l6.7-2.2Z"/><path d="M19 18v4m-2-2h4"/></svg></span> Achievements</button>
+            <button type="button" id="insightAchievementsTab" role="tab" aria-controls="insightAchievements" aria-selected="false"><span class="insight-tab-symbol"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 2 2.3 6.8L21 11l-6.7 2.2L12 20l-2.3-6.8L3 11l6.7-2.2Z"/><path d="M19 18v4m-2-2h4"/></svg></span> Achievements<span id="achievementUnreadDot" class="achievement-unread-dot" hidden></span></button>
           </div>
           <div class="insight-picker-wrap"><span class="insight-picker-label">VIEW PROGRESS FOR</span>
             <div id="insightHabitPicker" class="insight-custom-picker">
@@ -979,6 +979,7 @@ body:has(#loginPanel:not([hidden])) .shell,
         </div>
       </section>
     </main>
+    <div id="achievementCelebration" class="achievement-celebration-overlay" role="dialog" aria-modal="true" aria-label="Achievement celebration" hidden><div class="achievement-celebration-card"><div class="achievement-celebration-sparkle">✦</div><div class="achievement-celebration-medal">★</div><p id="achievementCelebrationKicker">ACHIEVEMENT UNLOCKED</p><h2 id="achievementCelebrationName">Milestone</h2><p id="achievementCelebrationText">Progress worth celebrating.</p><button type="button" data-celebration-close>Continue</button></div></div>
     <nav id="workspaceBottomNav" class="workspace-bottom-nav" aria-label="Main navigation" hidden>
       <div class="workspace-bottom-pill" data-current="home"><span class="workspace-bottom-highlight" aria-hidden="true"></span>
         <button type="button" class="workspace-bottom-item active" data-workspace="home" aria-label="Home" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m3 10 9-7 9 7v10H3z"/><path d="M9 20v-7h6v7"/></svg><span>Home</span></button>
@@ -1414,8 +1415,9 @@ body:has(#loginPanel:not([hidden])) .shell,
       }
     }
   </script>
-  <script defer src="focus.js?v=20261123-focus01"></script>
-  <script defer src="workspace.js?v=20261123-focus01"></script>
-  <script type="module" src="app.js?v=20261123-focus01"></script>
+  <script defer src="achievements.js?v=20261123-focus02"></script>
+  <script defer src="focus.js?v=20261123-focus02"></script>
+  <script defer src="workspace.js?v=20261123-focus02"></script>
+  <script type="module" src="app.js?v=20261123-focus02"></script>
 </body>
 </html>
