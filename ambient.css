@@ -346,3 +346,46 @@ html[data-theme="light"] .ambient-schedule-options label input:checked+span{
  .account-navigation>.ambient-field,.account-subpage>.ambient-field{display:none!important}
  .ambient-schedule-options label>span{transition:none}
 }
+
+
+/* Correct the miniature night preview: embers start INSIDE the preview rather
+   than 105% below it, and follow short, clearly visible drift paths. */
+#ambientPreviewModal .ambient-preview-card>#ambientPreviewField .ambient-ember{
+  top:var(--ember-y,50%);left:var(--ember-x,50%);
+  width:3px;height:3px;display:block;
+  background:#ffc18c;
+  box-shadow:0 0 8px 3px #ffab5b99,0 0 20px 7px #ee843947;
+  animation:ambient-preview-ember-drift 7.5s ease-in-out infinite;
+  animation-delay:var(--ember-delay,0s);
+  pointer-events:none;
+}
+#ambientPreviewModal[data-preview-level="subtle"] .ambient-preview-card>#ambientPreviewField .ambient-ember:nth-child(n+8),
+#ambientPreviewModal[data-preview-level="enhanced"] .ambient-preview-card>#ambientPreviewField .ambient-ember:nth-child(n+17){display:none}
+#ambientPreviewModal[data-preview-level="enhanced"] .ambient-preview-card>#ambientPreviewField .ambient-ember{
+  width:4px;height:4px;animation-duration:5.5s;
+}
+@keyframes ambient-preview-ember-drift{
+  0%,100%{opacity:0;transform:translate3d(-7px,13px,0) scale(.75)}
+  20%{opacity:.6}
+  48%{opacity:.9;transform:translate3d(5px,-17px,0) scale(1)}
+  78%{opacity:.55}
+  95%{opacity:0;transform:translate3d(13px,-48px,0) scale(.65)}
+}
+#ambientPreviewModal .ambient-preview-card>#ambientPreviewField .ambient-star{
+  top:28%;left:-50%;animation-name:ambient-preview-shoot;
+}
+#ambientPreviewModal .ambient-preview-card>#ambientPreviewField .ambient-star-1{top:62%}
+#ambientPreviewModal .ambient-preview-card>#ambientPreviewField .ambient-star-2{top:15%}
+#ambientPreviewModal[data-preview-stars="false"] #ambientPreviewField .ambient-star{display:none!important}
+@media(prefers-reduced-motion:reduce){
+ #ambientPreviewModal #ambientPreviewField .ambient-ember,
+ #ambientPreviewModal #ambientPreviewField .ambient-star{animation:none!important;display:none!important}
+}
+/* Real WebKit switch controls can produce native iOS haptic clicks on direct tap. */
+.ambient-choice input[type="checkbox"][switch]{
+  width:40px;height:25px;flex:0 0 40px;accent-color:#f0793c;
+}
+.ambient-touch-settings{margin-top:22px;padding-top:20px;border-top:1px solid #8884}
+.ambient-touch-settings h4{font-size:17px;margin:0 0 6px}
+.ambient-touch-settings>p{font-size:12px;line-height:1.6;opacity:.66;margin:0 0 9px}
+.ambient-touch-settings .ambient-choice{border-bottom:0}
