@@ -1891,3 +1891,11 @@ html[data-theme="light"] .insight-day-close{color:#a05c30;border-color:#d5b297}
  body.workspace-page-enter #checklistPanel:not([hidden]) #focusPlansRoot,
  .insight-day-detail{animation:none!important}
 }
+
+
+/* Make the yearly heatmap easier to tap on narrow touchscreens. */
+@media(max-width:799px){
+ .insight-year-week{grid-template-rows:18px repeat(7,16px);width:16px;flex-basis:16px}
+ .insight-year-day{width:16px;height:16px;border-radius:4px}
+ .insight-day-detail{padding:14px}
+}
