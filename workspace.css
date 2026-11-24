@@ -1899,3 +1899,78 @@ html[data-theme="light"] .insight-day-close{color:#a05c30;border-color:#d5b297}
  .insight-year-day{width:16px;height:16px;border-radius:4px}
  .insight-day-detail{padding:14px}
 }
+
+
+/* Insights clean-up v17: recent calendars become the primary date-level history.
+   Three airy months on desktop; swipeable, legible months on narrow phones. */
+.insight-heatmap-surface{margin-bottom:19px;padding:27px}
+.insight-heatmap-surface .insight-surface-header{margin-bottom:22px}
+.insight-recent-description{font-size:12px;color:#a6a3af;line-height:1.55;margin:7px 0 0}
+.insight-heatmap-surface .insight-heatmap{
+ display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+ align-items:start;justify-items:center;gap:24px;
+}
+.insight-heatmap-surface .insight-month{width:100%;max-width:265px;min-width:0}
+.insight-heatmap-surface .insight-month h3{
+ font-size:13px;letter-spacing:-.01em;font-weight:750;margin-bottom:14px;
+}
+.insight-heatmap-surface .insight-month-grid{gap:5px}
+.insight-heatmap-surface .insight-day-label{font-size:10px;margin-bottom:4px}
+.insight-heatmap-surface .insight-date{
+ font-size:10px;border-radius:6px;border-color:#ffffff14;
+ transition:background .16s ease,border-color .16s ease;
+}
+.insight-heatmap-surface .insight-date.done{
+ background:#713916;border-color:#ad6134;color:#ffe3cf;
+}
+.insight-heatmap-surface .insight-date.freeze{
+ background:#263e66;border-color:#4176b9;color:#d8e9ff;
+}
+.insight-heatmap-surface .insight-date.outside{border-color:transparent}
+.insight-heatmap-surface .insight-legend{
+ margin-top:25px;padding-top:17px;border-top:1px solid #ffffff12;
+ gap:10px 18px;
+}
+html[data-theme="light"] .insight-recent-description{color:#6b7788}
+html[data-theme="light"] .insight-heatmap-surface .insight-date{
+ border-color:#d8dce3;
+}
+html[data-theme="light"] .insight-heatmap-surface .insight-date.done{
+ color:#b04b16;background:#ffe6d4;border-color:#e9b48d;
+}
+html[data-theme="light"] .insight-heatmap-surface .insight-date.freeze{
+ background:#d9eaff;color:#2b66af;border-color:#aacbf3;
+}
+html[data-theme="light"] .insight-heatmap-surface .insight-date.outside{border-color:transparent}
+html[data-theme="light"] .insight-heatmap-surface .insight-legend{border-color:#dfe2e8}
+@media(max-width:799px){
+ .insight-heatmap-surface{padding:21px 16px}
+ .insight-heatmap-surface .insight-heatmap{
+   display:flex;overflow-x:auto;overflow-y:hidden;gap:12px;
+   margin-right:-16px;padding:0 16px 12px 0;
+   scroll-snap-type:x proximity;scroll-padding-inline:0;
+   overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;
+   scrollbar-width:thin;scrollbar-color:#80614c transparent;
+   justify-content:flex-start;align-items:flex-start;
+ }
+ .insight-heatmap-surface .insight-month{
+   flex:0 0 min(76vw,255px);width:min(76vw,255px);
+   padding:15px;background:#ffffff05;
+   border:1px solid #ffffff13;border-radius:15px;
+   scroll-snap-align:start;
+ }
+ .insight-heatmap-surface .insight-month h3{font-size:13px;margin-bottom:15px}
+ .insight-heatmap-surface .insight-date{font-size:10px}
+ .insight-heatmap-surface .insight-month-grid{gap:4px}
+ html[data-theme="light"] .insight-heatmap-surface .insight-month{
+   background:#f7f8fb;border-color:#e0e4e9;
+ }
+}
+@media(max-width:430px){
+ .insight-heatmap-surface .insight-month{
+   flex-basis:min(76vw,245px);width:min(76vw,245px);
+ }
+}
+@media(prefers-reduced-motion:reduce){
+ .insight-heatmap-surface .insight-date{transition:none}
+}
