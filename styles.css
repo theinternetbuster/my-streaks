@@ -2150,3 +2150,69 @@ html[data-theme="light"] .habit-card .card-flame.streak-flame--pending,html[data
 .habit-card .card-flame.streak-flame--done,.habit-card .mini-streak svg.streak-flame--done{color:#ff6724;fill:currentColor}
 .habit-card .card-flame.streak-flame--freeze,.habit-card .mini-streak svg.streak-flame--freeze{color:#539af5;fill:currentColor}
 html[data-theme="light"] .habit-card .card-flame.streak-flame--pending,html[data-theme="light"] .habit-card .mini-streak svg.streak-flame--pending{color:#a0a5af;fill:currentColor}
+
+
+/* Check-in moment — intentionally brief, never delays Firebase or card interactions. */
+.habit-card.checkin-celebrate{isolation:isolate}
+.habit-card.checkin-celebrate::after{
+ content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;z-index:3;
+ border:1px solid #ffa56896;
+ box-shadow:inset 0 0 22px #ff813b20,0 0 22px #ff873524;
+ animation:checkin-card-aura 1.02s ease-out both;
+}
+.habit-card.checkin-celebrate .streak-glow-target{
+ animation:checkin-flame-pop .65s cubic-bezier(.2,.95,.35,1) both!important;
+ transform-origin:center;
+}
+.habit-card.checkin-celebrate .card-streak,
+.habit-card.checkin-celebrate .mini-streak{
+ animation:checkin-count-rise .55s cubic-bezier(.2,.9,.25,1) both;
+}
+.checkin-spark-burst{
+ position:absolute;left:31px;bottom:26px;width:10px;height:10px;z-index:4;
+ pointer-events:none;overflow:visible;
+}
+.calendar-layout .checkin-spark-burst{left:auto;right:33px;top:24px;bottom:auto}
+.checkin-spark-burst i{
+ position:absolute;left:4px;top:4px;display:block;width:4px;height:4px;
+ border-radius:50%;background:#ffaf65;
+ box-shadow:0 0 7px 2px #ff974976;
+ opacity:0;animation:checkin-spark-fly .77s ease-out both;
+}
+.checkin-spark-burst i:nth-child(1){--spark-x:0px;--spark-y:-33px}
+.checkin-spark-burst i:nth-child(2){--spark-x:24px;--spark-y:-24px}
+.checkin-spark-burst i:nth-child(3){--spark-x:33px;--spark-y:0px}
+.checkin-spark-burst i:nth-child(4){--spark-x:22px;--spark-y:22px}
+.checkin-spark-burst i:nth-child(5){--spark-x:0px;--spark-y:29px}
+.checkin-spark-burst i:nth-child(6){--spark-x:-23px;--spark-y:20px}
+.checkin-spark-burst i:nth-child(7){--spark-x:-31px;--spark-y:0px}
+.checkin-spark-burst i:nth-child(8){--spark-x:-22px;--spark-y:-24px}
+.checkin-spark-burst i:nth-child(2n){width:3px;height:3px;animation-delay:.035s}
+.checkin-spark-burst i:nth-child(3n){animation-delay:.07s;background:#ffd29d}
+@keyframes checkin-card-aura{
+ 0%{opacity:0;transform:scale(.993)}
+ 18%{opacity:1}
+ 100%{opacity:0;transform:scale(1.006)}
+}
+@keyframes checkin-flame-pop{
+ 0%{transform:scale(.75);filter:drop-shadow(0 0 2px #ff8e41)}
+ 48%{transform:scale(1.24);filter:drop-shadow(0 0 12px #ffac6c)}
+ 100%{transform:scale(1);filter:drop-shadow(0 0 4px #ff893b75)}
+}
+@keyframes checkin-count-rise{
+ 0%{opacity:.7;transform:translateY(4px) scale(.93)}
+ 56%{opacity:1;transform:translateY(-2px) scale(1.06)}
+ 100%{opacity:1;transform:translateY(0) scale(1)}
+}
+@keyframes checkin-spark-fly{
+ 0%{opacity:0;transform:translate(0,0) scale(.55)}
+ 18%{opacity:1}
+ 76%{opacity:.86}
+ 100%{opacity:0;transform:translate(var(--spark-x),var(--spark-y)) scale(.35)}
+}
+@media(prefers-reduced-motion:reduce){
+ .habit-card.checkin-celebrate::after,.habit-card.checkin-celebrate .streak-glow-target,
+ .habit-card.checkin-celebrate .card-streak,.habit-card.checkin-celebrate .mini-streak,
+ .checkin-spark-burst i{animation:none!important}
+ .checkin-spark-burst{display:none!important}
+}
