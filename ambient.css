@@ -389,3 +389,28 @@ html[data-theme="light"] .ambient-schedule-options label input:checked+span{
 .ambient-touch-settings h4{font-size:17px;margin:0 0 6px}
 .ambient-touch-settings>p{font-size:12px;line-height:1.6;opacity:.66;margin:0 0 9px}
 .ambient-touch-settings .ambient-choice{border-bottom:0}
+
+
+/* Living flame: a quiet candle-like shimmer, only on orange completed
+   streaks when the existing Flame Glow preference is enabled. */
+html[data-ambient-glow="true"]:not([data-ambient="off"]) #dashboard .habit-card[data-flame-state="done"]:not(.checkin-celebrate) .streak-glow-target{
+ transform-origin:50% 66%;
+ animation:living-flame-flicker 6.8s ease-in-out infinite!important;
+}
+html[data-ambient-glow="true"]:not([data-ambient="off"]) #dashboard .habit-card:nth-child(2n)[data-flame-state="done"]:not(.checkin-celebrate) .streak-glow-target{animation-delay:-2.6s!important}
+html[data-ambient-glow="true"]:not([data-ambient="off"]) #dashboard .habit-card:nth-child(3n)[data-flame-state="done"]:not(.checkin-celebrate) .streak-glow-target{animation-delay:-4.1s!important}
+@keyframes living-flame-flicker{
+ 0%,100%{transform:scale(1) rotate(0deg);filter:drop-shadow(0 0 4px #ff893b75)}
+ 22%{transform:scale(1.025,.985) rotate(-1.3deg);filter:drop-shadow(0 0 5px #ff893b8c)}
+ 49%{transform:scale(.992,1.03) rotate(.9deg);filter:drop-shadow(0 0 7px #ff9c508c)}
+ 75%{transform:scale(1.014,.99) rotate(-.6deg);filter:drop-shadow(0 0 5px #ff893b75)}
+}
+html[data-ambient-glow="true"][data-ambient-night="true"]:not([data-ambient="off"]) #dashboard .habit-card[data-flame-state="done"]:not(.checkin-celebrate) .streak-glow-target{
+ animation-duration:5.9s!important;
+}
+html[data-ambient="off"] #dashboard .habit-card[data-flame-state="done"] .streak-glow-target{animation:none!important}
+html[data-ambient-glow="false"] #dashboard .habit-card[data-flame-state="done"] .streak-glow-target{animation:none!important}
+html[data-theme="light"] #dashboard .habit-card[data-flame-state="done"] .streak-glow-target{filter:none}
+@media(prefers-reduced-motion:reduce){
+ #dashboard .habit-card[data-flame-state="done"] .streak-glow-target{animation:none!important}
+}
