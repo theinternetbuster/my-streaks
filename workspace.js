@@ -2212,6 +2212,39 @@
       }
       return bars;
     }
+    function yearlyHeatmap(habits,all){
+       const today=new Date();today.setHours(12,0,0,0);
+       const monday=weekStart(today),start=shift(monday,-52*7);
+       const sets=habits.map(h=>new Set((h.completions||[]).filter(k=>k<=key(today))));
+       const days=new Map(),weeks=[];
+       for(let w=0;w<53;w++){
+         const first=shift(start,w*7),weekDates=[];
+         for(let d=0;d<7;d++){
+           const date=shift(first,d),dateKey=key(date),inFuture=date>today;
+           const count=inFuture?0:sets.reduce((n,set)=>n+(set.has(dateKey)?1:0),0);
+           if(!inFuture)days.set(dateKey,count);
+           weekDates.push({date,dateKey,count,inFuture});
+         }
+         weeks.push(weekDates);
+       }
+       const activeDays=[...days.values()].filter(n=>n>0).length;
+       const completions=[...days.values()].reduce((n,v)=>n+v,0);
+       const bestWeek=Math.max(0,...weeks.map(week=>week.reduce((n,d)=>n+d.count,0)));
+       const level=count=>count===0?0:!all?4:Math.min(4,Math.ceil(count/Math.max(1,habits.length)*4));
+       const html=weeks.map((week,index)=>{
+         const marker=week.find(x=>x.date.getDate()===1);
+         const month=index===0||marker?(marker?.date||week[0].date).toLocaleDateString('en-US',{month:'short'}):'';
+         return '<div class="insight-year-week"><div class="insight-year-month">'+month+'</div>'+
+           week.map(({date,dateKey,count,inFuture})=>
+             '<span class="insight-year-day'+(inFuture?' is-future':' year-level-'+level(count))+
+             (dateKey===key(today)?' is-today':'')+'"'+(inFuture?' aria-hidden="true"':
+             ' role="img" aria-label="'+date.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})+
+             ': '+count+' check-in'+(count===1?'':'s')+'" title="'+date.toLocaleDateString('en-US',{month:'short',day:'numeric'})+
+             ' · '+count+' check-in'+(count===1?'':'s')+'"')+'></span>'
+           ).join('')+'</div>';
+       }).join('');
+       return {html,activeDays,completions,bestWeek};
+     }
     function calendarMonths(h){
       const done=new Set(h.completions||[]),freeze=new Set(h.cadence==='weekly'?[]:(h.freezeDates||[]));
       let html='';
@@ -2355,6 +2388,19 @@
       const chart=all?weeklyChartAll(chosen):weeklyChart(h);
       $('insightActivityChart').innerHTML=chart;
       $('insightHeatmap').innerHTML=calendarMonths(all?combined:h);
+      const yearly=yearlyHeatmap(chosen,all);
+      const yearEl=$('insightYearGrid');
+      if(yearEl){
+        const scroll=$('insightYearScroll'),oldScroll=scroll.scrollLeft;
+        const wasRendered=yearEl.childElementCount>0;
+        yearEl.innerHTML=yearly.html;
+        $('insightYearSummary').innerHTML=
+          '<span><strong>'+yearly.activeDays+'</strong> active days</span>'+
+          '<span><strong>'+yearly.completions+'</strong> check-ins</span>'+
+          '<span><strong>'+yearly.bestWeek+'</strong> best week</span>';
+        if(wasRendered)scroll.scrollLeft=oldScroll;
+        else scroll.scrollLeft=scroll.scrollWidth;
+      }
       $('insightMilestones').innerHTML=achievementItems(habits).slice(0,7).map(a=>
         '<div class="insight-milestone '+(a.progress>=a.goal?'unlocked':'')+'"><span class="milestone-symbol">'+badgeArt[a.icon]+'</span><strong>'+safe(a.title)+'</strong><small>'+safe(a.detail)+'</small></div>'
       ).join('');
