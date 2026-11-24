@@ -41,10 +41,10 @@
       (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
     if(window.MyStreaksIPadLayout)document.documentElement.classList.add('ipad-ios-layout');
   </script>
-  <link rel="stylesheet" href="styles.css?v=20261124-heatmap-celebrate15" />
-  <link rel="stylesheet" href="ambient.css?v=20261124-heatmap-celebrate15" />
-  <link rel="stylesheet" href="focus.css?v=20261124-heatmap-celebrate15" />
-  <link rel="stylesheet" href="workspace.css?v=20261124-heatmap-celebrate15" />
+  <link rel="stylesheet" href="styles.css?v=20261124-living-heatmap16" />
+  <link rel="stylesheet" href="ambient.css?v=20261124-living-heatmap16" />
+  <link rel="stylesheet" href="focus.css?v=20261124-living-heatmap16" />
+  <link rel="stylesheet" href="workspace.css?v=20261124-living-heatmap16" />
   <style id="critical-landing-styles">
 /* Critical inline fallback is scoped to logged-out view so signed-in themes are unchanged. */
 [hidden]{display:none!important}
@@ -965,6 +965,7 @@ body:has(#loginPanel:not([hidden])) .shell,
             <div class="insight-year-scroll" id="insightYearScroll" tabindex="0" aria-label="Scrollable yearly activity heatmap">
               <div class="insight-year-grid" id="insightYearGrid"></div>
             </div>
+            <div id="insightDayDetail" class="insight-day-detail" role="region" aria-label="Selected day activity" aria-live="polite" hidden></div>
             <div class="insight-year-footer"><span>Past 53 weeks · Completed check-ins only</span>
               <div class="insight-year-legend"><span>Less</span><i class="year-level-0"></i><i class="year-level-1"></i><i class="year-level-2"></i><i class="year-level-3"></i><i class="year-level-4"></i><span>More</span></div>
             </div>
@@ -1504,12 +1505,12 @@ body:has(#loginPanel:not([hidden])) .shell,
       }
     }
   </script>
-  <script defer src="updates.js?v=20261124-heatmap-celebrate15"></script>
-  <script defer src="touch.js?v=20261124-heatmap-celebrate15"></script>
-  <script defer src="ambient.js?v=20261124-heatmap-celebrate15"></script>
-  <script defer src="achievements.js?v=20261124-heatmap-celebrate15"></script>
-  <script defer src="focus.js?v=20261124-heatmap-celebrate15"></script>
-  <script defer src="workspace.js?v=20261124-heatmap-celebrate15"></script>
-  <script type="module" src="app.js?v=20261124-heatmap-celebrate15"></script>
+  <script defer src="updates.js?v=20261124-living-heatmap16"></script>
+  <script defer src="touch.js?v=20261124-living-heatmap16"></script>
+  <script defer src="ambient.js?v=20261124-living-heatmap16"></script>
+  <script defer src="achievements.js?v=20261124-living-heatmap16"></script>
+  <script defer src="focus.js?v=20261124-living-heatmap16"></script>
+  <script defer src="workspace.js?v=20261124-living-heatmap16"></script>
+  <script type="module" src="app.js?v=20261124-living-heatmap16"></script>
 </body>
 </html>
