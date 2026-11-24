@@ -1818,3 +1818,76 @@ html[data-theme="light"] .insight-year-legend span{color:#6d7787}
  .insight-year-scroll{margin-right:-9px}
 }
 @media(prefers-reduced-motion:reduce){.insight-year-day{transition:none}}
+
+
+/* Lightweight page entrance: navigation stays fixed while content settles. */
+body.workspace-page-enter #dashboard:not([hidden]) .page-heading,
+body.workspace-page-enter #dashboard:not([hidden]) .dashboard-toolbar,
+body.workspace-page-enter #dashboard:not([hidden]) .habit-grid,
+body.workspace-page-enter #insightsPanel:not([hidden]) .workspace-heading,
+body.workspace-page-enter #insightsPanel:not([hidden]) #insightsContent,
+body.workspace-page-enter #checklistPanel:not([hidden]) .workspace-heading,
+body.workspace-page-enter #checklistPanel:not([hidden]) #checklistViewToggle,
+body.workspace-page-enter #checklistPanel:not([hidden]) #checklistOriginal,
+body.workspace-page-enter #checklistPanel:not([hidden]) #focusPlansRoot{
+ animation:workspace-enter-soft .23s cubic-bezier(.2,.75,.3,1) both;
+}
+@keyframes workspace-enter-soft{
+ from{opacity:.5;transform:translate3d(0,7px,0)}
+ to{opacity:1;transform:translate3d(0,0,0)}
+}
+/* Touch-friendly heatmap days: real buttons and an inline selected-day drawer. */
+.insight-year-day[data-heat-date]{
+ display:block;appearance:none;-webkit-appearance:none;padding:0;margin:0;cursor:pointer;
+ font:inherit;touch-action:manipulation;-webkit-tap-highlight-color:transparent;
+}
+.insight-year-day[data-heat-date]:focus-visible{
+ outline:2px solid #ffbd7a;outline-offset:2px;z-index:4;
+}
+.insight-year-day.is-selected{
+ outline:2px solid #ffd1a4;outline-offset:2px;z-index:3;
+ box-shadow:0 0 13px #ff925759;
+}
+.insight-day-detail[hidden]{display:none!important}
+.insight-day-detail{
+ margin:15px 0 4px;padding:15px 17px;border-radius:15px;
+ border:1px solid #98613c80;background:linear-gradient(120deg,#493024aa,#2c2629 60%,#29272b);
+ animation:insight-day-open .23s ease-out both;
+}
+@keyframes insight-day-open{from{opacity:.45;transform:translateY(-5px)}to{opacity:1;transform:translateY(0)}}
+.insight-day-heading{display:flex;justify-content:space-between;align-items:start;gap:14px}
+.insight-day-heading h3{font:750 17px 'Outfit',sans-serif;color:#fbf6f2;margin:5px 0}
+.insight-day-heading p{font-size:12px;color:#c9a992;margin:0}
+.insight-day-close{
+ width:30px;height:30px;border:1px solid #a67e6666;border-radius:9px;
+ color:#efcfb9;background:#ffffff0b;cursor:pointer;font-size:21px;line-height:1;
+}
+.insight-day-close:focus-visible{outline:2px solid #ffbc86;outline-offset:2px}
+.insight-day-habits{display:flex;flex-wrap:wrap;gap:7px;margin-top:14px}
+.insight-day-habit{
+ display:inline-flex;align-items:center;gap:6px;padding:8px 11px;border-radius:100px;
+ border:1px solid #ff9a5348;background:#ff9b4c12;
+ color:#ffdfc9;font-size:12px;font-weight:650;
+}
+.insight-day-habit>span{font-size:11px;color:#ffae69}
+.insight-day-empty{font-size:12px;color:#ccb7ab;margin:13px 0 0;line-height:1.6}
+html[data-theme="light"] .insight-day-detail{
+ background:linear-gradient(120deg,#fff1e8,#faf7f4);border-color:#eab994;
+}
+html[data-theme="light"] .insight-day-heading h3{color:#392c26}
+html[data-theme="light"] .insight-day-heading p,
+html[data-theme="light"] .insight-day-empty{color:#81644e}
+html[data-theme="light"] .insight-day-habit{background:#fff7ee;color:#8c4a27;border-color:#efc5a5}
+html[data-theme="light"] .insight-day-close{color:#a05c30;border-color:#d5b297}
+@media(prefers-reduced-motion:reduce){
+ body.workspace-page-enter #dashboard:not([hidden]) .page-heading,
+ body.workspace-page-enter #dashboard:not([hidden]) .dashboard-toolbar,
+ body.workspace-page-enter #dashboard:not([hidden]) .habit-grid,
+ body.workspace-page-enter #insightsPanel:not([hidden]) .workspace-heading,
+ body.workspace-page-enter #insightsPanel:not([hidden]) #insightsContent,
+ body.workspace-page-enter #checklistPanel:not([hidden]) .workspace-heading,
+ body.workspace-page-enter #checklistPanel:not([hidden]) #checklistViewToggle,
+ body.workspace-page-enter #checklistPanel:not([hidden]) #checklistOriginal,
+ body.workspace-page-enter #checklistPanel:not([hidden]) #focusPlansRoot,
+ .insight-day-detail{animation:none!important}
+}
