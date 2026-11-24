@@ -667,7 +667,7 @@ onAuthStateChanged(auth,u=>{
     layoutMode=prefs.layout==='calendar'?'calendar':'cards';
     document.querySelectorAll('input[name="appearanceMode"]').forEach(input=>input.checked=input.value===themeMode);
     applyTheme();showProfile();if(!el('dashboard').hidden)renderDashboard();
-    window.MyStreaksAmbient?.setSettings({mode:prefs.ambientMode??'subtle',stars:prefs.ambientStars!==false,glow:prefs.ambientGlow!==false},true);
+    window.MyStreaksAmbient?.setSettings({mode:prefs.ambientMode??'subtle',stars:prefs.ambientStars!==false,glow:prefs.ambientGlow!==false,nightSchedule:prefs.ambientNightSchedule??'standard',nightStart:prefs.ambientNightStart??'20:00',nightEnd:prefs.ambientNightEnd??'06:00'},true);
  },err=>console.error('Settings sync issue',err));
  unsubscribe=onSnapshot(habitCollection(),snapshot=>{
    if(currentEpoch!==initialLoadEpoch)return;
@@ -811,7 +811,7 @@ document.querySelectorAll('input[name="appearanceMode"]').forEach(input=>input.a
 document.addEventListener('my-streaks-ambient-change',event=>{
  if(!user)return;
  const s=event.detail;
- savePreference({ambientMode:s.mode,ambientStars:s.stars,ambientGlow:s.glow});
+ savePreference({ambientMode:s.mode,ambientStars:s.stars,ambientGlow:s.glow,ambientNightSchedule:s.nightSchedule,ambientNightStart:s.nightStart,ambientNightEnd:s.nightEnd});
 });
 for(const [buttonId] of accountSections)el(buttonId).addEventListener('click',()=>showAccountSection(buttonId));
 document.addEventListener('keydown',event=>{
