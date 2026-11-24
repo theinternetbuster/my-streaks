@@ -668,6 +668,7 @@ onAuthStateChanged(auth,u=>{
     document.querySelectorAll('input[name="appearanceMode"]').forEach(input=>input.checked=input.value===themeMode);
     applyTheme();showProfile();if(!el('dashboard').hidden)renderDashboard();
     window.MyStreaksAmbient?.setSettings({mode:prefs.ambientMode??'subtle',stars:prefs.ambientStars!==false,glow:prefs.ambientGlow!==false,nightSchedule:prefs.ambientNightSchedule??'standard',nightStart:prefs.ambientNightStart??'20:00',nightEnd:prefs.ambientNightEnd??'06:00'},true);
+    window.MyStreaksTouch?.setEnabled(prefs.touchFeedback!==false,true);
  },err=>console.error('Settings sync issue',err));
  unsubscribe=onSnapshot(habitCollection(),snapshot=>{
    if(currentEpoch!==initialLoadEpoch)return;
@@ -808,6 +809,10 @@ desktopSettings.addEventListener?.('change',()=>{
 });
 
 document.querySelectorAll('input[name="appearanceMode"]').forEach(input=>input.addEventListener('change',()=>{if(!input.checked)return;themeMode=input.value;applyTheme();savePreference({appearance:themeMode});}));
+document.addEventListener('my-streaks-touch-change',event=>{
+ if(!user)return;
+ savePreference({touchFeedback:event.detail.enabled});
+});
 document.addEventListener('my-streaks-ambient-change',event=>{
  if(!user)return;
  const s=event.detail;
