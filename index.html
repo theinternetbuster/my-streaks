@@ -42,9 +42,9 @@
     if(window.MyStreaksIPadLayout)document.documentElement.classList.add('ipad-ios-layout');
   </script>
   <link rel="stylesheet" href="styles.css?v=20261120-ipad-layout" />
-  <link rel="stylesheet" href="ambient.css?v=20261123-focus-compact12" />
-  <link rel="stylesheet" href="focus.css?v=20261123-focus-compact12" />
-  <link rel="stylesheet" href="workspace.css?v=20261123-focus-compact12" />
+  <link rel="stylesheet" href="ambient.css?v=20261123-solar-night13" />
+  <link rel="stylesheet" href="focus.css?v=20261123-solar-night13" />
+  <link rel="stylesheet" href="workspace.css?v=20261123-solar-night13" />
   <style id="critical-landing-styles">
 /* Critical inline fallback is scoped to logged-out view so signed-in themes are unchanged. */
 [hidden]{display:none!important}
@@ -1060,6 +1060,7 @@ body:has(#loginPanel:not([hidden])) .shell,
       <div id="accountScrim" class="account-scrim" aria-hidden="true"></div>
       <section class="account-sheet">
         <div class="account-navigation">
+          <div id="ambientSettingsNavField" class="ambient-field" aria-hidden="true"></div>
           
           <h1 class="desktop-settings-heading">Profile and Settings</h1>
           <header class="account-topbar"><span class="account-handle" aria-hidden="true"></span><button type="button" id="closeAccountMenu" class="babbel-close account-dismiss" aria-label="Close profile and settings">×</button></header>
@@ -1071,7 +1072,7 @@ body:has(#loginPanel:not([hidden])) .shell,
             <button type="button" id="accountBackupBtn" class="account-link" aria-expanded="false"><span class="account-link-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 17v3h16v-3"/></svg></span><span>Backup &amp; restore</span><span class="account-chevron">›</span></button>
           </nav>
         </div>
-        <div id="accountSubpage" class="account-subpage" aria-hidden="true">
+        <div id="accountSubpage" class="account-subpage" aria-hidden="true"><div id="ambientSettingsField" class="ambient-field" aria-hidden="true"></div>
           <div class="account-subheader"><button type="button" id="accountSubBack" class="account-back-button" aria-label="Back to profile"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg></button><h2 id="accountSubTitle">Settings</h2><span></span></div>
           <div class="account-subcontent">
             <div id="accountSettingsDetail" class="account-detail" hidden>
@@ -1106,6 +1107,24 @@ body:has(#loginPanel:not([hidden])) .shell,
 </div>
  <label class="ambient-choice"><input id="ambientStarsSetting" type="checkbox" checked><span><strong>Nighttime shooting stars</strong><small>Occasional stars between 8 PM and 6 AM when dark mode is on.</small></span></label>
  <label class="ambient-choice"><input id="ambientGlowSetting" type="checkbox" checked><span><strong>Living flame glow</strong><small>Warm streak flames and active Focus Plan sections.</small></span></label>
+ <section class="ambient-nighttime-settings" aria-labelledby="ambientNightHeading">
+  <div class="ambient-night-heading"><span class="ambient-night-moon" aria-hidden="true">☾</span><div><h4 id="ambientNightHeading">Nighttime schedule</h4><p>Choose when shooting stars and stronger flame lighting activate in dark mode.</p></div></div>
+  <div class="ambient-schedule-options" role="radiogroup" aria-label="Nighttime schedule">
+   <label><input type="radio" name="ambientNightSchedule" value="standard" checked><span><strong>Standard</strong><small>8 PM – 6 AM</small></span></label>
+   <label><input type="radio" name="ambientNightSchedule" value="sunset"><span><strong>Sunset to sunrise</strong><small>Automatically follows the seasons</small></span></label>
+   <label><input type="radio" name="ambientNightSchedule" value="custom"><span><strong>Custom hours</strong><small>Your preferred nighttime window</small></span></label>
+  </div>
+  <div id="ambientCustomHours" class="ambient-custom-times" hidden>
+   <label>Start at <input type="time" id="ambientNightStart" value="20:00" aria-label="Night effects start time"></label>
+   <label>End at <input type="time" id="ambientNightEnd" value="06:00" aria-label="Night effects end time"></label>
+  </div>
+  <div id="ambientSunsetInfo" class="ambient-location-panel" hidden>
+   <div><strong>Automatic daylight times</strong><p id="ambientLocationStatus">Enable location once on this device to calculate sunrise and sunset.</p></div>
+   <button id="ambientEnableLocation" type="button">Enable automatic times</button>
+   <small>Only an approximate location is saved on this device, never in your account. No weather-service requests.</small>
+  </div>
+  <div class="ambient-night-status"><span class="ambient-night-status-icon" aria-hidden="true">✦</span><span id="ambientNightStatus">Night effects: 8 PM – 6 AM</span></div>
+ </section>
  <div class="ambient-preview-action"><button id="ambientPreviewBtn" type="button">✦ Preview night effects</button><small id="ambientPreviewDescription">Test the atmosphere any time of day.</small></div>
  </section>
             </div>
@@ -1465,11 +1484,11 @@ body:has(#loginPanel:not([hidden])) .shell,
       }
     }
   </script>
-  <script defer src="updates.js?v=20261123-focus-compact12"></script>
-  <script defer src="ambient.js?v=20261123-focus-compact12"></script>
-  <script defer src="achievements.js?v=20261123-focus-compact12"></script>
-  <script defer src="focus.js?v=20261123-focus-compact12"></script>
-  <script defer src="workspace.js?v=20261123-focus-compact12"></script>
-  <script type="module" src="app.js?v=20261123-focus-compact12"></script>
+  <script defer src="updates.js?v=20261123-solar-night13"></script>
+  <script defer src="ambient.js?v=20261123-solar-night13"></script>
+  <script defer src="achievements.js?v=20261123-solar-night13"></script>
+  <script defer src="focus.js?v=20261123-solar-night13"></script>
+  <script defer src="workspace.js?v=20261123-solar-night13"></script>
+  <script type="module" src="app.js?v=20261123-solar-night13"></script>
 </body>
 </html>
