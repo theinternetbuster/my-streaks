@@ -1769,3 +1769,52 @@ html[data-theme="dark"] .achievement-card.locked .achievement-state{color:#8d8b9
 html[data-theme="light"] .achievement-card.locked{opacity:1;background:#fff;border-color:#e2e4eb}
 html[data-theme="light"] .achievement-card.locked h3{color:#69758a}
 html[data-theme="light"] .achievement-card.locked .achievement-emblem{background:#f2f3f6;border-color:#dfe2e8}
+
+
+/* Year-at-a-glance activity mosaic — neutral empty days, warm earned color. */
+.insight-year-surface{margin:0 0 19px;padding:26px 27px 23px;overflow:hidden}
+.insight-year-header{margin-bottom:17px}
+.insight-year-header h2{font-size:clamp(20px,2.7vw,26px)}
+.insight-year-header p{font-size:12px;color:#9f9da9;margin:7px 0 0;line-height:1.5}
+.insight-year-icon{
+ color:#e89457;font-size:25px;width:42px;height:42px;display:grid;place-items:center;
+ background:#e98b4712;border:1px solid #e98b4731;border-radius:13px;
+}
+.insight-year-summary{display:flex;gap:21px;align-items:center;flex-wrap:wrap;margin-bottom:19px}
+.insight-year-summary>span{font-size:11px;color:#a5a3af;display:flex;align-items:baseline;gap:6px}
+.insight-year-summary strong{font:800 21px/1 'Outfit',sans-serif;color:#fff;font-variant-numeric:tabular-nums}
+.insight-year-scroll{max-width:100%;overflow-x:auto;overflow-y:hidden;padding:0 1px 12px;scrollbar-width:thin;scrollbar-color:#6d5749 transparent;overscroll-behavior-x:contain}
+.insight-year-scroll:focus-visible{outline:2px solid #f08a4c;outline-offset:-1px;border-radius:9px}
+.insight-year-grid{display:flex;gap:4px;min-width:max-content;width:max-content}
+.insight-year-week{display:grid;grid-template-rows:18px repeat(7,12px);gap:4px;width:12px;flex:0 0 12px}
+.insight-year-month{font-size:9px;font-weight:750;line-height:14px;white-space:nowrap;color:#aaa7b0;letter-spacing:.015em}
+.insight-year-day{display:block;width:12px;height:12px;border-radius:3px;background:#38363c;border:1px solid #ffffff0b;position:relative;transition:transform .16s ease,filter .16s ease}
+.insight-year-day.year-level-0{background:#353339}
+.insight-year-day.year-level-1,.insight-year-legend .year-level-1{background:#78412b}
+.insight-year-day.year-level-2,.insight-year-legend .year-level-2{background:#a9502d}
+.insight-year-day.year-level-3,.insight-year-legend .year-level-3{background:#dd6c32}
+.insight-year-day.year-level-4,.insight-year-legend .year-level-4{background:#ff9750}
+.insight-year-day.year-level-4{box-shadow:0 0 9px #f8863d20}
+.insight-year-day.is-future{opacity:0;pointer-events:none}
+.insight-year-day.is-today{outline:1px solid #d8bd9f;outline-offset:1px}
+@media(hover:hover){.insight-year-day:not(.is-future):hover{transform:scale(1.34);z-index:2;filter:brightness(1.3);cursor:help}}
+.insight-year-footer{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:9px;flex-wrap:wrap;color:#8d8b97;font-size:10px}
+.insight-year-legend{display:flex;align-items:center;gap:4px}
+.insight-year-legend span{margin:0 5px;font-size:10px;color:#a4a1ab}
+.insight-year-legend i{width:11px;height:11px;border-radius:3px;display:block}
+.insight-year-legend .year-level-0{background:#353339}
+html[data-theme="light"] .insight-year-header p{color:#68768a}
+html[data-theme="light"] .insight-year-summary>span{color:#697486}
+html[data-theme="light"] .insight-year-summary strong{color:#243145}
+html[data-theme="light"] .insight-year-month{color:#697487}
+html[data-theme="light"] .insight-year-day.year-level-0,
+html[data-theme="light"] .insight-year-legend .year-level-0{background:#e8e9ef;border-color:#dfe1e8}
+html[data-theme="light"] .insight-year-footer,
+html[data-theme="light"] .insight-year-legend span{color:#6d7787}
+@media(max-width:799px){
+ .insight-year-surface{padding:20px 16px}
+ .insight-year-summary{gap:13px}
+ .insight-year-summary strong{font-size:18px}
+ .insight-year-scroll{margin-right:-9px}
+}
+@media(prefers-reduced-motion:reduce){.insight-year-day{transition:none}}
