@@ -355,3 +355,46 @@ html.ipad-ios-layout .checklist-page #checklistViewToggle.insight-section-tabs.f
  .focus-plans-root .focus-activity-detail,.focus-plans-root .focus-week-body{animation:none}
  .focus-plans-root .focus-row-chevron,.focus-plans-root .focus-chevron{transition:none}
 }
+
+
+/* Quiet study note and steady active timers — focus-stable18. */
+.focus-plans-root .focus-encouragement{
+ display:flex;align-items:center;gap:13px;
+ padding:15px 17px;margin-top:14px;
+ border:1px solid #a078ba3b;
+ border-radius:15px;
+ background:linear-gradient(105deg,rgba(155,99,193,.085),rgba(125,125,142,.045) 65%,transparent);
+ box-shadow:none;
+}
+.focus-plans-root .focus-tip-sparkle{
+ display:grid;place-items:center;flex:none;
+ width:31px;height:31px;
+ border:1px solid #b28ad34b;border-radius:10px;
+ background:#a97bc51b;color:#caa0f2;
+ font-size:19px;line-height:1;
+ text-shadow:0 0 10px #b58ced55;
+}
+.focus-plans-root .focus-encouragement p{
+ color:inherit;opacity:.78;line-height:1.55;
+ font-size:12px;font-weight:550;
+}
+.focus-plans-root .focus-activity.is-running .focus-activity-detail{
+ /* The expansion animates once on opening, not once per elapsed second. */
+ will-change:auto;
+}
+.focus-plans-root .focus-time{
+ font-variant-numeric:tabular-nums;
+ font-feature-settings:"tnum" 1;
+ min-width:74px;
+}
+html[data-theme="light"] .focus-plans-root .focus-encouragement{
+ border-color:#e5d4ec;
+ background:linear-gradient(105deg,#f9f3fc,#f8f8fb);
+}
+html[data-theme="light"] .focus-plans-root .focus-tip-sparkle{
+ color:#9550bc;background:#f1e6f8;border-color:#dac1eb;text-shadow:none;
+}
+@media(max-width:799px){
+ .focus-plans-root .focus-encouragement{padding:12px;gap:10px}
+ .focus-plans-root .focus-tip-sparkle{width:29px;height:29px}
+}
