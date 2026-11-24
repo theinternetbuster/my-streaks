@@ -41,10 +41,10 @@
       (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
     if(window.MyStreaksIPadLayout)document.documentElement.classList.add('ipad-ios-layout');
   </script>
-  <link rel="stylesheet" href="styles.css?v=20261124-living-heatmap16" />
-  <link rel="stylesheet" href="ambient.css?v=20261124-living-heatmap16" />
-  <link rel="stylesheet" href="focus.css?v=20261124-living-heatmap16" />
-  <link rel="stylesheet" href="workspace.css?v=20261124-living-heatmap16" />
+  <link rel="stylesheet" href="styles.css?v=20261124-insights-clean17" />
+  <link rel="stylesheet" href="ambient.css?v=20261124-insights-clean17" />
+  <link rel="stylesheet" href="focus.css?v=20261124-insights-clean17" />
+  <link rel="stylesheet" href="workspace.css?v=20261124-insights-clean17" />
   <style id="critical-landing-styles">
 /* Critical inline fallback is scoped to logged-out view so signed-in themes are unchanged. */
 [hidden]{display:none!important}
@@ -952,10 +952,11 @@ body:has(#loginPanel:not([hidden])) .shell,
           <div id="insightOverview" role="tabpanel" aria-labelledby="insightOverviewTab">
           <div class="insight-context-note" id="insightContextNote"></div>
           <div class="insight-stat-grid" id="insightStatGrid"></div>
-          <div class="insight-two-column">
-            <section class="insight-surface insight-activity"><div class="insight-surface-header"><div><span class="insight-kicker">ACTIVITY</span><h2>Little steps over time</h2></div><span class="insight-mark">↗</span></div><div id="insightActivityChart" class="insight-activity-chart"></div><p class="insight-footnote">Completed days only. Freeze days are shown separately.</p></section>
-            <section class="insight-surface insight-heatmap-surface"><div class="insight-surface-header"><div><span class="insight-kicker">YOUR HISTORY</span><h2>Recent months</h2></div><span class="insight-mark">✦</span></div><div id="insightHeatmap" class="insight-heatmap"></div><div class="insight-legend"><span><i class="insight-dot"></i> Not completed</span><span><i class="insight-dot completed"></i> Completed</span><span><i class="insight-dot frozen"></i> Freeze</span></div></section>
-          </div>
+          <section class="insight-surface insight-heatmap-surface" aria-labelledby="insightRecentHeading">
+            <div class="insight-surface-header"><div><span class="insight-kicker">YOUR HISTORY</span><h2 id="insightRecentHeading">Recent months</h2><p class="insight-recent-description">A closer look at the days you showed up.</p></div><span class="insight-mark" aria-hidden="true">✦</span></div>
+            <div id="insightHeatmap" class="insight-heatmap" aria-label="Completion calendars for the past three months"></div>
+            <div class="insight-legend"><span><i class="insight-dot"></i> Not completed</span><span><i class="insight-dot completed"></i> Completed</span><span><i class="insight-dot frozen"></i> Freeze</span></div>
+          </section>
           <section class="insight-surface insight-year-surface" aria-labelledby="insightYearHeading">
             <div class="insight-surface-header insight-year-header">
               <div><span class="insight-kicker">A YEAR OF SHOWING UP</span><h2 id="insightYearHeading">Your consistency, in color.</h2><p>Every square is a day. Brighter orange means more check-ins.</p></div>
@@ -1505,12 +1506,12 @@ body:has(#loginPanel:not([hidden])) .shell,
       }
     }
   </script>
-  <script defer src="updates.js?v=20261124-living-heatmap16"></script>
-  <script defer src="touch.js?v=20261124-living-heatmap16"></script>
-  <script defer src="ambient.js?v=20261124-living-heatmap16"></script>
-  <script defer src="achievements.js?v=20261124-living-heatmap16"></script>
-  <script defer src="focus.js?v=20261124-living-heatmap16"></script>
-  <script defer src="workspace.js?v=20261124-living-heatmap16"></script>
-  <script type="module" src="app.js?v=20261124-living-heatmap16"></script>
+  <script defer src="updates.js?v=20261124-insights-clean17"></script>
+  <script defer src="touch.js?v=20261124-insights-clean17"></script>
+  <script defer src="ambient.js?v=20261124-insights-clean17"></script>
+  <script defer src="achievements.js?v=20261124-insights-clean17"></script>
+  <script defer src="focus.js?v=20261124-insights-clean17"></script>
+  <script defer src="workspace.js?v=20261124-insights-clean17"></script>
+  <script type="module" src="app.js?v=20261124-insights-clean17"></script>
 </body>
 </html>
