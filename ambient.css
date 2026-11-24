@@ -218,3 +218,131 @@ html[data-theme="dark"][data-ambient-glow="true"][data-ambient-night="true"] #da
 html[data-theme="light"] #dashboard .habit-card:not([data-flame-state="done"]) .streak-glow-target{
  filter:none!important;animation:none!important;
 }
+
+
+/* Nighttime schedules and ambient Settings atmosphere — solar-night13. */
+.account-navigation,.account-subpage{isolation:isolate}
+.account-navigation>.ambient-field,.account-subpage>.ambient-field{
+ position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden;contain:layout paint;
+}
+.account-navigation>:not(.ambient-field),.account-subpage>:not(.ambient-field){
+ position:relative;z-index:1;
+}
+.account-navigation>.ambient-field .ambient-ember,.account-subpage>.ambient-field .ambient-ember{
+ top:var(--ember-y,50%);left:var(--ember-x,50%);
+ animation:ambient-drift-v3 var(--ember-duration,24s) ease-in-out infinite;
+ animation-delay:var(--ember-delay,0s);
+ box-shadow:0 0 7px 2px #ffa45d75,0 0 17px 6px #fa813f28;
+}
+html[data-ambient="subtle"] .account-navigation>.ambient-field .ambient-ember:nth-child(n+8),
+html[data-ambient="subtle"] .account-subpage>.ambient-field .ambient-ember:nth-child(n+8){display:none}
+html[data-ambient="enhanced"] .account-navigation>.ambient-field .ambient-ember,
+html[data-ambient="enhanced"] .account-subpage>.ambient-field .ambient-ember{
+ width:4px;height:4px;
+ animation-duration:calc(var(--ember-duration,25s) * .68);
+ box-shadow:0 0 11px 4px #ffb06c9f,0 0 25px 9px #ff883d40;
+}
+html[data-ambient="off"] .account-navigation>.ambient-field,
+html[data-ambient="off"] .account-subpage>.ambient-field{display:none!important}
+html[data-theme="light"] .account-navigation>.ambient-field .ambient-ember,
+html[data-theme="light"] .account-subpage>.ambient-field .ambient-ember{
+ background:#e49c54;box-shadow:0 0 5px 2px #e9ad6955;
+}
+html:not([data-ambient-night="true"]) .account-navigation>.ambient-field .ambient-star,
+html:not([data-ambient-night="true"]) .account-subpage>.ambient-field .ambient-star,
+html:not([data-ambient-stars="true"]) .account-navigation>.ambient-field .ambient-star,
+html:not([data-ambient-stars="true"]) .account-subpage>.ambient-field .ambient-star,
+html[data-theme="light"] .account-navigation>.ambient-field .ambient-star,
+html[data-theme="light"] .account-subpage>.ambient-field .ambient-star{display:none!important}
+html.ambient-paused .account-navigation>.ambient-field *,
+html.ambient-paused .account-subpage>.ambient-field *{animation-play-state:paused!important}
+
+.ambient-nighttime-settings{
+ margin-top:24px;padding:22px 0 0;
+ border-top:1px solid #8884;
+}
+.ambient-night-heading{display:flex;align-items:center;gap:12px;margin-bottom:17px}
+.ambient-night-heading>div{min-width:0;flex:1}
+.ambient-night-heading h4{margin:0 0 5px;font-size:17px;font-weight:750;letter-spacing:-.02em}
+.ambient-night-heading p{margin:0;font-size:12px;opacity:.67;line-height:1.55}
+.ambient-night-moon{
+ flex:none;width:43px;height:43px;display:grid;place-items:center;
+ border-radius:13px;background:#9c75431a;border:1px solid #d692543f;
+ color:#f5a456;font-size:28px;
+}
+html[data-ambient-night="true"] .ambient-night-moon{
+ text-shadow:0 0 12px #ffa15193;
+}
+.ambient-schedule-options{display:grid;gap:9px}
+.ambient-schedule-options label{display:block;cursor:pointer;position:relative}
+.ambient-schedule-options label input{position:absolute;opacity:0;width:1px;height:1px}
+.ambient-schedule-options label>span{
+ display:flex;flex-direction:column;justify-content:center;gap:4px;
+ min-height:66px;padding:12px 15px 12px 45px;border-radius:14px;
+ position:relative;background:#8881;border:1px solid #7775;
+ transition:background .2s,border-color .2s;
+}
+.ambient-schedule-options label>span:before{
+ content:"";position:absolute;top:50%;left:15px;transform:translateY(-50%);
+ width:17px;height:17px;border-radius:100%;border:2px solid #888a96;
+ box-sizing:border-box;
+}
+.ambient-schedule-options label input:checked+span{
+ background:color-mix(in srgb,#f27d37 10%,transparent);
+ border-color:#ee854a93;
+}
+.ambient-schedule-options label input:checked+span:before{
+ border:5px solid #ef884c;
+}
+.ambient-schedule-options label input:focus-visible+span{
+ outline:2px solid #f48d50;outline-offset:3px;
+}
+.ambient-schedule-options strong{font-size:13px;font-weight:750;color:inherit}
+.ambient-schedule-options small{font-size:11px;color:inherit;opacity:.63;line-height:1.4}
+.ambient-custom-times[hidden],.ambient-location-panel[hidden]{display:none!important}
+.ambient-custom-times{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+ gap:10px;margin-top:14px;
+}
+.ambient-custom-times label{font-size:12px;font-weight:650;display:grid;gap:7px}
+.ambient-custom-times input{
+ width:100%;min-width:0;min-height:45px;
+ padding:9px 11px;border:1px solid #7776;border-radius:12px;
+ color:inherit;background:#8882;font:inherit;
+ color-scheme:dark;
+}
+html[data-theme="light"] .ambient-custom-times input{color-scheme:light;background:#fff;border-color:#d8dce5}
+.ambient-location-panel{
+ display:grid;gap:9px;padding:14px;margin-top:14px;
+ background:#8881;border:1px solid #7775;border-radius:14px;
+}
+.ambient-location-panel strong{font-size:13px}
+.ambient-location-panel p{font-size:12px;line-height:1.55;margin:5px 0 0;opacity:.75}
+.ambient-location-panel button{
+ justify-self:start;min-height:38px;border:1px solid #ee895987;
+ border-radius:11px;padding:9px 13px;color:#fa995e;
+ background:#f68b4a15;font-size:12px;font-weight:750;cursor:pointer;
+}
+.ambient-location-panel button:disabled{opacity:.55}
+.ambient-location-panel small{font-size:10px;line-height:1.5;opacity:.6}
+.ambient-night-status{
+ display:flex;align-items:center;gap:10px;margin-top:14px;
+ background:#8881;border:1px solid #8883;border-radius:12px;
+ padding:12px 13px;font-size:12px;line-height:1.5;
+}
+.ambient-night-status-icon{color:#f4a264;font-size:19px}
+html[data-theme="light"] .ambient-schedule-options label>span,
+html[data-theme="light"] .ambient-location-panel,
+html[data-theme="light"] .ambient-night-status{
+ background:#f7f8fb;border-color:#dce0e8;
+}
+html[data-theme="light"] .ambient-schedule-options label input:checked+span{
+ background:#fff3ea;border-color:#f1a471;
+}
+@media(max-width:380px){
+ .ambient-custom-times{grid-template-columns:1fr}
+}
+@media(prefers-reduced-motion:reduce){
+ .account-navigation>.ambient-field,.account-subpage>.ambient-field{display:none!important}
+ .ambient-schedule-options label>span{transition:none}
+}
