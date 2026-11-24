@@ -6,7 +6,7 @@
  const defaults={mode:'subtle',stars:true,glow:true,nightSchedule:'standard',nightStart:'20:00',nightEnd:'06:00'};
  const GEO_KEY='my-streaks-solar-location-v1';
  const standard={start:'20:00',end:'06:00'};
- const validTime=t=>typeof t==='string'&&/^([01]\\d|2[0-3]):[0-5]\\d$/.test(t);
+ const validTime=t=>typeof t==='string'&&/^([01]\d|2[0-3]):[0-5]\d$/.test(t);
  const reduced=window.matchMedia('(prefers-reduced-motion: reduce)');
  const valid=v=>({
   mode:['off','subtle','enhanced'].includes(v?.mode)?v.mode:'subtle',
