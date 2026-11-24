@@ -21,7 +21,7 @@ const cleanBlocks=raw=>Array.isArray(raw)&&raw.length?raw.slice(0,12).map((b,i)=
 function start({db,doc,onSnapshot,setDoc}){
  const root=$('focusPlansRoot'),toggle=$('checklistViewToggle');
  if(!root||!toggle)return {setUser(){},dispose(){}};
- let user=null,unsub=null,plan={blocks:cleanBlocks(defaults),days:{}},ready=false,dirty=false,editing=false,adjusting=null,active=null,activeSince=0,overtime=false,saveQueue=Promise.resolve(),saveTimer=null,tickTimer=null,lastSnapshot='';
+ let user=null,unsub=null,plan={blocks:cleanBlocks(defaults),days:{}},ready=false,dirty=false,editing=false,adjusting=null,expanded=null,weekExpanded=false,active=null,activeSince=0,overtime=false,saveQueue=Promise.resolve(),saveTimer=null,tickTimer=null,lastSnapshot='';
  const record=()=>{const d=day();if(!plan.days[d])plan.days[d]={};return plan.days[d];};
  const entry=(id)=>{const r=record();if(!r[id])r[id]={seconds:0,done:false};return r[id];};
  const normalize=raw=>{
@@ -65,7 +65,7 @@ function start({db,doc,onSnapshot,setDoc}){
   const finished=blocks.filter(b=>today[b.id]?.done).length;
   const mondayDate=monday(),week=Array.from({length:7},(_,i)=>{const d=dayAt(mondayDate,i);return {date:d,seconds:Object.values(plan.days[d]||{}).reduce((a,r)=>a+(r.seconds||0),0)};});
   const weekly=week.reduce((a,x)=>a+x.seconds,0);
-  const completedPercent=blocks.length?Math.round(100*finished/blocks.length):0;
+  if(expanded&&!blocks.some(b=>b.id===expanded))expanded=null;
   const progress=blocks.map(b=>{
     const seconds=Math.max(0,today[b.id]?.seconds||0),portion=today[b.id]?.done?100:Math.min(100,seconds/(b.minutes*60)*100);
     return '<span class="focus-segment" style="flex:'+b.minutes+';--segment:'+b.color+'" title="'+escape(b.name)+' · '+format(seconds)+' recorded"><span class="focus-segment-fill" style="width:'+portion+'%"></span></span>';
@@ -76,13 +76,24 @@ function start({db,doc,onSnapshot,setDoc}){
     '<div class="focus-timeline">'+progress+'</div><div class="focus-summary"><span>'+finished+' / '+blocks.length+' sections complete</span><span>'+format(actual)+' recorded</span></div>'+
     '<div class="focus-activities">'+blocks.map(b=>row(b,today[b.id]||{seconds:0,done:false})).join('')+'</div>'+
     '<div class="focus-encouragement"><span>✦</span><p>'+escape(message)+'</p><button type="button" data-focus="finish">Finish for now</button></div>'+
-    '<section class="focus-week"><div class="focus-week-heading"><h3>This week</h3><strong>'+format(weekly)+' focused</strong></div><div class="focus-week-bars">'+week.map((w,i)=>'<div class="focus-week-day"><div class="focus-bar-track"><div class="focus-bar-fill" style="height:'+Math.max(2,Math.min(100,w.seconds/(Math.max(3600,...week.map(v=>v.seconds)))*100))+'%"></div></div><span>'+['M','T','W','T','F','S','S'][i]+'</span></div>').join('')+'</div><p>Recorded timer time only. Untimed check-offs add no minutes.</p></section>'+
+    '<section class="focus-week'+(weekExpanded?' is-expanded':'')+'"><button type="button" class="focus-week-heading" data-focus="week" aria-expanded="'+weekExpanded+'"><span class="focus-week-title"><strong>This week</strong><small>'+format(weekly)+' focused</small></span><span class="focus-chevron" aria-hidden="true">⌄</span></button>'+(weekExpanded?'<div class="focus-week-body"><div class="focus-week-bars">'+week.map((w,i)=>'<div class="focus-week-day"><div class="focus-bar-track"><div class="focus-bar-fill" style="height:'+Math.max(2,Math.min(100,w.seconds/(Math.max(3600,...week.map(v=>v.seconds)))*100))+'%"></div></div><span>'+['M','T','W','T','F','S','S'][i]+'</span></div>').join('')+'</div><p>Recorded timer time only. Untimed check-offs add no minutes.</p></div>':'')+'</section>'+
     (editing?editUI():'')+(adjusting?adjustUI():'');
  }
  function row(b,r){
   const running=active===b.id,seconds=Math.floor(r.seconds||0),target=b.minutes*60,remaining=Math.max(0,target-seconds);
-  const percent=Math.min(100,seconds/target*100);
-  return '<article class="focus-activity'+(r.done?' is-done':'')+(running?' is-running':'')+'" style="--activity-color:'+b.color+'"><div class="focus-activity-heading"><span class="focus-activity-stripe"></span><div class="focus-activity-name"><strong>'+escape(b.name)+'</strong><small>'+b.minutes+'m planned · '+format(seconds)+' studied'+(seconds>target?' · extra time':'')+'</small></div><button type="button" class="focus-done" data-focus="done" data-id="'+b.id+'" aria-label="'+(r.done?'Mark unfinished':'Mark complete')+'">'+(r.done?'✓':'○')+'</button></div><div class="focus-activity-bar"><span style="width:'+percent+'%"></span></div><div class="focus-activity-controls"><span class="focus-time">'+(remaining?clock(remaining)+' left': 'Plan time reached')+'</span><button type="button" data-focus="toggle" data-id="'+b.id+'">'+(running?'Pause':'▶ '+(seconds?'Continue':'Start'))+'</button><button type="button" data-focus="manual" data-id="'+b.id+'" title="Add, correct, or reset recorded study minutes">Edit time</button></div></article>';
+  const percent=Math.min(100,seconds/target*100),open=expanded===b.id;
+  const status=r.done?'✓':running?'Ⅱ':'○';
+  return '<article class="focus-activity'+(r.done?' is-done':'')+(running?' is-running':'')+(open?' is-expanded':'')+'" style="--activity-color:'+b.color+'">'+
+   '<div class="focus-activity-row"><button type="button" class="focus-activity-expand" data-focus="expand" data-id="'+b.id+'" aria-expanded="'+open+'" aria-controls="focus-detail-'+b.id+'">'+
+   '<span class="focus-activity-stripe" aria-hidden="true"></span><span class="focus-activity-name"><strong>'+escape(b.name)+'</strong><small>'+format(seconds)+' / '+b.minutes+'m'+(seconds>target?' · extra time':'')+(running?' · timer running':'')+'</small></span>'+
+   '<span class="focus-mini-progress" aria-hidden="true"><span style="width:'+percent+'%"></span></span>'+
+   '<span class="focus-row-chevron" aria-hidden="true">⌄</span></button>'+
+   '<button type="button" class="focus-done" data-focus="done" data-id="'+b.id+'" aria-label="'+(r.done?'Mark '+escape(b.name)+' unfinished':'Mark '+escape(b.name)+' complete')+'">'+status+'</button></div>'+
+   '<div id="focus-detail-'+b.id+'" class="focus-activity-detail"'+(open?'':' hidden')+'>'+
+   '<div class="focus-activity-bar"><span style="width:'+percent+'%"></span></div>'+
+   '<div class="focus-activity-controls"><span class="focus-time">'+(remaining?clock(remaining)+' left':'Plan time reached')+'</span>'+
+   '<button type="button" data-focus="toggle" data-id="'+b.id+'">'+(running?'Ⅱ Pause':'▶ '+(seconds?'Continue':'Start'))+'</button>'+
+   '<button type="button" data-focus="manual" data-id="'+b.id+'" title="Correct or reset recorded study minutes">Edit time</button></div></div></article>';
  }
  function editUI(){
   return '<div class="focus-edit-shade"><div class="focus-edit-dialog" role="dialog" aria-modal="true" aria-label="Edit German plan"><div class="focus-edit-head"><h3>Edit study plan</h3><button data-focus="close">✕</button></div><p>Choose activities, minutes and colors. Changes apply to future study; already recorded time stays saved.</p>'+
@@ -109,11 +120,13 @@ function start({db,doc,onSnapshot,setDoc}){
  root.addEventListener('click',e=>{
   const button=e.target.closest('button[data-focus]');if(!button||!user||!ready)return;
   const action=button.dataset.focus,id=button.dataset.id,b=plan.blocks.find(x=>x.id===id);
+  if(action==='expand'){expanded=expanded===id?null:id;render();return;}
+  if(action==='week'){weekExpanded=!weekExpanded;render();return;}
   if(action==='edit'){stop();adjusting=null;editing=true;render();return;}
   if(action==='close'){editing=false;render();return;}
   if(action==='saveedit'){editSave();return;}
   if(action==='add'){editSave();if(plan.blocks.length>=12)return;plan.blocks.push({id:'x'+Date.now().toString(36),name:'New activity',minutes:20,color:palette[plan.blocks.length%palette.length]});editing=true;render();return;}
-  if(action==='remove'){if(plan.blocks.length===1)return;plan.blocks=plan.blocks.filter(x=>x.id!==id);scheduleSave();render();return;}
+  if(action==='remove'){if(plan.blocks.length===1)return;plan.blocks=plan.blocks.filter(x=>x.id!==id);if(expanded===id)expanded=null;scheduleSave();render();return;}
   if(action==='finish'){stop();render();return;}
   if(action==='canceladjust'){adjusting=null;render();return;}
   if(action==='lessfive'||action==='morefive'){const field=$('focusAdjustMinutes');if(field)field.value=String(Math.max(0,Number(field.value||0)+(action==='morefive'?5:-5)));return;}
@@ -121,7 +134,7 @@ function start({db,doc,onSnapshot,setDoc}){
   if(action==='resetadjust'){if(!confirm('Reset this activity’s recorded time for today to zero? This will not change any other dates.'))return;entry(adjusting).seconds=0;entry(adjusting).done=false;adjusting=null;scheduleSave(true);render();return;}
   if(!b)return;
   if(action==='toggle'){
-   if(active===id){stop();}else{stop();active=id;activeSince=Date.now();overtime=entry(id).seconds>=b.minutes*60;}
+   if(active===id){stop();}else{stop();active=id;expanded=id;activeSince=Date.now();overtime=entry(id).seconds>=b.minutes*60;}
    scheduleSave();render();return;
   }
   if(action==='done'){
@@ -148,7 +161,7 @@ function start({db,doc,onSnapshot,setDoc}){
  tickTimer=setInterval(()=>{if(active&&!root.hidden){flushActive();render();if(!overtime&&entry(active).seconds>=plan.blocks.find(b=>b.id===active).minutes*60){stop();render();}else if(entry(active).seconds%10===0)scheduleSave();}},1000);
  function setUser(next){
   stop(false);clearTimeout(saveTimer);if(unsub)unsub();unsub=null;user=next;ready=false;dirty=false;active=null;editing=false;adjusting=null;
-  plan={blocks:cleanBlocks(defaults),days:{}};
+  plan={blocks:cleanBlocks(defaults),days:{}};expanded=null;weekExpanded=false;
   if(!user){root.innerHTML='';return;}
   const uid=user.uid;
   unsub=onSnapshot(doc(db,'users',uid,'settings','focusPlans'),snap=>{
