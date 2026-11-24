@@ -2213,18 +2213,6 @@
        }
        return max;
      }
-    function weeklyChart(h){
-      const completed=new Set(h.completions||[]),start=weekStart(new Date());
-      let bars='';
-      for(let w=7;w>=0;w--){
-        const monday=shift(start,-w*7);
-        let count=0;
-        for(let d=0;d<7;d++)if(completed.has(key(shift(monday,d))))count++;
-        const height=count?Math.max(8,count/7*100):0;
-        bars+='<div class="insight-week"><div class="insight-week-vertical"><span class="insight-week-bar" style="height:'+height+'%" title="'+count+' completed days"></span></div><span class="insight-week-label">'+monday.toLocaleDateString('en-US',{month:'short',day:'numeric'})+'</span></div>';
-      }
-      return bars;
-    }
     function yearlyHeatmap(habits,all){
        const today=new Date();today.setHours(12,0,0,0);
        const monday=weekStart(today),start=shift(monday,-52*7);
@@ -2398,8 +2386,7 @@
       // All Habits is an aggregate of check-ins, not a synthetic streak.
       const combined={completions:[...new Set(chosen.flatMap(x=>x.completions||[]))],
         freezeDates:[...new Set(chosen.filter(x=>x.cadence!=='weekly').flatMap(x=>x.freezeDates||[]))]};
-      const chart=all?weeklyChartAll(chosen):weeklyChart(h);
-      $('insightActivityChart').innerHTML=chart;
+      // Recent-month calendars and the yearly heatmap provide the activity timeline.
       $('insightHeatmap').innerHTML=calendarMonths(all?combined:h);
       const yearly=yearlyHeatmap(chosen,all);
       const detail=$('insightDayDetail');
@@ -2468,17 +2455,7 @@
       selectedHeatDay=null;$('insightDayDetail').hidden=true;$('insightDayDetail').innerHTML='';
       $('insightYearGrid').querySelectorAll('button[data-heat-date]').forEach(b=>{b.classList.remove('is-selected');b.setAttribute('aria-pressed','false');});
     });
-        function weeklyChartAll(habits){
-      const start=weekStart(new Date()),completed=habits.map(h=>new Set(h.completions||[]));
-      return Array.from({length:8},(_,i)=>{
-        const monday=shift(start,(i-7)*7);
-        let count=0;
-        for(let day=0;day<7;day++){const k=key(shift(monday,day));for(const set of completed)if(set.has(k))count++;}
-        const max=7*habits.length,height=count?Math.max(8,count/max*100):0;
-        return '<div class="insight-week"><div class="insight-week-vertical"><span class="insight-week-bar" style="height:'+height+'%" title="'+count+' check-ins across all habits"></span></div><span class="insight-week-label">'+monday.toLocaleDateString('en-US',{month:'short',day:'numeric'})+'</span></div>';
-      }).join('');
-    }
-    function onHabitsChange(){achievementInstance?.onHabitsChange();if(tab==='insights')renderInsights();}
+        function onHabitsChange(){achievementInstance?.onHabitsChange();if(tab==='insights')renderInsights();}
     function dispose(){focusInstance?.dispose();achievementInstance?.dispose();if(unsub)unsub();if(insightUnsub)insightUnsub();clearTimeout(saveTimer);if(sortable)sortable.destroy();clearTimeout(transitionTimeout);if(transitionFrame)cancelAnimationFrame(transitionFrame);}
     try{achievementInstance=window.MyStreaksAchievements?.start({db,doc,onSnapshot,setDoc,getHabits,evaluateHabit,longestFor,visuals:badgeArt,weeklyProtectedFor:h=>h.cadence==='weekly'?protectedWeeklyHistory(h).protectedWeeks.length:0})||null;}catch(error){console.error('Achievement celebrations initialization failed',error);}
     // Focus Plans uses its own Firestore document, separate from checklist notes.
