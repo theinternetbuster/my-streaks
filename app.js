@@ -461,6 +461,22 @@ async function saveReorderedHabits(){
  });
 }
 const pendingCheckins=new Map();
+function celebrateCheckin(id){
+ if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+ requestAnimationFrame(()=>{
+  const card=[...el('habitGrid').querySelectorAll('.habit-card')].find(node=>node.dataset.id===id);
+  if(!card)return;
+  const burst=document.createElement('span');
+  burst.className='checkin-spark-burst';burst.setAttribute('aria-hidden','true');
+  for(let n=0;n<8;n++){
+   const ember=document.createElement('i');
+   ember.style.setProperty('--spark-index',n);
+   burst.appendChild(ember);
+  }
+  card.appendChild(burst);card.classList.add('checkin-celebrate');
+  setTimeout(()=>{burst.remove();card.classList.remove('checkin-celebrate');},1050);
+ });
+}
 // Calendar edits can wait for the check-in transaction rather than locking today.
 const pendingCheckinSaves=new Map();
 let holdDelayTimer=null;
@@ -482,6 +498,7 @@ async function checkInHabit(id){
  const key=todayKey();
  pendingCheckins.set(id,key);
  refreshHabitViews(id); // Update every calendar instantly, without waiting for Firebase.
+ celebrateCheckin(id);
  try{
    const checkinSave=runTransaction(db,async tx=>{
      const ref=habitDoc(id),snapshot=await tx.get(ref);
