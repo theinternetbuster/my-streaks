@@ -42,9 +42,9 @@
     if(window.MyStreaksIPadLayout)document.documentElement.classList.add('ipad-ios-layout');
   </script>
   <link rel="stylesheet" href="styles.css?v=20261120-ipad-layout" />
-  <link rel="stylesheet" href="ambient.css?v=20261123-solar-night13" />
-  <link rel="stylesheet" href="focus.css?v=20261123-solar-night13" />
-  <link rel="stylesheet" href="workspace.css?v=20261123-solar-night13" />
+  <link rel="stylesheet" href="ambient.css?v=20261123-preview-touch14" />
+  <link rel="stylesheet" href="focus.css?v=20261123-preview-touch14" />
+  <link rel="stylesheet" href="workspace.css?v=20261123-preview-touch14" />
   <style id="critical-landing-styles">
 /* Critical inline fallback is scoped to logged-out view so signed-in themes are unchanged. */
 [hidden]{display:none!important}
@@ -1105,8 +1105,8 @@ body:has(#loginPanel:not([hidden])) .shell,
  <span class="ambient-card-title">Enhanced<span class="ambient-selected-check" aria-hidden="true">✓</span></span><span class="ambient-card-description">More embers and a richer warm glow.</span>
  </span></label>
 </div>
- <label class="ambient-choice"><input id="ambientStarsSetting" type="checkbox" checked><span><strong>Nighttime shooting stars</strong><small>Occasional stars between 8 PM and 6 AM when dark mode is on.</small></span></label>
- <label class="ambient-choice"><input id="ambientGlowSetting" type="checkbox" checked><span><strong>Living flame glow</strong><small>Warm streak flames and active Focus Plan sections.</small></span></label>
+ <label class="ambient-choice"><input id="ambientStarsSetting" type="checkbox" switch checked><span><strong>Nighttime shooting stars</strong><small>Occasional stars between 8 PM and 6 AM when dark mode is on.</small></span></label>
+ <label class="ambient-choice"><input id="ambientGlowSetting" type="checkbox" switch checked><span><strong>Living flame glow</strong><small>Warm streak flames and active Focus Plan sections.</small></span></label>
  <section class="ambient-nighttime-settings" aria-labelledby="ambientNightHeading">
   <div class="ambient-night-heading"><span class="ambient-night-moon" aria-hidden="true">☾</span><div><h4 id="ambientNightHeading">Nighttime schedule</h4><p>Choose when shooting stars and stronger flame lighting activate in dark mode.</p></div></div>
   <div class="ambient-schedule-options" role="radiogroup" aria-label="Nighttime schedule">
@@ -1124,6 +1124,13 @@ body:has(#loginPanel:not([hidden])) .shell,
    <small>Only an approximate location is saved on this device, never in your account. No weather-service requests.</small>
   </div>
   <div class="ambient-night-status"><span class="ambient-night-status-icon" aria-hidden="true">✦</span><span id="ambientNightStatus">Night effects: 8 PM – 6 AM</span></div>
+ </section>
+ <section class="ambient-touch-settings" aria-labelledby="ambientTouchHeading">
+  <h4 id="ambientTouchHeading">Touch feedback</h4>
+  <p>A gentle tactile response on supported devices. iPhone native switches may provide a system click when tapped; other buttons use feedback only where the browser supports it.</p>
+  <label class="ambient-choice"><input id="touchFeedbackSetting" type="checkbox" switch checked>
+   <span><strong>Touch feedback</strong><small>Subtle feedback for habit interactions, study controls, and supported switches.</small></span>
+  </label>
  </section>
  <div class="ambient-preview-action"><button id="ambientPreviewBtn" type="button">✦ Preview night effects</button><small id="ambientPreviewDescription">Test the atmosphere any time of day.</small></div>
  </section>
@@ -1484,11 +1491,12 @@ body:has(#loginPanel:not([hidden])) .shell,
       }
     }
   </script>
-  <script defer src="updates.js?v=20261123-solar-night13"></script>
-  <script defer src="ambient.js?v=20261123-solar-night13"></script>
-  <script defer src="achievements.js?v=20261123-solar-night13"></script>
-  <script defer src="focus.js?v=20261123-solar-night13"></script>
-  <script defer src="workspace.js?v=20261123-solar-night13"></script>
-  <script type="module" src="app.js?v=20261123-solar-night13"></script>
+  <script defer src="updates.js?v=20261123-preview-touch14"></script>
+  <script defer src="touch.js?v=20261123-preview-touch14"></script>
+  <script defer src="ambient.js?v=20261123-preview-touch14"></script>
+  <script defer src="achievements.js?v=20261123-preview-touch14"></script>
+  <script defer src="focus.js?v=20261123-preview-touch14"></script>
+  <script defer src="workspace.js?v=20261123-preview-touch14"></script>
+  <script type="module" src="app.js?v=20261123-preview-touch14"></script>
 </body>
 </html>
