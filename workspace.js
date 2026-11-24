@@ -19,6 +19,17 @@
     let tab='home',user=null,unsub=null,insightUnsub=null,blocks=[],dirty=false,saveTimer=null,selectedHabit='all',insightSection='overview',insightSelectionPending=false,
         slashFor=null,slashMatches=types,slashSelected=0,sortable=null,saveSerial=0,listenerEpoch=0;
     let pendingWrite=Promise.resolve(),editRevision=0;
+    let selectedHeatDay=null,transitionTimeout=null,transitionFrame=null;
+    const playPageEntrance=()=>{
+      document.body.classList.remove('workspace-page-enter');
+      if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+      if(transitionFrame)cancelAnimationFrame(transitionFrame);
+      clearTimeout(transitionTimeout);
+      transitionFrame=requestAnimationFrame(()=>{
+        document.body.classList.add('workspace-page-enter');
+        transitionTimeout=setTimeout(()=>document.body.classList.remove('workspace-page-enter'),260);
+      });
+    };
     // Snapshot-based editing history covers both typing and structural changes.
     let historyUndo=[],historyRedo=[],historyPresent='[]',lastHistoryAt=0,lastHistoryField='',restoringHistory=false,allBlocksSelected=false,pendingUndoFocus=null;
     const serializeBlocks=()=>JSON.stringify(blocks.map((b,i)=>({...b,order:i})));
@@ -84,6 +95,7 @@
     }
     function selectTab(next,{history:pushHistory=true,silent=false}={}){
       if(!['home','insights','checklist'].includes(next)||!user)return;
+      const changed=tab!==next;
       if(next!=='checklist')focusInstance?.pause?.();
       tab=next;updateNav();closeSlash();
       if(pushHistory){
@@ -93,6 +105,7 @@
       if(!silent)onTabChange(tab);
       if(tab==='insights')renderInsights();
       if(tab==='checklist')renderChecklist();
+      if(changed)playPageEntrance();
       window.scrollTo({top:0,behavior:'instant'});
     }
     document.querySelectorAll('[data-workspace]').forEach(b=>b.addEventListener('click',event=>{
@@ -110,7 +123,7 @@
       if(unsub){unsub();unsub=null;}
       if(insightUnsub){insightUnsub();insightUnsub=null;}
       clearTimeout(saveTimer);editRevision++;
-      user=next;focusInstance?.setUser(next);achievementInstance?.setUser(next);blocks=[];dirty=false;saveSerial++;clearDocumentSelection();resetHistory();selectedHabit='all';insightSection='overview';insightSelectionPending=false;
+      user=next;selectedHeatDay=null;focusInstance?.setUser(next);achievementInstance?.setUser(next);blocks=[];dirty=false;saveSerial++;clearDocumentSelection();resetHistory();selectedHabit='all';insightSection='overview';insightSelectionPending=false;
       tab=['insights','checklist'].includes(new URLSearchParams(location.search).get('view'))?
         new URLSearchParams(location.search).get('view'):'home';
       updateNav();
@@ -2236,11 +2249,11 @@
          const month=index===0||marker?(marker?.date||week[0].date).toLocaleDateString('en-US',{month:'short'}):'';
          return '<div class="insight-year-week"><div class="insight-year-month">'+month+'</div>'+
            week.map(({date,dateKey,count,inFuture})=>
-             '<span class="insight-year-day'+(inFuture?' is-future':' year-level-'+level(count))+
+             '<'+(inFuture?'span':'button type="button" data-heat-date="'+dateKey+'"')+' class="insight-year-day'+(inFuture?' is-future':' year-level-'+level(count))+
              (dateKey===key(today)?' is-today':'')+'"'+(inFuture?' aria-hidden="true"':
              ' role="img" aria-label="'+date.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})+
              ': '+count+' check-in'+(count===1?'':'s')+'" title="'+date.toLocaleDateString('en-US',{month:'short',day:'numeric'})+
-             ' · '+count+' check-in'+(count===1?'':'s')+'"')+'></span>'
+             ' · '+count+' check-in'+(count===1?'':'s')+'"')+'></'+(inFuture?'span':'button')+'>'
            ).join('')+'</div>';
        }).join('');
        return {html,activeDays,completions,bestWeek};
@@ -2389,6 +2402,22 @@
       $('insightActivityChart').innerHTML=chart;
       $('insightHeatmap').innerHTML=calendarMonths(all?combined:h);
       const yearly=yearlyHeatmap(chosen,all);
+      const detail=$('insightDayDetail');
+      function paintHeatDetail(){
+        if(!detail)return;
+        const date=selectedHeatDay;
+        const earliest=key(shift(weekStart(new Date()),-52*7));
+        if(!date||date<earliest||date>key(new Date())){detail.hidden=true;detail.innerHTML='';return;}
+        const matched=chosen.filter(x=>(x.completions||[]).includes(date));
+        detail.hidden=false;
+        detail.innerHTML='<div class="insight-day-heading"><div><span class="insight-kicker">DAY DETAILS</span><h3>'+
+          parse(date).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'})+
+          '</h3><p>'+matched.length+' habit'+(matched.length===1?'':'s')+' completed</p></div>'+
+          '<button class="insight-day-close" type="button" data-heat-close aria-label="Close day details">×</button></div>'+
+          (matched.length?'<div class="insight-day-habits">'+matched.map(x=>
+            '<span class="insight-day-habit"><span aria-hidden="true">✦</span>'+safe(x.name)+'</span>'
+          ).join('')+'</div>':'<p class="insight-day-empty">No check-ins on this day. Every day is a fresh opportunity.</p>');
+      }
       const yearEl=$('insightYearGrid');
       if(yearEl){
         const scroll=$('insightYearScroll'),oldScroll=scroll.scrollLeft;
@@ -2400,13 +2429,46 @@
           '<span><strong>'+yearly.bestWeek+'</strong> best week</span>';
         if(wasRendered)scroll.scrollLeft=oldScroll;
         else scroll.scrollLeft=scroll.scrollWidth;
+        yearEl.querySelectorAll('button[data-heat-date]').forEach(b=>{
+          const selected=b.dataset.heatDate===selectedHeatDay;
+          b.classList.toggle('is-selected',selected);
+          b.setAttribute('aria-pressed',String(selected));
+        });
+        paintHeatDetail();
       }
       $('insightMilestones').innerHTML=achievementItems(habits).slice(0,7).map(a=>
         '<div class="insight-milestone '+(a.progress>=a.goal?'unlocked':'')+'"><span class="milestone-symbol">'+badgeArt[a.icon]+'</span><strong>'+safe(a.title)+'</strong><small>'+safe(a.detail)+'</small></div>'
       ).join('');
       renderAchievements(habits);
     }
-    function weeklyChartAll(habits){
+    $('insightYearGrid')?.addEventListener('click',event=>{
+      const button=event.target.closest('button[data-heat-date]');
+      if(!button)return;
+      selectedHeatDay=selectedHeatDay===button.dataset.heatDate?null:button.dataset.heatDate;
+      // Refresh only the readout and selection; preserve heatmap scroll and focus.
+      const day=selectedHeatDay,habits=getHabits();
+      const chosen=selectedHabit==='all'?habits:habits.filter(h=>h.id===selectedHabit);
+      const detail=$('insightDayDetail');
+      $('insightYearGrid').querySelectorAll('button[data-heat-date]').forEach(b=>{
+        const yes=b.dataset.heatDate===day;b.classList.toggle('is-selected',yes);b.setAttribute('aria-pressed',String(yes));
+      });
+      if(!day){detail.hidden=true;detail.innerHTML='';return;}
+      const matched=chosen.filter(h=>(h.completions||[]).includes(day));
+      detail.hidden=false;
+      detail.innerHTML='<div class="insight-day-heading"><div><span class="insight-kicker">DAY DETAILS</span><h3>'+
+        parse(day).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'})+
+        '</h3><p>'+matched.length+' habit'+(matched.length===1?'':'s')+' completed</p></div>'+
+        '<button class="insight-day-close" type="button" data-heat-close aria-label="Close day details">×</button></div>'+
+        (matched.length?'<div class="insight-day-habits">'+matched.map(h=>
+          '<span class="insight-day-habit"><span aria-hidden="true">✦</span>'+safe(h.name)+'</span>'
+        ).join('')+'</div>':'<p class="insight-day-empty">No check-ins on this day. Every day is a fresh opportunity.</p>');
+    });
+    $('insightDayDetail')?.addEventListener('click',event=>{
+      if(!event.target.closest('[data-heat-close]'))return;
+      selectedHeatDay=null;$('insightDayDetail').hidden=true;$('insightDayDetail').innerHTML='';
+      $('insightYearGrid').querySelectorAll('button[data-heat-date]').forEach(b=>{b.classList.remove('is-selected');b.setAttribute('aria-pressed','false');});
+    });
+        function weeklyChartAll(habits){
       const start=weekStart(new Date()),completed=habits.map(h=>new Set(h.completions||[]));
       return Array.from({length:8},(_,i)=>{
         const monday=shift(start,(i-7)*7);
@@ -2417,7 +2479,7 @@
       }).join('');
     }
     function onHabitsChange(){achievementInstance?.onHabitsChange();if(tab==='insights')renderInsights();}
-    function dispose(){focusInstance?.dispose();achievementInstance?.dispose();if(unsub)unsub();if(insightUnsub)insightUnsub();clearTimeout(saveTimer);if(sortable)sortable.destroy();}
+    function dispose(){focusInstance?.dispose();achievementInstance?.dispose();if(unsub)unsub();if(insightUnsub)insightUnsub();clearTimeout(saveTimer);if(sortable)sortable.destroy();clearTimeout(transitionTimeout);if(transitionFrame)cancelAnimationFrame(transitionFrame);}
     try{achievementInstance=window.MyStreaksAchievements?.start({db,doc,onSnapshot,setDoc,getHabits,evaluateHabit,longestFor,visuals:badgeArt,weeklyProtectedFor:h=>h.cadence==='weekly'?protectedWeeklyHistory(h).protectedWeeks.length:0})||null;}catch(error){console.error('Achievement celebrations initialization failed',error);}
     // Focus Plans uses its own Firestore document, separate from checklist notes.
     try{focusInstance=window.MyStreaksFocus?.start({db,doc,onSnapshot,setDoc})||null;}catch(error){console.error('Focus Plans initialization failed',error);}
