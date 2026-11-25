@@ -123,3 +123,9 @@ html[data-theme="light"] .ms-goal-number strong{color:color-mix(in srgb,var(--ms
 }
 @media(prefers-reduced-motion:reduce){.ms-focus-stars i,.ms-recap-art,.ms-complete{animation:none}.ms-progress i{transition:none}}
 html[data-ambient="off"] .ms-focus-stars i{animation:none}
+
+.ms-list-dialog{position:fixed;box-sizing:border-box;margin:auto;padding:0;border:1px solid var(--ms-border);border-radius:20px;background:var(--ms-card);color:var(--ms-ink);width:min(92vw,430px);max-height:85dvh;overflow:auto;box-shadow:0 20px 70px #0006}
+.ms-list-dialog::backdrop{background:#0009;backdrop-filter:blur(7px)}
+.ms-list-dialog .ms-feature-card{border:0}
+.ms-list-dialog [data-list-error]{margin:0;color:#e57546}
+html[data-ambient="subtle"] .ms-focus-stars i:nth-child(even){animation:none;opacity:.15}
