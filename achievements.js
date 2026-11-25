@@ -2,7 +2,11 @@
 (function(){
 'use strict';
 const $=id=>document.getElementById(id);
-const awards=[{id:'first',name:'First Spark',at:1,field:'total'},{id:'week',name:'One Week Strong',at:7,field:'best'},{id:'rhythm',name:'Two-Week Rhythm',at:14,field:'best'},{id:'month',name:'Thirty-Day Flame',at:30,field:'best'},{id:'century',name:'Century Club',at:100,field:'best'},{id:'fifty',name:'Every Day Counts',at:50,field:'total'},{id:'freeze',name:'Room for Life',at:1,field:'freezes'},{id:'many',name:'Many Paths',at:3,field:'breadth'}];
+const awards=[{id:'first',name:'First Spark',at:1,field:'total'},{id:'week',name:'One Week Strong',at:7,field:'best'},{id:'rhythm',name:'Two-Week Rhythm',at:14,field:'best'},{id:'month',name:'Thirty-Day Flame',at:30,field:'best'},{id:'century',name:'Century Club',at:100,field:'best'},{id:'fifty',name:'Every Day Counts',at:50,field:'total'},{id:'freeze',name:'Room for Life',at:1,field:'freezes'},{id:'many',name:'Many Paths',at:3,field:'breadth'},
+ {id:'german1',name:'First Focused Hour',at:1,field:'studyHours'},
+ {id:'german10',name:'Ten Hours of German',at:10,field:'studyHours'},
+ {id:'german25',name:'Twenty-Five Hours',at:25,field:'studyHours'},
+ {id:'german100',name:'German Century',at:100,field:'studyHours'}];
 const awardMessages={
  "first": {
   "earned": "One check-in started something new. Every lasting habit begins with a single day.",
@@ -43,12 +47,32 @@ const awardMessages={
   "earned": "Progress in three different habits. You're building more than one good routine.",
   "locked": "Record at least one completion in three different habits to earn this badge.",
   "repeat": "Three routines with real check-ins. Your efforts are taking shape."
+ },
+ "german1": {
+  "earned": "Your first hour of German recorded in Focus Plans. A new chapter of your learning history begins.",
+  "locked": "Record one hour of German study in Focus Plans. Earlier untracked study is not counted.",
+  "repeat": "Another hour of recorded German practice."
+ },
+ "german10": {
+  "earned": "Ten hours of German practice recorded here, one session at a time.",
+  "locked": "Accumulate ten recorded hours of German practice in Focus Plans.",
+  "repeat": "Another ten-hour milestone in your recorded study history."
+ },
+ "german25": {
+  "earned": "Twenty-five recorded hours of listening, speaking, reading, and learning German.",
+  "locked": "Reach twenty-five recorded hours of German practice in Focus Plans.",
+  "repeat": "Another twenty-five-hour chapter in your German study history."
+ },
+ "german100": {
+  "earned": "One hundred recorded hours of German practice. Every individual session built this total.",
+  "locked": "Reach one hundred recorded hours in Focus Plans; earlier study remains separate.",
+  "repeat": "A hundred recorded study hours is a milestone worth recognizing."
  }
 };
-function start({db,doc,onSnapshot,setDoc,getHabits,evaluateHabit,longestFor,weeklyProtectedFor,visuals={}}){
+function start({db,doc,onSnapshot,setDoc,getHabits,evaluateHabit,longestFor,weeklyProtectedFor,getStudyHours,visuals={}}){
  const sheet=$('achievementCelebration'),dot=$('achievementUnreadDot');
  if(!sheet||!dot)return {setUser(){},onHabitsChange(){},markRead(){},openDetail(){},isUnlocked(){return false},dispose(){}};
- const awardIcons={first:'flame',week:'sunrise',rhythm:'star',month:'crown',century:'gem',fifty:'calendar',freeze:'freeze',many:'layers'};
+ const awardIcons={first:'flame',week:'sunrise',rhythm:'star',month:'crown',century:'gem',fifty:'calendar',freeze:'freeze',many:'layers',german1:'star',german10:'sunrise',german25:'crown',german100:'gem'};
  let user=null,unsub=null,ready=false,habitsReady=false,pendingInitial=false,ledger=null,queue=[],showing=false,timer=null,saveQueue=Promise.resolve(),lastPreview=null;
  const clone=x=>JSON.parse(JSON.stringify(x));
  function measures(){
@@ -59,7 +83,7 @@ function start({db,doc,onSnapshot,setDoc,getHabits,evaluateHabit,longestFor,week
    // Each habit owns its streak; no summed streak across unrelated habits.
    const streaks=Object.fromEntries(habits.map(h=>[h.id,evaluateHabit(h).streak||0]));
    const best=Math.max(0,...habits.map(h=>longestFor?longestFor(h):(streaks[h.id]||0)));
-   return {total,breadth,freezes,best,streaks};
+   return {total,breadth,freezes,best,streaks,studyHours:Math.max(0,Number(getStudyHours?.()??0))};
  }
  function refreshDot(){
   dot.hidden=!ledger||!ledger.unread;
