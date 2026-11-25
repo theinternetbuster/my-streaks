@@ -45,6 +45,7 @@ function start({db,doc,onSnapshot,setDoc,onStudyChange}){
  function scheduleSave(immediate=false){
   if(!user||!ready)return;
   dirty=true;clearTimeout(saveTimer);
+  onStudyChange?.();
   const write=()=>{
    if(!user)return;
    const uid=user.uid,payload=JSON.parse(JSON.stringify(plan));
@@ -77,7 +78,7 @@ function start({db,doc,onSnapshot,setDoc,onStudyChange}){
     '<div class="focus-timeline">'+progress+'</div><div class="focus-summary"><span>'+finished+' / '+blocks.length+' sections complete</span><span data-focus-live="recorded">'+format(actual)+' recorded</span></div>'+
     '<div class="focus-activities">'+blocks.map(b=>row(b,today[b.id]||{seconds:0,done:false})).join('')+'</div>'+
     '<div class="focus-encouragement" role="note"><span class="focus-tip-sparkle" aria-hidden="true">✦</span><p>'+escape(message)+'</p></div>'+
-    '<section class="focus-week'+(weekExpanded?' is-expanded':'')+'"><button type="button" class="focus-week-heading" data-focus="week" aria-expanded="'+weekExpanded+'"><span class="focus-week-title"><strong>This week</strong><small>'+format(weekly)+' focused</small></span><span class="focus-chevron" aria-hidden="true">⌄</span></button>'+(weekExpanded?'<div class="focus-week-body"><div class="focus-week-bars">'+week.map((w,i)=>'<button type="button" class="focus-week-day'+(selectedWeekDay===w.date?' is-selected':'')+'" data-focus="week-day" data-date="'+w.date+'" data-focus-weekday="'+w.date+'" aria-pressed="'+(selectedWeekDay===w.date)+'" aria-label="'+new Date(w.date+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'})+': '+format(w.seconds)+' studied" title="'+format(w.seconds)+' · '+w.date+'"><span class="focus-bar-track"><span class="focus-bar-fill" style="height:'+Math.max(2,Math.min(100,w.seconds/(Math.max(3600,...week.map(v=>v.seconds)))*100))+'%"></span></span><span>'+['M','T','W','T','F','S','S'][i]+'</span></button>').join('')+'</div>'+(selectedWeekDay&&week.some(w=>w.date===selectedWeekDay)?'<div class="focus-week-selected" data-focus-week-selected><strong>'+new Date(selectedWeekDay+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'})+'</strong><span>'+format(week.find(w=>w.date===selectedWeekDay).seconds)+' studied</span></div>':'')+'<p>Tap a day to see its time. Hover over bars on desktop. Only recorded minutes count.</p></div>':'')+'</section>'+
+    '<section class="focus-week'+(weekExpanded?' is-expanded':'')+'"><button type="button" class="focus-week-heading" data-focus="week" aria-expanded="'+weekExpanded+'"><span class="focus-week-title"><strong>This week</strong><small>'+format(weekly)+' focused</small></span><span class="focus-chevron" aria-hidden="true">⌄</span></button>'+(weekExpanded?'<div class="focus-week-body"><div class="focus-week-bars">'+week.map((w,i)=>'<button type="button" class="focus-week-day'+(selectedWeekDay===w.date?' is-selected':'')+'" data-focus="week-day" data-date="'+w.date+'" data-focus-weekday="'+w.date+'" aria-pressed="'+(selectedWeekDay===w.date)+'" aria-label="'+new Date(w.date+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'})+': '+format(w.seconds)+' studied" title="'+format(w.seconds)+' · '+w.date+'"><span class="focus-bar-track"><span class="focus-bar-fill" style="height:'+Math.max(2,Math.min(100,w.seconds/(Math.max(3600,...week.map(v=>v.seconds)))*100))+'%"></span></span><span>'+['M','T','W','T','F','S','S'][i]+'</span></button>').join('')+'</div>'+(selectedWeekDay&&week.some(w=>w.date===selectedWeekDay)?'<div class="focus-week-selected" data-focus-week-selected><strong>'+new Date(selectedWeekDay+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'})+'</strong><span>'+format(week.find(w=>w.date===selectedWeekDay).seconds)+' studied</span></div>':'')+'</div>':'')+'</section>'+
     (editing?editUI():'')+(adjusting?adjustUI():'');
  }
  /* Running timers update text and widths in place. Rebuilding the full
@@ -157,7 +158,7 @@ function start({db,doc,onSnapshot,setDoc,onStudyChange}){
   const button=e.target.closest('button[data-focus]');if(!button||!user||!ready)return;
   const action=button.dataset.focus,id=button.dataset.id,b=plan.blocks.find(x=>x.id===id);
   if(action==='expand'){expanded=expanded===id?null:id;render();return;}
-  if(action==='week'){weekExpanded=!weekExpanded;render();return;}
+  if(action==='week'){weekExpanded=!weekExpanded;if(!weekExpanded)selectedWeekDay=null;render();return;}
   if(action==='week-day'){selectedWeekDay=selectedWeekDay===button.dataset.date?null:button.dataset.date;render();return;}
   if(action==='edit'){stop();adjusting=null;editing=true;render();return;}
   if(action==='close'){editing=false;render();return;}
@@ -211,9 +212,10 @@ function start({db,doc,onSnapshot,setDoc,onStudyChange}){
   },err=>{console.error('Focus Plan sync',err);$('focusSyncLabel').textContent='Sync unavailable';if(!ready){ready=true;render();}});
  }
  function getDay(date){if(!ready||!user)return null;const items=plan.days[date]||{};return {total:Object.values(items).reduce((sum,r)=>sum+(r.seconds||0),0),activities:Object.entries(items).filter(([,r])=>r.seconds>0).map(([id,r])=>({id,name:plan.blocks.find(b=>b.id===id)?.name||id,seconds:r.seconds,color:plan.blocks.find(b=>b.id===id)?.color||'#b08bcb'}))};}
+ function getStudyHours(){if(!ready||!user)return null;return Math.floor(Object.values(plan.days).reduce((sum,entries)=>sum+Object.values(entries).reduce((n,r)=>n+(r.seconds||0),0),0)/3600);}
  function pause(){stop();if(!root.hidden)render();}
  function dispose(){stop();clearTimeout(saveTimer);clearInterval(tickTimer);if(unsub)unsub();document.removeEventListener('visibilitychange',onHidden);}
- return {setUser,dispose,render,pause,getDay};
+ return {setUser,dispose,render,pause,getDay,getStudyHours};
 }
 window.MyStreaksFocus={start};
 })();
