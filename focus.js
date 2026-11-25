@@ -22,6 +22,23 @@ function start({db,doc,onSnapshot,setDoc,onStudyChange}){
  const root=$('focusPlansRoot'),toggle=$('checklistViewToggle');
  if(!root||!toggle)return {setUser(){},dispose(){}};
  let user=null,unsub=null,plan={blocks:cleanBlocks(defaults),days:{}},ready=false,dirty=false,editing=false,adjusting=null,expanded=null,weekExpanded=false,selectedWeekDay=null,active=null,activeSince=0,overtime=false,saveQueue=Promise.resolve(),saveTimer=null,tickTimer=null,lastSnapshot='';
+ let immersiveId=null,immersiveTheme='aurora';
+ const immersive=document.createElement('dialog');immersive.className='ms-focus-dialog';immersive.setAttribute('aria-label','Immersive focus timer');document.body.append(immersive);
+ const themes=['aurora','space','forest','embers'];
+ function paintImmersive(){
+  if(!immersive.open||!immersiveId)return;
+  const b=plan.blocks.find(x=>x.id===immersiveId);if(!b){immersive.close();return;}
+  const seconds=Math.floor(entry(b.id).seconds||0),target=b.minutes*60,running=active===b.id;
+  const time=immersive.querySelector('[data-immersive-time]'),ring=immersive.querySelector('[data-immersive-ring]'),label=immersive.querySelector('[data-immersive-status]'),toggle=immersive.querySelector('[data-immersive-toggle]'),done=immersive.querySelector('[data-immersive-done]');
+  if(time)time.textContent=clock(seconds);if(ring)ring.style.setProperty('--ms-ring',Math.min(100,seconds/target*100)+'%');if(label)label.textContent=(running?'Recording · ': 'Paused · ')+format(target)+' target';if(toggle)toggle.textContent=running?'Ⅱ Pause':'▶ Continue';if(done)done.textContent=entry(b.id).done?'Mark unfinished':'✓ Mark done';
+ }
+ function openImmersive(b){
+  immersiveId=b.id;immersive.dataset.environment=immersiveTheme;
+  immersive.innerHTML='<div class="ms-focus-inner"><div class="ms-focus-stars" aria-hidden="true">'+Array.from({length:36},(_,i)=>'<i style="--x:'+((i*73+13)%100)+'%;--y:'+((i*47+7)%100)+'%;--delay:'+(-(i%9))+'s"></i>').join('')+'</div><div class="ms-focus-top"><button type="button" data-immersive-close aria-label="Minimize focus view">↙ Minimize</button><span>GERMAN · FOCUS</span></div><div class="ms-focus-ring" data-immersive-ring><div><small>'+escape(b.name)+'</small><strong data-immersive-time>00:00</strong><span data-immersive-status></span></div></div><div class="ms-focus-controls"><button type="button" data-immersive-toggle>▶ Continue</button><button type="button" data-immersive-done>✓ Mark done</button></div><div class="ms-focus-themes" role="group" aria-label="Focus environment">'+themes.map(t=>'<button type="button" data-immersive-theme="'+t+'" aria-pressed="'+(t===immersiveTheme)+'">'+t[0].toUpperCase()+t.slice(1)+'</button>').join('')+'</div></div>';
+  if(!immersive.open)immersive.showModal();paintImmersive();
+ }
+ immersive.addEventListener('click',e=>{const button=e.target.closest('button');if(!button||!user)return;if(button.hasAttribute('data-immersive-close')){immersive.close();return;}if(button.dataset.immersiveTheme){immersiveTheme=button.dataset.immersiveTheme;immersive.dataset.environment=immersiveTheme;immersive.querySelectorAll('[data-immersive-theme]').forEach(x=>x.setAttribute('aria-pressed',String(x===button)));return;}const action=button.hasAttribute('data-immersive-toggle')?'toggle':button.hasAttribute('data-immersive-done')?'done':'';if(!action)return;const original=root.querySelector('[data-focus="'+action+'"][data-id="'+immersiveId+'"]');original?.click();paintImmersive();});
+ immersive.addEventListener('close',()=>{immersiveId=null;});
  const record=()=>{const d=day();if(!plan.days[d])plan.days[d]={};return plan.days[d];};
  const entry=(id)=>{const r=record();if(!r[id])r[id]={seconds:0,done:false};return r[id];};
  const normalize=raw=>{
@@ -41,7 +58,7 @@ function start({db,doc,onSnapshot,setDoc,onStudyChange}){
   const now=Date.now(),elapsed=Math.max(0,Math.floor((now-activeSince)/1000));
   if(elapsed>0){entry(active).seconds+=elapsed;activeSince+=elapsed*1000;dirty=true;}
  }
- function stop(save=true){if(!active)return;flushActive();active=null;overtime=false;if(save)scheduleSave(true);}
+ function stop(save=true){if(!active)return;flushActive();active=null;overtime=false;if(save)scheduleSave(true);paintImmersive();}
  function scheduleSave(immediate=false){
   if(!user||!ready)return;
   dirty=true;clearTimeout(saveTimer);
@@ -86,6 +103,7 @@ function start({db,doc,onSnapshot,setDoc,onStudyChange}){
     move the entire expanded box while someone was trying to study. */
  function updateLiveTimer(){
   if(!active||root.hidden||!ready)return;
+  paintImmersive();
   const b=plan.blocks.find(item=>item.id===active);
   if(!b)return;
   const today=record(),seconds=Math.floor(today[b.id]?.seconds||0);
@@ -130,7 +148,7 @@ function start({db,doc,onSnapshot,setDoc,onStudyChange}){
    '<div class="focus-activity-bar" data-focus-bar="'+b.id+'"><span style="width:'+percent+'%"></span></div>'+
    '<div class="focus-activity-controls"><span class="focus-time" data-focus-countdown="'+b.id+'">'+(remaining?clock(remaining)+' left':'Plan time reached')+'</span>'+
    '<button type="button" data-focus="toggle" data-id="'+b.id+'">'+(running?'Ⅱ Pause':'▶ '+(seconds?'Continue':'Start'))+'</button>'+
-   '<button type="button" data-focus="manual" data-id="'+b.id+'" title="Correct or reset recorded study minutes">Edit time</button></div></div></article>';
+   '<button type="button" data-focus="manual" data-id="'+b.id+'" title="Correct or reset recorded study minutes">Edit time</button><button type="button" data-focus="immersive" data-id="'+b.id+'" aria-label="Expand focus timer">⤢ Focus view</button></div></div></article>';
  }
  function editUI(){
   return '<div class="focus-edit-shade"><div class="focus-edit-dialog" role="dialog" aria-modal="true" aria-label="Edit German plan"><div class="focus-edit-head"><h3>Edit study plan</h3><button data-focus="close">✕</button></div><p>Choose activities, minutes and colors. Changes apply to future study; already recorded time stays saved.</p>'+
@@ -170,6 +188,7 @@ function start({db,doc,onSnapshot,setDoc,onStudyChange}){
   if(action==='saveadjust'){const value=Number($('focusAdjustMinutes')?.value);if(!Number.isFinite(value)||value<0||value>1440){alert('Enter a valid number of minutes from 0 to 1440.');return;}entry(adjusting).seconds=Math.round(value*60);adjusting=null;scheduleSave(true);render();return;}
   if(action==='resetadjust'){if(!confirm('Reset this activity’s recorded time for today to zero? This will not change any other dates.'))return;entry(adjusting).seconds=0;entry(adjusting).done=false;adjusting=null;scheduleSave(true);render();return;}
   if(!b)return;
+  if(action==='immersive'){openImmersive(b);return;}
   if(action==='toggle'){
    if(active===id){stop();}else{stop();active=id;expanded=id;activeSince=Date.now();overtime=entry(id).seconds>=b.minutes*60;}
    scheduleSave();render();return;
@@ -197,7 +216,7 @@ function start({db,doc,onSnapshot,setDoc,onStudyChange}){
  window.addEventListener('pagehide',()=>stop());
  tickTimer=setInterval(()=>{if(active&&!root.hidden){flushActive();updateLiveTimer();if(!overtime&&entry(active).seconds>=plan.blocks.find(b=>b.id===active).minutes*60){stop();render();}else if(entry(active).seconds%10===0)scheduleSave();}},1000);
  function setUser(next){
-  stop(false);clearTimeout(saveTimer);if(unsub)unsub();unsub=null;user=next;ready=false;dirty=false;active=null;editing=false;adjusting=null;
+  stop(false);if(immersive.open)immersive.close();clearTimeout(saveTimer);if(unsub)unsub();unsub=null;user=next;ready=false;dirty=false;active=null;editing=false;adjusting=null;
   plan={blocks:cleanBlocks(defaults),days:{}};expanded=null;weekExpanded=false;selectedWeekDay=null;
   if(!user){root.innerHTML='';return;}
   const uid=user.uid;
@@ -212,10 +231,11 @@ function start({db,doc,onSnapshot,setDoc,onStudyChange}){
   },err=>{console.error('Focus Plan sync',err);$('focusSyncLabel').textContent='Sync unavailable';if(!ready){ready=true;render();}});
  }
  function getDay(date){if(!ready||!user)return null;const items=plan.days[date]||{};return {total:Object.values(items).reduce((sum,r)=>sum+(r.seconds||0),0),activities:Object.entries(items).filter(([,r])=>r.seconds>0).map(([id,r])=>({id,name:plan.blocks.find(b=>b.id===id)?.name||id,seconds:r.seconds,color:plan.blocks.find(b=>b.id===id)?.color||'#b08bcb'}))};}
+ function getHistory(){if(!ready||!user)return null;return Object.fromEntries(Object.keys(plan.days).map(d=>[d,getDay(d).activities]));}
  function getStudyHours(){if(!ready||!user)return null;return Math.floor(Object.values(plan.days).reduce((sum,entries)=>sum+Object.values(entries).reduce((n,r)=>n+(r.seconds||0),0),0)/3600);}
  function pause(){stop();if(!root.hidden)render();}
- function dispose(){stop();clearTimeout(saveTimer);clearInterval(tickTimer);if(unsub)unsub();document.removeEventListener('visibilitychange',onHidden);}
- return {setUser,dispose,render,pause,getDay,getStudyHours};
+ function dispose(){stop();immersive.remove();clearTimeout(saveTimer);clearInterval(tickTimer);if(unsub)unsub();document.removeEventListener('visibilitychange',onHidden);}
+ return {setUser,dispose,render,pause,getDay,getStudyHours,getHistory};
 }
 window.MyStreaksFocus={start};
 })();
