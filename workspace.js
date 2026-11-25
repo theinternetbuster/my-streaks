@@ -19,6 +19,60 @@
     let tab='home',user=null,unsub=null,blocks=[],dirty=false,saveTimer=null,insightSection='overview',
         slashFor=null,slashMatches=types,slashSelected=0,sortable=null,saveSerial=0,listenerEpoch=0;
     let pendingWrite=Promise.resolve(),editRevision=0;
+    let listId='school',lists={school:{name:'School',icon:'🎓',color:'#60a5fa'}},listUnsub=null,listReady=false,listSwitching=false,checklistReady=false;
+    const listDocument=id=>id==='school'?'checklist':'checklist-'+id;
+    const listBar=document.createElement('section');
+    listBar.className='checklist-list-bar';
+    listBar.setAttribute('aria-label','Your checklists');
+    $('checklistOriginal').prepend(listBar);
+    function renderListBar(){
+      listBar.innerHTML='<div class="checklist-list-heading"><strong>My lists</strong><button type="button" data-list-action="new" '+(!listReady||listSwitching?'disabled':'')+'>＋ New list</button></div><div class="checklist-list-options">'+Object.entries(lists).map(([id,v])=>'<button type="button" data-list-id="'+safe(id)+'" aria-pressed="'+(id===listId)+'" '+(!checklistReady||listSwitching?'disabled':'')+' style="--list-color:'+safe(v.color)+'"><span aria-hidden="true">'+safe(v.icon)+'</span><span>'+safe(v.name)+'</span></button>').join('')+'</div><div class="checklist-list-actions"><span>'+safe(lists[listId]?.name||'School')+'</span><button type="button" data-list-action="rename" '+(!listReady||listSwitching?'disabled':'')+'>Edit list</button></div>';
+      root.inert=!checklistReady||listSwitching;
+      for(const id of ['checklistAdd','checklistAddBottom','checklistEmpty'])$(id).disabled=!checklistReady||listSwitching;
+    }
+    const listColors=['#60a5fa','#34d399','#a78bfa','#f59e0b','#f472b6','#64748b'];
+    function listenChecklist(id){
+      if(unsub)unsub();
+      const epoch=++listenerEpoch;
+      checklistReady=false;blocks=[];dirty=false;resetHistory();renderChecklist(true);renderListBar();
+      $('checklistSyncStatus').textContent='Syncing…';
+      unsub=onSnapshot(doc(db,'users',user.uid,'settings',listDocument(id)),snapshot=>{
+        if(epoch!==listenerEpoch||!user)return;
+        if(!dirty&&!snapshot.metadata?.hasPendingWrites){
+          const incoming=snapshot.exists()?snapshot.data().blocks:[];
+          const nextBlocks=Array.isArray(incoming)?migrateChecklistBlocks(incoming.filter(b=>b&&typeof b.text==='string').slice(0,500)):[];
+          const nextJson=JSON.stringify(nextBlocks.map((b,i)=>({...b,order:i})));
+          if(!checklistReady||nextJson!==serializeBlocks()){blocks=nextBlocks;resetHistory();renderChecklist(true);}
+          if(!checklistReady){checklistReady=true;renderListBar();}
+        }
+        if(!snapshot.metadata?.hasPendingWrites&&!dirty)$('checklistSyncStatus').textContent='';
+      },error=>{if(epoch!==listenerEpoch)return;console.error('Checklist read failed',error);$('checklistSyncStatus').textContent='Could not sync';});
+    }
+    async function switchList(id){
+      if(!user||!lists[id]||id===listId||listSwitching||!checklistReady)return;
+      const uid=user.uid;listSwitching=true;
+      document.activeElement?.blur?.();closeSlash();closeBlockMenu();closeDateMenu();clearDocumentSelection();
+      clearTimeout(saveTimer);renderListBar();
+      if(dirty)await saveChecklist();else await pendingWrite;
+      if(user?.uid!==uid)return;
+      if(dirty){listSwitching=false;renderListBar();return;}
+      listId=id;listSwitching=false;editRevision++;saveSerial++;listenChecklist(id);
+    }
+    listBar.addEventListener('click',async e=>{
+      const button=e.target.closest('button');if(!button||!user||listSwitching)return;
+      if(button.dataset.listId){switchList(button.dataset.listId);return;}
+      if(!listReady)return;
+      const editing=button.dataset.listAction==='rename';
+      if(!editing&&button.dataset.listAction!=='new')return;
+      const id=editing?listId:uniqueId(),previous=lists[id],uid=user.uid;
+      const name=prompt(editing?'Edit list name':'Name your new list',previous?.name||'Life')?.trim().slice(0,40);
+      if(!name)return;
+      const icon=prompt('Choose a short icon or emoji',previous?.icon||'🌿');
+      if(icon===null)return;
+      const item={name,icon:icon.trim().slice(0,12)||'•',color:previous?.color||listColors[Object.keys(lists).length%listColors.length]};
+      try{await setDoc(doc(db,'users',uid,'settings','checklistLists'),{lists:{[id]:item}},{merge:true});if(user?.uid!==uid)return;lists[id]=item;renderListBar();if(!editing)await switchList(id);}
+      catch(error){console.error('List metadata save failed',error);$('checklistSyncStatus').textContent='Could not save list';}
+    });
     let selectedHeatDay=null,transitionTimeout=null,transitionFrame=null;
     const playPageEntrance=()=>{
       document.body.classList.remove('workspace-page-enter');
@@ -120,32 +174,22 @@
       selectTab(new URLSearchParams(location.search).get('view')||'home',{history:false});
     });
     function setUser(next){
-      if(unsub){unsub();unsub=null;}
+      if(unsub){unsub();unsub=null;}if(listUnsub){listUnsub();listUnsub=null;}listenerEpoch++;
       clearTimeout(saveTimer);editRevision++;
       user=next;habitHistoryReady=false;selectedHeatDay=null;focusInstance?.setUser(next);achievementInstance?.setUser(next);blocks=[];dirty=false;saveSerial++;clearDocumentSelection();resetHistory();insightSection='overview';
-      tab=['insights','checklist'].includes(new URLSearchParams(location.search).get('view'))?
-        new URLSearchParams(location.search).get('view'):'home';
-      updateNav();
-      if(!user){renderChecklist();return;}
-      const epoch=++listenerEpoch;
-      $('checklistSyncStatus').textContent='Syncing…';
-      try{
-        unsub=onSnapshot(doc(db,'users',user.uid,'settings','checklist'),snapshot=>{
-          if(epoch!==listenerEpoch||!user)return;
-          if(!dirty){
-            const incoming=snapshot.exists()?snapshot.data().blocks:[];
-            const nextBlocks=Array.isArray(incoming)?migrateChecklistBlocks(incoming.filter(b=>b&&typeof b.text==='string').slice(0,500)):[];
-            const nextJson=JSON.stringify(nextBlocks.map((b,i)=>({...b,order:i})));
-            if(nextJson!==serializeBlocks()){
-              blocks=nextBlocks;resetHistory();renderChecklist();
-            }
-          }
-          if(!snapshot.metadata?.hasPendingWrites)$('checklistSyncStatus').textContent='';
-        },error=>{
-          console.error('Checklist read failed',error);
-          $('checklistSyncStatus').textContent='Could not sync';
-        });
-      }catch(error){console.error('Checklist could not initialize',error);$('checklistSyncStatus').textContent='Sync unavailable';}
+      listId='school';lists={school:{name:'School',icon:'🎓',color:'#60a5fa'}};listReady=false;checklistReady=false;listSwitching=false;
+      tab=['insights','checklist'].includes(new URLSearchParams(location.search).get('view'))?new URLSearchParams(location.search).get('view'):'home';
+      updateNav();renderListBar();
+      if(!user){renderChecklist(true);return;}
+      const uid=user.uid;
+      listUnsub=onSnapshot(doc(db,'users',uid,'settings','checklistLists'),snapshot=>{
+        if(user?.uid!==uid)return;
+        const incoming=snapshot.data()?.lists||{};
+        const clean={school:{name:'School',icon:'🎓',color:'#60a5fa'}};
+        for(const [id,v] of Object.entries(incoming))if(/^[a-z0-9_-]{1,50}$/i.test(id)&&v&&typeof v.name==='string')clean[id]={name:v.name.slice(0,40),icon:String(v.icon||'•').slice(0,12),color:/^#[0-9a-f]{6}$/i.test(v.color)?v.color:'#60a5fa'};
+        lists=clean;listReady=true;renderListBar();
+      },error=>{console.error('List metadata sync failed',error);});
+      listenChecklist('school');
       if(tab==='insights')renderInsights();
     }
     function normalizedType(t){return types.some(x=>x.id===t)?t:'text';}
@@ -202,7 +246,7 @@
       }
     }
     function scheduleSave(soon=false){
-      if(!user)return;
+      if(!user||!checklistReady||listSwitching)return;
       trackHistory();
       dirty=true;editRevision++;clearTimeout(saveTimer);
       $('checklistSyncStatus').textContent='Saving…';
@@ -210,23 +254,22 @@
     }
     async function saveChecklist(){
       if(!user)return;
-      const thisUser=user.uid;
+      const thisUser=user.uid, thisList=listId;
       const payload=blocks.map((b,i)=>({...b,order:i}));
       const serial=++saveSerial,revision=editRevision;
       // Serialize writes so a slower earlier save cannot overwrite a newer edit.
       const run=async()=>{
         if(!user||user.uid!==thisUser)return;
         try{
-          await setDoc(doc(db,'users',thisUser,'settings','checklist'),{
+          await setDoc(doc(db,'users',thisUser,'settings',listDocument(thisList)),{
             blocks:payload,updatedAt:Date.now()
           },{merge:true});
-          if(serial===saveSerial&&revision===editRevision&&user&&user.uid===thisUser){
+          if(serial===saveSerial&&revision===editRevision&&user&&user.uid===thisUser&&listId===thisList){
             dirty=false;$('checklistSyncStatus').textContent='';
           }
         }catch(err){
           console.error('Checklist save failed',err);
-          if(serial===saveSerial)$('checklistSyncStatus').textContent='Save failed — retrying';
-          dirty=true;
+          if(serial===saveSerial&&user?.uid===thisUser&&listId===thisList){$('checklistSyncStatus').textContent='Save failed — retry';dirty=true;}
         }
       };
       pendingWrite=pendingWrite.then(run,run);
@@ -2430,7 +2473,7 @@ studylaurel:'<svg class="study-art" viewBox="0 0 80 80" aria-hidden="true"><g cl
       $('insightYearGrid').querySelectorAll('button[data-heat-date]').forEach(b=>{b.classList.remove('is-selected');b.setAttribute('aria-pressed','false');});
     });
         function onHabitsChange(){habitHistoryReady=true;achievementInstance?.onHabitsChange();if(tab==='insights')renderInsights();}
-    function dispose(){focusInstance?.dispose();achievementInstance?.dispose();if(unsub)unsub();clearTimeout(saveTimer);if(sortable)sortable.destroy();clearTimeout(transitionTimeout);if(transitionFrame)cancelAnimationFrame(transitionFrame);}
+    function dispose(){focusInstance?.dispose();achievementInstance?.dispose();if(listUnsub)listUnsub();if(unsub)unsub();clearTimeout(saveTimer);if(sortable)sortable.destroy();clearTimeout(transitionTimeout);if(transitionFrame)cancelAnimationFrame(transitionFrame);}
     try{achievementInstance=window.MyStreaksAchievements?.start({db,doc,onSnapshot,setDoc,getHabits,evaluateHabit,longestFor,visuals:badgeArt,getStudyHours:()=>focusInstance?.getStudyHours?.()??null,weeklyProtectedFor:h=>h.cadence==='weekly'?protectedWeeklyHistory(h).protectedWeeks.length:0})||null;}catch(error){console.error('Achievement celebrations initialization failed',error);}
     // Focus Plans uses its own Firestore document, separate from checklist notes.
     try{focusInstance=window.MyStreaksFocus?.start({db,doc,onSnapshot,setDoc,onStudyChange:({timerRunning=false}={})=>{if(habitHistoryReady&&!timerRunning)achievementInstance?.onHabitsChange();if(tab==='insights')renderInsights();}})||null;}catch(error){console.error('Focus Plans initialization failed',error);}
