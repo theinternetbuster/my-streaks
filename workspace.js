@@ -27,10 +27,29 @@
     $('checklistOriginal').prepend(listBar);
     function renderListBar(){
       listBar.innerHTML='<div class="checklist-list-heading"><strong>My lists</strong><button type="button" data-list-action="new" '+(!listReady||listSwitching?'disabled':'')+'>＋ New list</button></div><div class="checklist-list-options">'+Object.entries(lists).map(([id,v])=>'<button type="button" data-list-id="'+safe(id)+'" aria-pressed="'+(id===listId)+'" '+(!checklistReady||listSwitching?'disabled':'')+' style="--list-color:'+safe(v.color)+'"><span aria-hidden="true">'+safe(v.icon)+'</span><span>'+safe(v.name)+'</span></button>').join('')+'</div><div class="checklist-list-actions"><span>'+safe(lists[listId]?.name||'School')+'</span><button type="button" data-list-action="rename" '+(!listReady||listSwitching?'disabled':'')+'>Edit list</button></div>';
+      const title=document.querySelector('.checklist-document-top>span:first-child');if(title){const label=Array.from(title.childNodes).find(n=>n.nodeType===3);if(label)label.textContent=' '+(lists[listId]?.name||'School').toUpperCase();}
       root.inert=!checklistReady||listSwitching;
       for(const id of ['checklistAdd','checklistAddBottom','checklistEmpty'])$(id).disabled=!checklistReady||listSwitching;
     }
     const listColors=['#60a5fa','#34d399','#a78bfa','#f59e0b','#f472b6','#64748b'];
+    const listDialog=document.createElement('dialog');listDialog.className='ms-list-dialog';listDialog.setAttribute('aria-label','Manage checklist');document.body.append(listDialog);
+    let editingList=null;
+    function openListDialog(editing){
+      editingList=editing?listId:null;
+      const previous=editing?lists[listId]:null;
+      listDialog.innerHTML='<form class="ms-feature-card ms-goal-form"><h3>'+(editing?'Edit list':'Create a checklist')+'</h3><label>Name<input name="name" required maxlength="40" value="'+safe(previous?.name||'')+'" placeholder="Life, Projects, School…"></label><label>Icon or emoji<input name="icon" maxlength="12" value="'+safe(previous?.icon||'🌿')+'"></label><label>Color<select name="color">'+listColors.map((c,i)=>'<option value="'+c+'" '+((previous?.color||listColors[Object.keys(lists).length%listColors.length])===c?'selected':'')+'>'+['Blue','Green','Purple','Gold','Pink','Slate'][i]+'</option>').join('')+'</select></label><div class="ms-goal-actions"><button type="button" data-list-cancel>Cancel</button><button type="submit" class="ms-primary">Save list</button></div><p data-list-error role="status"></p></form>';
+      listDialog.showModal();
+    }
+    listDialog.addEventListener('click',e=>{if(e.target.closest('[data-list-cancel]'))listDialog.close();});
+    listDialog.addEventListener('submit',async e=>{
+      e.preventDefault();if(!user||!listReady||listSwitching)return;
+      const form=e.target,id=editingList||uniqueId(),uid=user.uid,name=form.elements.name.value.trim().slice(0,40);
+      if(!name)return;
+      const item={name,icon:form.elements.icon.value.trim().slice(0,12)||'•',color:listColors.includes(form.elements.color.value)?form.elements.color.value:listColors[0]};
+      const submit=form.querySelector('button[type="submit"]');submit.disabled=true;
+      try{await setDoc(doc(db,'users',uid,'settings','checklistLists'),{lists:{[id]:item}},{merge:true});if(user?.uid!==uid)return;lists[id]=item;listDialog.close();renderListBar();if(!editingList)await switchList(id);}
+      catch(error){console.error('List metadata save failed',error);form.querySelector('[data-list-error]').textContent='Could not save list. Try again.';submit.disabled=false;}
+    });
     function listenChecklist(id){
       if(unsub)unsub();
       const epoch=++listenerEpoch;
@@ -62,16 +81,7 @@
       const button=e.target.closest('button');if(!button||!user||listSwitching)return;
       if(button.dataset.listId){switchList(button.dataset.listId);return;}
       if(!listReady)return;
-      const editing=button.dataset.listAction==='rename';
-      if(!editing&&button.dataset.listAction!=='new')return;
-      const id=editing?listId:uniqueId(),previous=lists[id],uid=user.uid;
-      const name=prompt(editing?'Edit list name':'Name your new list',previous?.name||'Life')?.trim().slice(0,40);
-      if(!name)return;
-      const icon=prompt('Choose a short icon or emoji',previous?.icon||'🌿');
-      if(icon===null)return;
-      const item={name,icon:icon.trim().slice(0,12)||'•',color:previous?.color||listColors[Object.keys(lists).length%listColors.length]};
-      try{await setDoc(doc(db,'users',uid,'settings','checklistLists'),{lists:{[id]:item}},{merge:true});if(user?.uid!==uid)return;lists[id]=item;renderListBar();if(!editing)await switchList(id);}
-      catch(error){console.error('List metadata save failed',error);$('checklistSyncStatus').textContent='Could not save list';}
+      if(button.dataset.listAction==='new'||button.dataset.listAction==='rename')openListDialog(button.dataset.listAction==='rename');
     });
     let selectedHeatDay=null,transitionTimeout=null,transitionFrame=null;
     const playPageEntrance=()=>{
@@ -175,7 +185,7 @@
       selectTab(new URLSearchParams(location.search).get('view')||'home',{history:false});
     });
     function setUser(next){
-      if(unsub){unsub();unsub=null;}if(listUnsub){listUnsub();listUnsub=null;}listenerEpoch++;
+      if(listDialog.open)listDialog.close();if(unsub){unsub();unsub=null;}if(listUnsub){listUnsub();listUnsub=null;}listenerEpoch++;
       clearTimeout(saveTimer);editRevision++;
       user=next;habitHistoryReady=false;selectedHeatDay=null;focusInstance?.setUser(next);achievementInstance?.setUser(next);blocks=[];dirty=false;saveSerial++;clearDocumentSelection();resetHistory();insightSection='overview';
       progressInstance?.setUser(next);
@@ -1976,7 +1986,7 @@
       drawDocumentSelection();
     }
     document.addEventListener('keydown',event=>{
-      if(!user||tab!=='checklist'||!root.isConnected)return;
+      if(!user||tab!=='checklist'||!root.isConnected||!checklistReady||listSwitching||listDialog.open)return;
       const inside=root.contains(document.activeElement)||root.contains(event.target);
       // Block menu deletion leaves focus on the menu: Undo must still work
       // when the checklist itself does not currently own keyboard focus.
@@ -2402,7 +2412,7 @@ studylaurel:'<svg class="study-art" viewBox="0 0 80 80" aria-hidden="true"><g cl
       const empty=$('insightEmpty'),content=$('insightsContent');
       empty.hidden=habits.length>0||insightSection!=='overview';content.hidden=false;
       if(insightSection==='reports'){renderInsightTabs();progressInstance?.refresh();return;}
-      if(!habits.length){renderInsightTabs();return;}
+      if(!habits.length){renderInsightTabs();$('insightOverview').hidden=true;if(insightSection==='achievements')renderAchievements([]);return;}
       renderInsightTabs();
       const all=true;
       const chosen=habits;
@@ -2471,7 +2481,7 @@ studylaurel:'<svg class="study-art" viewBox="0 0 80 80" aria-hidden="true"><g cl
       $('insightYearGrid').querySelectorAll('button[data-heat-date]').forEach(b=>{b.classList.remove('is-selected');b.setAttribute('aria-pressed','false');});
     });
         function onHabitsChange(){habitHistoryReady=true;achievementInstance?.onHabitsChange();if(tab==='insights')renderInsights();if(tab==='goals')progressInstance?.refresh();}
-    function dispose(){progressInstance?.dispose();focusInstance?.dispose();achievementInstance?.dispose();if(listUnsub)listUnsub();if(unsub)unsub();clearTimeout(saveTimer);if(sortable)sortable.destroy();clearTimeout(transitionTimeout);if(transitionFrame)cancelAnimationFrame(transitionFrame);}
+    function dispose(){listDialog.remove();progressInstance?.dispose();focusInstance?.dispose();achievementInstance?.dispose();if(listUnsub)listUnsub();if(unsub)unsub();clearTimeout(saveTimer);if(sortable)sortable.destroy();clearTimeout(transitionTimeout);if(transitionFrame)cancelAnimationFrame(transitionFrame);}
     try{achievementInstance=window.MyStreaksAchievements?.start({db,doc,onSnapshot,setDoc,getHabits,evaluateHabit,longestFor,visuals:badgeArt,getStudyHours:()=>focusInstance?.getStudyHours?.()??null,weeklyProtectedFor:h=>h.cadence==='weekly'?protectedWeeklyHistory(h).protectedWeeks.length:0})||null;}catch(error){console.error('Achievement celebrations initialization failed',error);}
     // Focus Plans uses its own Firestore document, separate from checklist notes.
     try{focusInstance=window.MyStreaksFocus?.start({db,doc,onSnapshot,setDoc,onStudyChange:({timerRunning=false}={})=>{if(habitHistoryReady&&!timerRunning)achievementInstance?.onHabitsChange();if(tab==='insights')renderInsights();if(tab==='goals')progressInstance?.refresh();}})||null;}catch(error){console.error('Focus Plans initialization failed',error);}
