@@ -2359,6 +2359,36 @@
     $('insightOverviewTab').addEventListener('click',()=>chooseInsightSection('overview'));
     $('insightAchievementsTab').addEventListener('click',()=>chooseInsightSection('achievements'));
     $('insightViewAchievements').addEventListener('click',()=>chooseInsightSection('achievements'));
+    const formatStudyTime=seconds=>{
+      const minutes=Math.floor(Math.max(0,seconds||0)/60);
+      return minutes>=60?Math.floor(minutes/60)+'h '+String(minutes%60).padStart(2,'0')+'m':minutes+'m';
+    };
+    function germanDayHtml(date){
+      const study=focusInstance?.getDay?.(date);
+      if(!study)return '<div class="insight-german-day"><span class="insight-german-icon" aria-hidden="true">DE</span><div class="insight-german-main"><small>GERMAN PRACTICE</small><strong>Loading study history…</strong></div></div>';
+      return '<section class="insight-german-day" aria-label="German study time"><span class="insight-german-icon" aria-hidden="true">DE</span>'+
+        '<div class="insight-german-main"><small>GERMAN PRACTICE</small><strong>'+formatStudyTime(study.total)+' studied</strong>'+
+        (study.activities.length?'<div class="insight-german-breakdown">'+study.activities.map(x=>
+          '<span class="insight-german-chip"><i style="--activity-color:'+safe(x.color)+'"></i>'+safe(x.name)+' · '+formatStudyTime(x.seconds)+'</span>'
+        ).join('')+'</div>':'<p>No timer time recorded for German on this date.</p>')+
+        '</div></section>';
+    }
+    function renderHeatDetails(date,chosen){
+      const detail=$('insightDayDetail');
+      if(!detail)return;
+      const earliest=key(shift(weekStart(new Date()),-52*7));
+      if(!date||date<earliest||date>key(new Date())){detail.hidden=true;detail.innerHTML='';return;}
+      const matched=chosen.filter(h=>(h.completions||[]).includes(date));
+      detail.hidden=false;
+      detail.innerHTML='<div class="insight-day-heading"><div><span class="insight-kicker">DAY DETAILS</span><h3>'+
+        parse(date).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'})+
+        '</h3><p>'+matched.length+' habit'+(matched.length===1?'':'s')+' completed</p></div>'+
+        '<button class="insight-day-close" type="button" data-heat-close aria-label="Close day details">×</button></div>'+
+        (matched.length?'<div class="insight-day-habits">'+matched.map(h=>
+          '<span class="insight-day-habit"><span aria-hidden="true">✦</span>'+safe(h.name)+'</span>'
+        ).join('')+'</div>':'<p class="insight-day-empty">No habit check-ins recorded on this date.</p>')+
+        germanDayHtml(date);
+    }
     function renderInsights(){
       const habits=getHabits();
       const empty=$('insightEmpty'),content=$('insightsContent');
@@ -2389,22 +2419,7 @@
       // Recent-month calendars and the yearly heatmap provide the activity timeline.
       $('insightHeatmap').innerHTML=calendarMonths(all?combined:h);
       const yearly=yearlyHeatmap(chosen,all);
-      const detail=$('insightDayDetail');
-      function paintHeatDetail(){
-        if(!detail)return;
-        const date=selectedHeatDay;
-        const earliest=key(shift(weekStart(new Date()),-52*7));
-        if(!date||date<earliest||date>key(new Date())){detail.hidden=true;detail.innerHTML='';return;}
-        const matched=chosen.filter(x=>(x.completions||[]).includes(date));
-        detail.hidden=false;
-        detail.innerHTML='<div class="insight-day-heading"><div><span class="insight-kicker">DAY DETAILS</span><h3>'+
-          parse(date).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'})+
-          '</h3><p>'+matched.length+' habit'+(matched.length===1?'':'s')+' completed</p></div>'+
-          '<button class="insight-day-close" type="button" data-heat-close aria-label="Close day details">×</button></div>'+
-          (matched.length?'<div class="insight-day-habits">'+matched.map(x=>
-            '<span class="insight-day-habit"><span aria-hidden="true">✦</span>'+safe(x.name)+'</span>'
-          ).join('')+'</div>':'<p class="insight-day-empty">No check-ins on this day. Every day is a fresh opportunity.</p>');
-      }
+      renderHeatDetails(selectedHeatDay,chosen);
       const yearEl=$('insightYearGrid');
       if(yearEl){
         const scroll=$('insightYearScroll'),oldScroll=scroll.scrollLeft;
@@ -2421,7 +2436,7 @@
           b.classList.toggle('is-selected',selected);
           b.setAttribute('aria-pressed',String(selected));
         });
-        paintHeatDetail();
+        renderHeatDetails(selectedHeatDay,chosen);
       }
       $('insightMilestones').innerHTML=achievementItems(habits).slice(0,7).map(a=>
         '<div class="insight-milestone '+(a.progress>=a.goal?'unlocked':'')+'"><span class="milestone-symbol">'+badgeArt[a.icon]+'</span><strong>'+safe(a.title)+'</strong><small>'+safe(a.detail)+'</small></div>'
@@ -2440,15 +2455,7 @@
         const yes=b.dataset.heatDate===day;b.classList.toggle('is-selected',yes);b.setAttribute('aria-pressed',String(yes));
       });
       if(!day){detail.hidden=true;detail.innerHTML='';return;}
-      const matched=chosen.filter(h=>(h.completions||[]).includes(day));
-      detail.hidden=false;
-      detail.innerHTML='<div class="insight-day-heading"><div><span class="insight-kicker">DAY DETAILS</span><h3>'+
-        parse(day).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'})+
-        '</h3><p>'+matched.length+' habit'+(matched.length===1?'':'s')+' completed</p></div>'+
-        '<button class="insight-day-close" type="button" data-heat-close aria-label="Close day details">×</button></div>'+
-        (matched.length?'<div class="insight-day-habits">'+matched.map(h=>
-          '<span class="insight-day-habit"><span aria-hidden="true">✦</span>'+safe(h.name)+'</span>'
-        ).join('')+'</div>':'<p class="insight-day-empty">No check-ins on this day. Every day is a fresh opportunity.</p>');
+      renderHeatDetails(day,chosen);
     });
     $('insightDayDetail')?.addEventListener('click',event=>{
       if(!event.target.closest('[data-heat-close]'))return;
@@ -2459,7 +2466,7 @@
     function dispose(){focusInstance?.dispose();achievementInstance?.dispose();if(unsub)unsub();if(insightUnsub)insightUnsub();clearTimeout(saveTimer);if(sortable)sortable.destroy();clearTimeout(transitionTimeout);if(transitionFrame)cancelAnimationFrame(transitionFrame);}
     try{achievementInstance=window.MyStreaksAchievements?.start({db,doc,onSnapshot,setDoc,getHabits,evaluateHabit,longestFor,visuals:badgeArt,weeklyProtectedFor:h=>h.cadence==='weekly'?protectedWeeklyHistory(h).protectedWeeks.length:0})||null;}catch(error){console.error('Achievement celebrations initialization failed',error);}
     // Focus Plans uses its own Firestore document, separate from checklist notes.
-    try{focusInstance=window.MyStreaksFocus?.start({db,doc,onSnapshot,setDoc})||null;}catch(error){console.error('Focus Plans initialization failed',error);}
+    try{focusInstance=window.MyStreaksFocus?.start({db,doc,onSnapshot,setDoc,onStudyChange:()=>{if(tab==='insights')renderInsights();}})||null;}catch(error){console.error('Focus Plans initialization failed',error);}
     // Deep links should initialize consistently once the account loads.
     updateNav();
     return {setUser,selectTab,onHabitsChange,renderInsights,renderChecklist,tab:()=>tab,dispose};
