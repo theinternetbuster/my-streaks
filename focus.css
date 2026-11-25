@@ -398,3 +398,55 @@ html[data-theme="light"] .focus-plans-root .focus-tip-sparkle{
  .focus-plans-root .focus-encouragement{padding:12px;gap:10px}
  .focus-plans-root .focus-tip-sparkle{width:29px;height:29px}
 }
+
+
+/* Lifetime German progress and touch-friendly weekly study inspection. */
+.focus-plans-root .focus-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
+.focus-plans-root .focus-stats>div{min-width:0}
+.focus-plans-root .focus-stat-lifetime{
+ background:linear-gradient(135deg,#382d2e,#302b32)!important;
+ border-color:#d28c543b!important;
+}
+.focus-plans-root .focus-stat-lifetime small{color:#c2acb4}
+.focus-plans-root .focus-stat-lifetime strong{color:#ffad75}
+html[data-theme="light"] .focus-plans-root .focus-stat-lifetime{
+ background:linear-gradient(135deg,#fff6ed,#fdf4f6)!important;
+ border-color:#efc5a5!important;
+}
+html[data-theme="light"] .focus-plans-root .focus-stat-lifetime small{color:#8a6770}
+html[data-theme="light"] .focus-plans-root .focus-stat-lifetime strong{color:#bd622f}
+.focus-plans-root .focus-week-day{
+ background:transparent;border:0;color:inherit;cursor:pointer;padding:4px 3px 8px;
+ border-radius:9px;touch-action:manipulation;font:inherit;
+ transition:background .16s;
+}
+.focus-plans-root .focus-week-day:hover,
+.focus-plans-root .focus-week-day.is-selected{background:#c2875430}
+.focus-plans-root .focus-week-day:focus-visible{
+ outline:2px solid #e89a68;outline-offset:-2px;
+}
+.focus-plans-root .focus-week-day.is-selected .focus-bar-fill{
+ background:linear-gradient(180deg,#ffbb85,#e88b58);
+ box-shadow:0 0 12px #ec99664f;
+}
+.focus-plans-root .focus-week-selected{
+ display:flex;align-items:center;justify-content:space-between;gap:12px;
+ margin:10px 0 15px;padding:12px 15px;border-radius:12px;
+ background:#ad7b4f18;border:1px solid #c58c5c48;
+ font-size:12px;line-height:1.4;
+}
+.focus-plans-root .focus-week-selected strong{font-size:12px}
+.focus-plans-root .focus-week-selected span{font-size:13px;color:#ffb482;font-weight:750;font-variant-numeric:tabular-nums}
+html[data-theme="light"] .focus-plans-root .focus-week-selected{background:#fff5ed;border-color:#edd0b6}
+html[data-theme="light"] .focus-plans-root .focus-week-selected span{color:#b85e2b}
+@media(max-width:799px){
+ .focus-plans-root .focus-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .focus-plans-root .focus-week-day{padding:4px 2px 8px}
+}
+@media(min-width:800px) and (max-width:1000px){
+ .focus-plans-root .focus-stats>div{padding:14px 12px}
+ .focus-plans-root .focus-stats strong{font-size:clamp(18px,2.4vw,27px)}
+}
+@media(prefers-reduced-motion:reduce){
+ .focus-plans-root .focus-week-day{transition:none}
+}
