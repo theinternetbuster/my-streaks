@@ -15,10 +15,74 @@
   function start({db,doc,onSnapshot,setDoc,getHabits,evaluateHabit,onTabChange}){
     const root=$('checklistBlocks');
     if(!root)return null;
-    let focusInstance=null,achievementInstance=null,habitHistoryReady=false;
+    let focusInstance=null,achievementInstance=null,progressInstance=null,habitHistoryReady=false;
     let tab='home',user=null,unsub=null,blocks=[],dirty=false,saveTimer=null,insightSection='overview',
         slashFor=null,slashMatches=types,slashSelected=0,sortable=null,saveSerial=0,listenerEpoch=0;
     let pendingWrite=Promise.resolve(),editRevision=0;
+    let listId='school',lists={school:{name:'School',icon:'🎓',color:'#60a5fa'}},listUnsub=null,listReady=false,listSwitching=false,checklistReady=false;
+    const listDocument=id=>id==='school'?'checklist':'checklist-'+id;
+    const listBar=document.createElement('section');
+    listBar.className='checklist-list-bar';
+    listBar.setAttribute('aria-label','Your checklists');
+    $('checklistOriginal').prepend(listBar);
+    function renderListBar(){
+      listBar.innerHTML='<div class="checklist-list-heading"><strong>My lists</strong><button type="button" data-list-action="new" '+(!listReady||listSwitching?'disabled':'')+'>＋ New list</button></div><div class="checklist-list-options">'+Object.entries(lists).map(([id,v])=>'<button type="button" data-list-id="'+safe(id)+'" aria-pressed="'+(id===listId)+'" '+(!checklistReady||listSwitching?'disabled':'')+' style="--list-color:'+safe(v.color)+'"><span aria-hidden="true">'+safe(v.icon)+'</span><span>'+safe(v.name)+'</span></button>').join('')+'</div><div class="checklist-list-actions"><span>'+safe(lists[listId]?.name||'School')+'</span><button type="button" data-list-action="rename" '+(!listReady||listSwitching?'disabled':'')+'>Edit list</button></div>';
+      const title=document.querySelector('.checklist-document-top>span:first-child');if(title){const label=Array.from(title.childNodes).find(n=>n.nodeType===3);if(label)label.textContent=' '+(lists[listId]?.name||'School').toUpperCase();}
+      root.inert=!checklistReady||listSwitching;
+      for(const id of ['checklistAdd','checklistAddBottom','checklistEmpty'])$(id).disabled=!checklistReady||listSwitching;
+    }
+    const listColors=['#60a5fa','#34d399','#a78bfa','#f59e0b','#f472b6','#64748b'];
+    const listDialog=document.createElement('dialog');listDialog.className='ms-list-dialog';listDialog.setAttribute('aria-label','Manage checklist');document.body.append(listDialog);
+    let editingList=null;
+    function openListDialog(editing){
+      editingList=editing?listId:null;
+      const previous=editing?lists[listId]:null;
+      listDialog.innerHTML='<form class="ms-feature-card ms-goal-form"><h3>'+(editing?'Edit list':'Create a checklist')+'</h3><label>Name<input name="name" required maxlength="40" value="'+safe(previous?.name||'')+'" placeholder="Life, Projects, School…"></label><label>Icon or emoji<input name="icon" maxlength="12" value="'+safe(previous?.icon||'🌿')+'"></label><label>Color<select name="color">'+listColors.map((c,i)=>'<option value="'+c+'" '+((previous?.color||listColors[Object.keys(lists).length%listColors.length])===c?'selected':'')+'>'+['Blue','Green','Purple','Gold','Pink','Slate'][i]+'</option>').join('')+'</select></label><div class="ms-goal-actions"><button type="button" data-list-cancel>Cancel</button><button type="submit" class="ms-primary">Save list</button></div><p data-list-error role="status"></p></form>';
+      listDialog.showModal();
+    }
+    listDialog.addEventListener('click',e=>{if(e.target.closest('[data-list-cancel]'))listDialog.close();});
+    listDialog.addEventListener('submit',async e=>{
+      e.preventDefault();if(!user||!listReady||listSwitching)return;
+      const form=e.target,id=editingList||uniqueId(),uid=user.uid,name=form.elements.name.value.trim().slice(0,40);
+      if(!name)return;
+      const item={name,icon:form.elements.icon.value.trim().slice(0,12)||'•',color:listColors.includes(form.elements.color.value)?form.elements.color.value:listColors[0]};
+      const submit=form.querySelector('button[type="submit"]');submit.disabled=true;
+      try{await setDoc(doc(db,'users',uid,'settings','checklistLists'),{lists:{[id]:item}},{merge:true});if(user?.uid!==uid)return;lists[id]=item;listDialog.close();renderListBar();if(!editingList)await switchList(id);}
+      catch(error){console.error('List metadata save failed',error);form.querySelector('[data-list-error]').textContent='Could not save list. Try again.';submit.disabled=false;}
+    });
+    function listenChecklist(id){
+      if(unsub)unsub();
+      const epoch=++listenerEpoch;
+      checklistReady=false;blocks=[];dirty=false;resetHistory();renderChecklist(true);renderListBar();
+      $('checklistSyncStatus').textContent='Syncing…';
+      unsub=onSnapshot(doc(db,'users',user.uid,'settings',listDocument(id)),snapshot=>{
+        if(epoch!==listenerEpoch||!user)return;
+        if(!dirty&&!snapshot.metadata?.hasPendingWrites){
+          const incoming=snapshot.exists()?snapshot.data().blocks:[];
+          const nextBlocks=Array.isArray(incoming)?migrateChecklistBlocks(incoming.filter(b=>b&&typeof b.text==='string').slice(0,500)):[];
+          const nextJson=JSON.stringify(nextBlocks.map((b,i)=>({...b,order:i})));
+          if(!checklistReady||nextJson!==serializeBlocks()){blocks=nextBlocks;resetHistory();renderChecklist(!checklistReady);}
+          if(!checklistReady){checklistReady=true;renderListBar();}
+        }
+        if(!snapshot.metadata?.hasPendingWrites&&!dirty)$('checklistSyncStatus').textContent='';
+      },error=>{if(epoch!==listenerEpoch)return;console.error('Checklist read failed',error);$('checklistSyncStatus').textContent='Could not sync';});
+    }
+    async function switchList(id){
+      if(!user||!lists[id]||id===listId||listSwitching||!checklistReady)return;
+      const uid=user.uid;listSwitching=true;
+      document.activeElement?.blur?.();closeSlash();closeBlockMenu();closeDateMenu();clearDocumentSelection();
+      clearTimeout(saveTimer);renderListBar();
+      if(dirty)await saveChecklist();else await pendingWrite;
+      if(user?.uid!==uid)return;
+      if(dirty){listSwitching=false;renderListBar();return;}
+      listId=id;listSwitching=false;editRevision++;saveSerial++;listenChecklist(id);
+    }
+    listBar.addEventListener('click',async e=>{
+      const button=e.target.closest('button');if(!button||!user||listSwitching)return;
+      if(button.dataset.listId){switchList(button.dataset.listId);return;}
+      if(!listReady)return;
+      if(button.dataset.listAction==='new'||button.dataset.listAction==='rename')openListDialog(button.dataset.listAction==='rename');
+    });
     let selectedHeatDay=null,transitionTimeout=null,transitionFrame=null;
     const playPageEntrance=()=>{
       document.body.classList.remove('workspace-page-enter');
@@ -94,7 +158,7 @@
       document.querySelector('.workspace-bottom-pill')?.setAttribute('data-current',tab);
     }
     function selectTab(next,{history:pushHistory=true,silent=false}={}){
-      if(!['home','insights','checklist'].includes(next)||!user)return;
+      if(!['home','insights','checklist','goals'].includes(next)||!user)return;
       const changed=tab!==next;
       if(next!=='checklist')focusInstance?.pause?.();
       tab=next;updateNav();closeSlash();
@@ -105,6 +169,7 @@
       if(!silent)onTabChange(tab);
       if(tab==='insights')renderInsights();
       if(tab==='checklist')renderChecklist();
+      if(tab==='goals')progressInstance?.refresh();
       if(changed)playPageEntrance();
       window.scrollTo({top:0,behavior:'instant'});
     }
@@ -120,32 +185,23 @@
       selectTab(new URLSearchParams(location.search).get('view')||'home',{history:false});
     });
     function setUser(next){
-      if(unsub){unsub();unsub=null;}
+      if(listDialog.open)listDialog.close();if(unsub){unsub();unsub=null;}if(listUnsub){listUnsub();listUnsub=null;}listenerEpoch++;
       clearTimeout(saveTimer);editRevision++;
       user=next;habitHistoryReady=false;selectedHeatDay=null;focusInstance?.setUser(next);achievementInstance?.setUser(next);blocks=[];dirty=false;saveSerial++;clearDocumentSelection();resetHistory();insightSection='overview';
-      tab=['insights','checklist'].includes(new URLSearchParams(location.search).get('view'))?
-        new URLSearchParams(location.search).get('view'):'home';
-      updateNav();
-      if(!user){renderChecklist();return;}
-      const epoch=++listenerEpoch;
-      $('checklistSyncStatus').textContent='Syncing…';
-      try{
-        unsub=onSnapshot(doc(db,'users',user.uid,'settings','checklist'),snapshot=>{
-          if(epoch!==listenerEpoch||!user)return;
-          if(!dirty){
-            const incoming=snapshot.exists()?snapshot.data().blocks:[];
-            const nextBlocks=Array.isArray(incoming)?migrateChecklistBlocks(incoming.filter(b=>b&&typeof b.text==='string').slice(0,500)):[];
-            const nextJson=JSON.stringify(nextBlocks.map((b,i)=>({...b,order:i})));
-            if(nextJson!==serializeBlocks()){
-              blocks=nextBlocks;resetHistory();renderChecklist();
-            }
-          }
-          if(!snapshot.metadata?.hasPendingWrites)$('checklistSyncStatus').textContent='';
-        },error=>{
-          console.error('Checklist read failed',error);
-          $('checklistSyncStatus').textContent='Could not sync';
-        });
-      }catch(error){console.error('Checklist could not initialize',error);$('checklistSyncStatus').textContent='Sync unavailable';}
+      progressInstance?.setUser(next);
+      listId='school';lists={school:{name:'School',icon:'🎓',color:'#60a5fa'}};listReady=false;checklistReady=false;listSwitching=false;
+      tab=['insights','checklist','goals'].includes(new URLSearchParams(location.search).get('view'))?new URLSearchParams(location.search).get('view'):'home';
+      updateNav();renderListBar();
+      if(!user){renderChecklist(true);return;}
+      const uid=user.uid;
+      listUnsub=onSnapshot(doc(db,'users',uid,'settings','checklistLists'),snapshot=>{
+        if(user?.uid!==uid)return;
+        const incoming=snapshot.data()?.lists||{};
+        const clean={school:{name:'School',icon:'🎓',color:'#60a5fa'}};
+        for(const [id,v] of Object.entries(incoming))if(/^[a-z0-9_-]{1,50}$/i.test(id)&&v&&typeof v.name==='string')clean[id]={name:v.name.slice(0,40),icon:String(v.icon||'•').slice(0,12),color:/^#[0-9a-f]{6}$/i.test(v.color)?v.color:'#60a5fa'};
+        lists=clean;listReady=true;renderListBar();
+      },error=>{console.error('List metadata sync failed',error);});
+      listenChecklist('school');
       if(tab==='insights')renderInsights();
     }
     function normalizedType(t){return types.some(x=>x.id===t)?t:'text';}
@@ -202,7 +258,7 @@
       }
     }
     function scheduleSave(soon=false){
-      if(!user)return;
+      if(!user||!checklistReady||listSwitching)return;
       trackHistory();
       dirty=true;editRevision++;clearTimeout(saveTimer);
       $('checklistSyncStatus').textContent='Saving…';
@@ -210,29 +266,29 @@
     }
     async function saveChecklist(){
       if(!user)return;
-      const thisUser=user.uid;
+      const thisUser=user.uid, thisList=listId;
       const payload=blocks.map((b,i)=>({...b,order:i}));
       const serial=++saveSerial,revision=editRevision;
       // Serialize writes so a slower earlier save cannot overwrite a newer edit.
       const run=async()=>{
         if(!user||user.uid!==thisUser)return;
         try{
-          await setDoc(doc(db,'users',thisUser,'settings','checklist'),{
+          await setDoc(doc(db,'users',thisUser,'settings',listDocument(thisList)),{
             blocks:payload,updatedAt:Date.now()
           },{merge:true});
-          if(serial===saveSerial&&revision===editRevision&&user&&user.uid===thisUser){
+          if(serial===saveSerial&&revision===editRevision&&user&&user.uid===thisUser&&listId===thisList){
             dirty=false;$('checklistSyncStatus').textContent='';
           }
         }catch(err){
           console.error('Checklist save failed',err);
-          if(serial===saveSerial)$('checklistSyncStatus').textContent='Save failed — retrying';
-          dirty=true;
+          if(serial===saveSerial&&user?.uid===thisUser&&listId===thisList){$('checklistSyncStatus').textContent='Save failed — retry';dirty=true;}
         }
       };
       pendingWrite=pendingWrite.then(run,run);
       await pendingWrite;
     }
     function addBlock(afterId=null,type='todo',text='',forcedParentId=null){
+      if(!checklistReady||listSwitching)return null;
       const preceding=blocks.find(x=>x.id===afterId);
       const parentId=forcedParentId!==null?forcedParentId:(preceding?.parentId||'');
       const b={id:uniqueId(),type,text,parentId,checked:false,collapsed:false,detailsOpen:type==='todoList',note:'',detailsMode:'tasks',subtasks:[],dueDate:'',order:blocks.length,createdAt:Date.now()};
@@ -1930,7 +1986,7 @@
       drawDocumentSelection();
     }
     document.addEventListener('keydown',event=>{
-      if(!user||tab!=='checklist'||!root.isConnected)return;
+      if(!user||tab!=='checklist'||!root.isConnected||!checklistReady||listSwitching||listDialog.open)return;
       const inside=root.contains(document.activeElement)||root.contains(event.target);
       // Block menu deletion leaves focus on the menu: Undo must still work
       // when the checklist itself does not currently own keyboard focus.
@@ -2309,24 +2365,18 @@ studylaurel:'<svg class="study-art" viewBox="0 0 80 80" aria-hidden="true"><g cl
     $('insightAchievementGrid').addEventListener('click',e=>{const card=e.target.closest('[data-achievement-index]');if(card)achievementInstance?.openDetail(card.dataset.achievementIndex);});
     $('insightAchievementGrid').addEventListener('keydown',e=>{if(e.key!=='Enter'&&e.key!==' ')return;const card=e.target.closest('[data-achievement-index]');if(!card)return;e.preventDefault();achievementInstance?.openDetail(card.dataset.achievementIndex);});
     function renderInsightTabs(){
-      const achievements=insightSection==='achievements';
-      $('insightOverview').hidden=achievements;
-      $('insightAchievements').hidden=!achievements;
-      document.querySelector('.insight-section-tabs')?.setAttribute('data-selected',achievements?'achievements':'overview');
-      for(const [id,active] of [['insightOverviewTab',!achievements],['insightAchievementsTab',achievements]]){
-        $(id).classList.toggle('active',active);
-        $(id).setAttribute('aria-selected',String(active));
-        $(id).tabIndex=active?0:-1;
+      for(const [section,panel,button] of [['overview','insightOverview','insightOverviewTab'],['achievements','insightAchievements','insightAchievementsTab'],['reports','insightReports','insightReportsTab']]){
+        const active=insightSection===section;
+        $(panel).hidden=!active;$(button).classList.toggle('active',active);$(button).setAttribute('aria-selected',String(active));$(button).tabIndex=active?0:-1;
       }
+      document.querySelector('.ms-insight-tabs')?.setAttribute('data-selected',insightSection);
     }
     function chooseInsightSection(which){
-      insightSection=which==='achievements'?'achievements':'overview';
+      insightSection=['overview','achievements','reports'].includes(which)?which:'overview';
       if(insightSection==='achievements')achievementInstance?.markRead();
       renderInsightTabs();renderInsights();
     }
-    $('insightOverviewTab').addEventListener('click',()=>chooseInsightSection('overview'));
-    $('insightAchievementsTab').addEventListener('click',()=>chooseInsightSection('achievements'));
-    $('insightViewAchievements').addEventListener('click',()=>chooseInsightSection('achievements'));
+    for(const [id,section] of [['insightOverviewTab','overview'],['insightAchievementsTab','achievements'],['insightReportsTab','reports'],['insightViewAchievements','achievements']])$(id).addEventListener('click',()=>chooseInsightSection(section));
     const formatStudyTime=seconds=>{
       const minutes=Math.floor(Math.max(0,seconds||0)/60);
       return minutes>=60?Math.floor(minutes/60)+'h '+String(minutes%60).padStart(2,'0')+'m':minutes+'m';
@@ -2360,8 +2410,9 @@ studylaurel:'<svg class="study-art" viewBox="0 0 80 80" aria-hidden="true"><g cl
     function renderInsights(){
       const habits=getHabits();
       const empty=$('insightEmpty'),content=$('insightsContent');
-      empty.hidden=habits.length>0;content.hidden=habits.length===0;
-      if(!habits.length){renderInsightTabs();return;}
+      empty.hidden=habits.length>0||insightSection!=='overview';content.hidden=false;
+      if(insightSection==='reports'){renderInsightTabs();progressInstance?.refresh();return;}
+      if(!habits.length){renderInsightTabs();$('insightOverview').hidden=true;if(insightSection==='achievements')renderAchievements([]);return;}
       renderInsightTabs();
       const all=true;
       const chosen=habits;
@@ -2429,11 +2480,12 @@ studylaurel:'<svg class="study-art" viewBox="0 0 80 80" aria-hidden="true"><g cl
       selectedHeatDay=null;$('insightDayDetail').hidden=true;$('insightDayDetail').innerHTML='';
       $('insightYearGrid').querySelectorAll('button[data-heat-date]').forEach(b=>{b.classList.remove('is-selected');b.setAttribute('aria-pressed','false');});
     });
-        function onHabitsChange(){habitHistoryReady=true;achievementInstance?.onHabitsChange();if(tab==='insights')renderInsights();}
-    function dispose(){focusInstance?.dispose();achievementInstance?.dispose();if(unsub)unsub();clearTimeout(saveTimer);if(sortable)sortable.destroy();clearTimeout(transitionTimeout);if(transitionFrame)cancelAnimationFrame(transitionFrame);}
+        function onHabitsChange(){habitHistoryReady=true;achievementInstance?.onHabitsChange();if(tab==='insights')renderInsights();if(tab==='goals')progressInstance?.refresh();}
+    function dispose(){listDialog.remove();progressInstance?.dispose();focusInstance?.dispose();achievementInstance?.dispose();if(listUnsub)listUnsub();if(unsub)unsub();clearTimeout(saveTimer);if(sortable)sortable.destroy();clearTimeout(transitionTimeout);if(transitionFrame)cancelAnimationFrame(transitionFrame);}
     try{achievementInstance=window.MyStreaksAchievements?.start({db,doc,onSnapshot,setDoc,getHabits,evaluateHabit,longestFor,visuals:badgeArt,getStudyHours:()=>focusInstance?.getStudyHours?.()??null,weeklyProtectedFor:h=>h.cadence==='weekly'?protectedWeeklyHistory(h).protectedWeeks.length:0})||null;}catch(error){console.error('Achievement celebrations initialization failed',error);}
     // Focus Plans uses its own Firestore document, separate from checklist notes.
-    try{focusInstance=window.MyStreaksFocus?.start({db,doc,onSnapshot,setDoc,onStudyChange:({timerRunning=false}={})=>{if(habitHistoryReady&&!timerRunning)achievementInstance?.onHabitsChange();if(tab==='insights')renderInsights();}})||null;}catch(error){console.error('Focus Plans initialization failed',error);}
+    try{focusInstance=window.MyStreaksFocus?.start({db,doc,onSnapshot,setDoc,onStudyChange:({timerRunning=false}={})=>{if(habitHistoryReady&&!timerRunning)achievementInstance?.onHabitsChange();if(tab==='insights')renderInsights();if(tab==='goals')progressInstance?.refresh();}})||null;}catch(error){console.error('Focus Plans initialization failed',error);}
+    try{progressInstance=window.MyStreaksProgress?.start({db,doc,onSnapshot,setDoc,getHabits,getHistory:()=>focusInstance?.getHistory?.()??null})||null;}catch(error){console.error('Progress initialization failed',error);}
     // Deep links should initialize consistently once the account loads.
     updateNav();
     return {setUser,selectTab,onHabitsChange,renderInsights,renderChecklist,tab:()=>tab,dispose};
