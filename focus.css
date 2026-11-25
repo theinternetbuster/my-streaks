@@ -450,3 +450,43 @@ html[data-theme="light"] .focus-plans-root .focus-week-selected span{color:#b85e
 @media(prefers-reduced-motion:reduce){
  .focus-plans-root .focus-week-day{transition:none}
 }
+
+/* German collection: distinct enamel-like medals and individual reveals. */
+.achievement-celebration-overlay[data-award="german1"]{--award-accent:#b9a4ff;--award-glow:#9d82ed55;--award-bg:#352454}
+.achievement-celebration-overlay[data-award="german10"]{--award-accent:#78e0d5;--award-glow:#50d6c44d;--award-bg:#144c58}
+.achievement-celebration-overlay[data-award="german25"]{--award-accent:#ffae86;--award-glow:#f28d7452;--award-bg:#633746}
+.achievement-celebration-overlay[data-award="german100"]{--award-accent:#f5d18a;--award-glow:#e5bf645e;--award-bg:#29435f}
+.achievement-celebration-overlay[data-award^="german"] .achievement-celebration-card{
+ background:radial-gradient(ellipse at 50% 15%,var(--award-bg),#23212c 57%,#17171e);
+ border-color:color-mix(in srgb,var(--award-accent) 36%,transparent)
+}
+.achievement-celebration-overlay[data-award^="german"] .achievement-celebration-medal{
+ width:132px;height:132px;border:2px solid color-mix(in srgb,var(--award-accent) 68%,#222);
+ background:radial-gradient(circle at 37% 24%,color-mix(in srgb,var(--award-accent) 29%,var(--award-bg)),var(--award-bg) 66%,#171720);
+ box-shadow:inset 0 0 0 5px #ffffff09,0 0 0 8px var(--award-glow),0 0 48px var(--award-glow)
+}
+.achievement-celebration-overlay[data-award^="german"] .achievement-celebration-medal svg{width:94px;height:94px;overflow:visible;filter:drop-shadow(0 5px 5px #0005)}
+.achievement-celebration-overlay[data-award^="german"] .achievement-celebration-sparkle,
+.achievement-celebration-overlay[data-award^="german"] .achievement-celebration-card::before,
+.achievement-celebration-overlay[data-award^="german"] .achievement-celebration-card::after{color:var(--award-accent)}
+.achievement-celebration-overlay[data-award^="german"] .study-art g,
+.achievement-celebration-overlay[data-award^="german"] .study-spark{transform-box:fill-box;transform-origin:center}
+.achievement-celebration-overlay.award-revealing[data-award="german1"] .study-book-left{transform-origin:right center;animation:study-page-left 1.5s .4s both cubic-bezier(.18,.85,.25,1)}
+.achievement-celebration-overlay.award-revealing[data-award="german1"] .study-book-right{transform-origin:left center;animation:study-page-right 1.5s .4s both cubic-bezier(.18,.85,.25,1)}
+.achievement-celebration-overlay.award-revealing[data-award="german10"] .study-bubble-back{animation:study-chat-back 1.4s .35s both cubic-bezier(.2,.8,.3,1.2)}
+.achievement-celebration-overlay.award-revealing[data-award="german10"] .study-bubble-front{animation:study-chat-front 1.4s .62s both cubic-bezier(.2,.8,.3,1.2)}
+.achievement-celebration-overlay.award-revealing[data-award="german25"] .study-needle{transform-box:view-box;transform-origin:40px 40px;animation:study-compass-turn 2s .35s both cubic-bezier(.16,.85,.25,1)}
+.achievement-celebration-overlay.award-revealing[data-award="german100"] .study-wreath{animation:study-wreath-rise 1.7s .35s both ease-out}
+.achievement-celebration-overlay.award-revealing[data-award="german100"] .study-crest{animation:study-crest-rise 1.7s .5s both cubic-bezier(.18,.8,.25,1.2)}
+.achievement-celebration-overlay.award-revealing[data-award^="german"] .study-spark{animation:study-spark-reveal 1.3s 1.2s both ease-out}
+@keyframes study-page-left{0%{opacity:0;transform:scaleX(.05) rotate(14deg)}100%{opacity:1;transform:none}}
+@keyframes study-page-right{0%{opacity:0;transform:scaleX(.05) rotate(-14deg)}100%{opacity:1;transform:none}}
+@keyframes study-chat-back{0%{opacity:0;transform:translate(17px,-15px) scale(.65)}100%{opacity:1;transform:none}}
+@keyframes study-chat-front{0%{opacity:0;transform:translate(-17px,14px) scale(.65)}100%{opacity:1;transform:none}}
+@keyframes study-compass-turn{0%{transform:rotate(-370deg)}75%{transform:rotate(18deg)}100%{transform:rotate(0)}}
+@keyframes study-wreath-rise{0%{opacity:0;transform:translateY(13px) scale(.7)}100%{opacity:1;transform:none}}
+@keyframes study-crest-rise{0%{opacity:0;transform:translateY(18px) scale(.55)}100%{opacity:1;transform:none}}
+@keyframes study-spark-reveal{0%{opacity:0;transform:scale(0) rotate(-90deg)}65%{opacity:1;transform:scale(1.35) rotate(12deg)}100%{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){
+ .achievement-celebration-overlay[data-award^="german"] .study-art *{animation:none!important;transform:none!important;opacity:1!important}
+}
