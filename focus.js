@@ -18,10 +18,10 @@ const dayAt=(d,n)=>{const c=new Date(d);c.setDate(c.getDate()+n);return [c.getFu
 const format=s=>{const m=Math.floor(Math.max(0,s)/60);return m>=60?Math.floor(m/60)+'h '+String(m%60).padStart(2,'0')+'m':m+'m';};
 const clock=s=>{s=Math.max(0,Math.floor(s));return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');};
 const cleanBlocks=raw=>Array.isArray(raw)&&raw.length?raw.slice(0,12).map((b,i)=>({id:/^[a-z0-9_-]{1,32}$/i.test(b.id||'')?b.id:'block'+i,name:String(b.name||'Activity').slice(0,55),minutes:Math.max(1,Math.min(240,Number(b.minutes)||20)),color:/^#[0-9a-f]{6}$/i.test(b.color||'')?b.color:palette[i%palette.length]})):defaults.map(x=>({...x}));
-function start({db,doc,onSnapshot,setDoc}){
+function start({db,doc,onSnapshot,setDoc,onStudyChange}){
  const root=$('focusPlansRoot'),toggle=$('checklistViewToggle');
  if(!root||!toggle)return {setUser(){},dispose(){}};
- let user=null,unsub=null,plan={blocks:cleanBlocks(defaults),days:{}},ready=false,dirty=false,editing=false,adjusting=null,expanded=null,weekExpanded=false,active=null,activeSince=0,overtime=false,saveQueue=Promise.resolve(),saveTimer=null,tickTimer=null,lastSnapshot='';
+ let user=null,unsub=null,plan={blocks:cleanBlocks(defaults),days:{}},ready=false,dirty=false,editing=false,adjusting=null,expanded=null,weekExpanded=false,selectedWeekDay=null,active=null,activeSince=0,overtime=false,saveQueue=Promise.resolve(),saveTimer=null,tickTimer=null,lastSnapshot='';
  const record=()=>{const d=day();if(!plan.days[d])plan.days[d]={};return plan.days[d];};
  const entry=(id)=>{const r=record();if(!r[id])r[id]={seconds:0,done:false};return r[id];};
  const normalize=raw=>{
@@ -65,18 +65,19 @@ function start({db,doc,onSnapshot,setDoc}){
   const finished=blocks.filter(b=>today[b.id]?.done).length;
   const mondayDate=monday(),week=Array.from({length:7},(_,i)=>{const d=dayAt(mondayDate,i);return {date:d,seconds:Object.values(plan.days[d]||{}).reduce((a,r)=>a+(r.seconds||0),0)};});
   const weekly=week.reduce((a,x)=>a+x.seconds,0);
+  const lifetime=Object.values(plan.days).reduce((sum,entries)=>sum+Object.values(entries).reduce((n,r)=>n+(r.seconds||0),0),0);
   if(expanded&&!blocks.some(b=>b.id===expanded))expanded=null;
   const progress=blocks.map(b=>{
-    const seconds=Math.max(0,today[b.id]?.seconds||0),portion=today[b.id]?.done?100:Math.min(100,seconds/(b.minutes*60)*100);
+    const seconds=Math.max(0,today[b.id]?.seconds||0),portion=Math.min(100,seconds/(b.minutes*60)*100);
     return '<span class="focus-segment" data-focus-segment="'+b.id+'" style="flex:'+b.minutes+';--segment:'+b.color+'" title="'+escape(b.name)+' · '+format(seconds)+' recorded"><span class="focus-segment-fill" style="width:'+portion+'%"></span></span>';
   }).join('');
   const message=finished===blocks.length?'Gut gemacht! All sections checked off for today.':active?'Your study time is being recorded. Keep your attention on the activity, not the clock.':actual>0?'Every bit of practice counts. Come back whenever you are ready.':'Start with any section. Your study time saves as you go.';
   root.innerHTML='<div class="focus-topline"><div><span class="focus-eyebrow">YOUR STUDY SPACE</span><h2>German Practice <span class="focus-language-code" aria-label="German language">DE</span></h2><p>One section at a time, at your pace.</p></div><button type="button" class="focus-edit-trigger" data-focus="edit">Edit plan</button></div>'+
-    '<div class="focus-stats"><div><small>Planned today</small><strong>'+format(planned)+'</strong></div><div><small>Studied today</small><strong data-focus-live="today">'+format(actual)+'</strong></div><div><small>This week</small><strong data-focus-live="week-total">'+format(weekly)+'</strong></div></div>'+
+    '<div class="focus-stats"><div><small>Planned today</small><strong>'+format(planned)+'</strong></div><div><small>Studied today</small><strong data-focus-live="today">'+format(actual)+'</strong></div><div><small>This week</small><strong data-focus-live="week-total">'+format(weekly)+'</strong></div><div class="focus-stat-lifetime"><small>Total studied</small><strong data-focus-live="lifetime">'+format(lifetime)+'</strong></div></div>'+
     '<div class="focus-timeline">'+progress+'</div><div class="focus-summary"><span>'+finished+' / '+blocks.length+' sections complete</span><span data-focus-live="recorded">'+format(actual)+' recorded</span></div>'+
     '<div class="focus-activities">'+blocks.map(b=>row(b,today[b.id]||{seconds:0,done:false})).join('')+'</div>'+
     '<div class="focus-encouragement" role="note"><span class="focus-tip-sparkle" aria-hidden="true">✦</span><p>'+escape(message)+'</p></div>'+
-    '<section class="focus-week'+(weekExpanded?' is-expanded':'')+'"><button type="button" class="focus-week-heading" data-focus="week" aria-expanded="'+weekExpanded+'"><span class="focus-week-title"><strong>This week</strong><small>'+format(weekly)+' focused</small></span><span class="focus-chevron" aria-hidden="true">⌄</span></button>'+(weekExpanded?'<div class="focus-week-body"><div class="focus-week-bars">'+week.map((w,i)=>'<div class="focus-week-day"><div class="focus-bar-track"><div class="focus-bar-fill" style="height:'+Math.max(2,Math.min(100,w.seconds/(Math.max(3600,...week.map(v=>v.seconds)))*100))+'%"></div></div><span>'+['M','T','W','T','F','S','S'][i]+'</span></div>').join('')+'</div><p>Recorded timer time only. Untimed check-offs add no minutes.</p></div>':'')+'</section>'+
+    '<section class="focus-week'+(weekExpanded?' is-expanded':'')+'"><button type="button" class="focus-week-heading" data-focus="week" aria-expanded="'+weekExpanded+'"><span class="focus-week-title"><strong>This week</strong><small>'+format(weekly)+' focused</small></span><span class="focus-chevron" aria-hidden="true">⌄</span></button>'+(weekExpanded?'<div class="focus-week-body"><div class="focus-week-bars">'+week.map((w,i)=>'<button type="button" class="focus-week-day'+(selectedWeekDay===w.date?' is-selected':'')+'" data-focus="week-day" data-date="'+w.date+'" data-focus-weekday="'+w.date+'" aria-pressed="'+(selectedWeekDay===w.date)+'" aria-label="'+new Date(w.date+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'})+': '+format(w.seconds)+' studied" title="'+format(w.seconds)+' · '+w.date+'"><span class="focus-bar-track"><span class="focus-bar-fill" style="height:'+Math.max(2,Math.min(100,w.seconds/(Math.max(3600,...week.map(v=>v.seconds)))*100))+'%"></span></span><span>'+['M','T','W','T','F','S','S'][i]+'</span></button>').join('')+'</div>'+(selectedWeekDay&&week.some(w=>w.date===selectedWeekDay)?'<div class="focus-week-selected" data-focus-week-selected><strong>'+new Date(selectedWeekDay+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'})+'</strong><span>'+format(week.find(w=>w.date===selectedWeekDay).seconds)+' studied</span></div>':'')+'<p>Tap a day to see its time. Hover over bars on desktop. Only recorded minutes count.</p></div>':'')+'</section>'+
     (editing?editUI():'')+(adjusting?adjustUI():'');
  }
  /* Running timers update text and widths in place. Rebuilding the full
@@ -95,9 +96,10 @@ function start({db,doc,onSnapshot,setDoc}){
   const put=(selector,value)=>{const element=root.querySelector(selector);if(element)element.textContent=value;};
   put('[data-focus-live="today"]',format(actual));
   put('[data-focus-live="week-total"]',format(weekly));
+  put('[data-focus-live="lifetime"]',format(Object.values(plan.days).reduce((sum,entries)=>sum+Object.values(entries).reduce((n,r)=>n+(r.seconds||0),0),0)));
   put('[data-focus-live="recorded"]',format(actual)+' recorded');
   put('[data-focus-row-time="'+b.id+'"]',
-   format(seconds)+' / '+b.minutes+'m'+(seconds>target?' · extra time':'')+' · timer running');
+   format(seconds)+' / '+b.minutes+'m'+(seconds>target?' · +'+format(seconds-target)+' extra':'')+' · timer running');
   put('[data-focus-countdown="'+b.id+'"]',remaining?clock(remaining)+' left':'Plan time reached');
   const width=Math.min(100,seconds/target*100)+'%';
   for(const selector of ['[data-focus-mini="'+b.id+'"] span','[data-focus-bar="'+b.id+'"] span',
@@ -108,14 +110,18 @@ function start({db,doc,onSnapshot,setDoc}){
   if(segment)segment.title=b.name+' · '+format(seconds)+' recorded';
   const weekLabel=root.querySelector('.focus-week-title small');
   if(weekLabel)weekLabel.textContent=format(weekly)+' focused';
+  const todayBar=root.querySelector('[data-focus-weekday="'+day()+'"]');
+  if(todayBar){const total=Object.values(record()).reduce((n,r)=>n+(r.seconds||0),0);const max=Math.max(3600,...Array.from({length:7},(_,i)=>Object.values(plan.days[dayAt(mondayDate,i)]||{}).reduce((n,r)=>n+(r.seconds||0),0)));const fill=todayBar.querySelector('.focus-bar-fill');if(fill)fill.style.height=Math.max(2,Math.min(100,total/max*100))+'%';todayBar.title=format(total)+' · '+day();todayBar.setAttribute('aria-label','Today: '+format(total)+' studied');}
+  if(selectedWeekDay===day())put('[data-focus-week-selected] span',format(Object.values(record()).reduce((n,r)=>n+(r.seconds||0),0))+' studied');
  }
  function row(b,r){
   const running=active===b.id,seconds=Math.floor(r.seconds||0),target=b.minutes*60,remaining=Math.max(0,target-seconds);
   const percent=Math.min(100,seconds/target*100),open=expanded===b.id;
+  const extra=seconds>target?' · +'+format(seconds-target)+' extra':'';
   const status=r.done?'✓':running?'Ⅱ':'○';
   return '<article class="focus-activity'+(r.done?' is-done':'')+(running?' is-running':'')+(open?' is-expanded':'')+'" style="--activity-color:'+b.color+'">'+
    '<div class="focus-activity-row"><button type="button" class="focus-activity-expand" data-focus="expand" data-id="'+b.id+'" aria-expanded="'+open+'" aria-controls="focus-detail-'+b.id+'">'+
-   '<span class="focus-activity-stripe" aria-hidden="true"></span><span class="focus-activity-name"><strong>'+escape(b.name)+'</strong><small data-focus-row-time="'+b.id+'">'+format(seconds)+' / '+b.minutes+'m'+(seconds>target?' · extra time':'')+(running?' · timer running':'')+'</small></span>'+
+   '<span class="focus-activity-stripe" aria-hidden="true"></span><span class="focus-activity-name"><strong>'+escape(b.name)+'</strong><small data-focus-row-time="'+b.id+'">'+format(seconds)+' / '+b.minutes+'m'+extra+(running?' · timer running':'')+'</small></span>'+
    '<span class="focus-mini-progress" data-focus-mini="'+b.id+'" aria-hidden="true"><span style="width:'+percent+'%"></span></span>'+
    '<span class="focus-row-chevron" aria-hidden="true">⌄</span></button>'+
    '<button type="button" class="focus-done" data-focus="done" data-id="'+b.id+'" aria-label="'+(r.done?'Mark '+escape(b.name)+' unfinished':'Mark '+escape(b.name)+' complete')+'">'+status+'</button></div>'+
@@ -152,6 +158,7 @@ function start({db,doc,onSnapshot,setDoc}){
   const action=button.dataset.focus,id=button.dataset.id,b=plan.blocks.find(x=>x.id===id);
   if(action==='expand'){expanded=expanded===id?null:id;render();return;}
   if(action==='week'){weekExpanded=!weekExpanded;render();return;}
+  if(action==='week-day'){selectedWeekDay=selectedWeekDay===button.dataset.date?null:button.dataset.date;render();return;}
   if(action==='edit'){stop();adjusting=null;editing=true;render();return;}
   if(action==='close'){editing=false;render();return;}
   if(action==='saveedit'){editSave();return;}
@@ -190,22 +197,23 @@ function start({db,doc,onSnapshot,setDoc}){
  tickTimer=setInterval(()=>{if(active&&!root.hidden){flushActive();updateLiveTimer();if(!overtime&&entry(active).seconds>=plan.blocks.find(b=>b.id===active).minutes*60){stop();render();}else if(entry(active).seconds%10===0)scheduleSave();}},1000);
  function setUser(next){
   stop(false);clearTimeout(saveTimer);if(unsub)unsub();unsub=null;user=next;ready=false;dirty=false;active=null;editing=false;adjusting=null;
-  plan={blocks:cleanBlocks(defaults),days:{}};expanded=null;weekExpanded=false;
+  plan={blocks:cleanBlocks(defaults),days:{}};expanded=null;weekExpanded=false;selectedWeekDay=null;
   if(!user){root.innerHTML='';return;}
   const uid=user.uid;
   unsub=onSnapshot(doc(db,'users',uid,'settings','focusPlans'),snap=>{
    if(user?.uid!==uid)return;
    const data=snap.exists()?snap.data():null;
-   if(!ready){plan=normalize(data);ready=true;render();return;}
+   if(!ready){plan=normalize(data);ready=true;render();onStudyChange?.();return;}
    // Ignore our own pending writes to avoid rolling back a running stopwatch.
    if(dirty||snap.metadata?.hasPendingWrites)return;
    const incoming=normalize(data);
-   if(JSON.stringify(incoming)!==JSON.stringify(plan)){plan=incoming;if(!root.hidden)render();}
+   if(JSON.stringify(incoming)!==JSON.stringify(plan)){plan=incoming;if(!root.hidden)render();onStudyChange?.();}
   },err=>{console.error('Focus Plan sync',err);$('focusSyncLabel').textContent='Sync unavailable';if(!ready){ready=true;render();}});
  }
+ function getDay(date){if(!ready||!user)return null;const items=plan.days[date]||{};return {total:Object.values(items).reduce((sum,r)=>sum+(r.seconds||0),0),activities:Object.entries(items).filter(([,r])=>r.seconds>0).map(([id,r])=>({id,name:plan.blocks.find(b=>b.id===id)?.name||id,seconds:r.seconds,color:plan.blocks.find(b=>b.id===id)?.color||'#b08bcb'}))};}
  function pause(){stop();if(!root.hidden)render();}
  function dispose(){stop();clearTimeout(saveTimer);clearInterval(tickTimer);if(unsub)unsub();document.removeEventListener('visibilitychange',onHidden);}
- return {setUser,dispose,render,pause};
+ return {setUser,dispose,render,pause,getDay};
 }
 window.MyStreaksFocus={start};
 })();
