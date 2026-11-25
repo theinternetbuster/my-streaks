@@ -45,7 +45,7 @@ function start({db,doc,onSnapshot,setDoc,onStudyChange}){
  function scheduleSave(immediate=false){
   if(!user||!ready)return;
   dirty=true;clearTimeout(saveTimer);
-  onStudyChange?.();
+  onStudyChange?.({timerRunning:!!active});
   const write=()=>{
    if(!user)return;
    const uid=user.uid,payload=JSON.parse(JSON.stringify(plan));
