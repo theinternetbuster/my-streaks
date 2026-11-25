@@ -1974,3 +1974,56 @@ html[data-theme="light"] .insight-heatmap-surface .insight-legend{border-color:#
 @media(prefers-reduced-motion:reduce){
  .insight-heatmap-surface .insight-date{transition:none}
 }
+
+
+/* Study history alongside habits in an Insights selected-day detail. */
+.insight-german-day{
+ display:flex;align-items:flex-start;gap:12px;margin-top:16px;
+ padding:15px 14px;border:1px solid #b995e240;
+ border-radius:14px;background:linear-gradient(120deg,#583d6333,#45364d18);
+}
+.insight-german-icon{
+ flex:0 0 37px;width:37px;height:37px;
+ display:grid;place-items:center;border-radius:11px;
+ color:#d9b2fa;border:1px solid #bb8cdd55;background:#a575c529;
+ font-size:12px;font-weight:850;letter-spacing:.02em;
+}
+.insight-german-main{flex:1;min-width:0}
+.insight-german-main>small{
+ display:block;color:#c3a1d8;font-size:10px;letter-spacing:.11em;
+ font-weight:800;margin:1px 0 5px;
+}
+.insight-german-main>strong{
+ display:block;color:#faf0ff;font:750 19px 'Outfit',sans-serif;
+ font-variant-numeric:tabular-nums;line-height:1.3;
+}
+.insight-german-main>p{font-size:12px;color:#b9a4c1;margin:8px 0 0;line-height:1.55}
+.insight-german-breakdown{
+ display:flex;flex-wrap:wrap;gap:7px;margin-top:12px;
+}
+.insight-german-chip{
+ display:inline-flex;align-items:center;gap:7px;
+ padding:7px 10px;border-radius:9px;
+ color:#e5d5e9;background:#a575c519;
+ border:1px solid #b08ac32e;font-size:11px;font-weight:650;
+}
+.insight-german-chip i{
+ background:var(--activity-color);width:6px;height:6px;border-radius:50%;
+ display:inline-block;flex:none;box-shadow:0 0 8px color-mix(in srgb,var(--activity-color) 40%,transparent);
+}
+html[data-theme="light"] .insight-german-day{
+ background:linear-gradient(120deg,#f8f0ff,#fff8fc);border-color:#e4d3ee;
+}
+html[data-theme="light"] .insight-german-icon{
+ color:#9153ae;background:#f1e5f9;border-color:#dec7eb;
+}
+html[data-theme="light"] .insight-german-main>small{color:#8d609f}
+html[data-theme="light"] .insight-german-main>strong{color:#432e53}
+html[data-theme="light"] .insight-german-main>p{color:#82718b}
+html[data-theme="light"] .insight-german-chip{
+ background:#fff;color:#694d78;border-color:#e6d9ed;
+}
+@media(max-width:520px){
+ .insight-german-day{padding:12px;gap:9px}
+ .insight-german-chip{font-size:10px}
+}
