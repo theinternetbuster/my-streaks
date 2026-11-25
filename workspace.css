@@ -2027,3 +2027,72 @@ html[data-theme="light"] .insight-german-chip{
  .insight-german-day{padding:12px;gap:9px}
  .insight-german-chip{font-size:10px}
 }
+
+
+/* Recorded German study milestone collection: subtle violet distinction. */
+.achievement-study-divider{
+ grid-column:1/-1;display:flex;align-items:center;gap:12px;
+ margin:14px 0 0;padding:20px 3px 4px;border-top:1px solid #9e7eae36;
+ text-align:left;
+}
+.achievement-study-divider-symbol{
+ display:grid;place-items:center;flex:none;width:40px;height:40px;
+ border-radius:12px;border:1px solid #b38acd59;
+ background:#b68bca1b;color:#d3a9ee;font-size:21px;
+}
+.achievement-study-divider>div{display:grid;gap:4px}
+.achievement-study-divider strong{
+ font:750 18px 'Outfit',sans-serif;color:#ebdeef;
+}
+.achievement-study-divider small{
+ font:500 11px 'DM Sans',sans-serif;color:#aaa0b4;line-height:1.5;
+}
+.achievement-card.achievement-study{
+ border-color:#745c823b;
+ background:linear-gradient(145deg,#302b35,#242227 70%);
+}
+.achievement-card.achievement-study.unlocked{
+ border-color:#a17bbb80;
+ background:radial-gradient(ellipse at 50% 12%,#514063,#29262f 69%);
+}
+.achievement-card.achievement-study.unlocked:hover{
+ border-color:#c69ade;
+ box-shadow:0 14px 35px #0005,0 0 17px #b182bf16;
+}
+.achievement-card.achievement-study .achievement-tier{
+ color:#c1a2d1;
+}
+.achievement-card.achievement-study.unlocked .achievement-state{
+ color:#d3a1f1;
+}
+.achievement-card.achievement-study .achievement-emblem{
+ border-color:#766180;background:linear-gradient(135deg,#42354b,#27232e);
+}
+.achievement-card.achievement-study.unlocked .achievement-emblem{
+ color:#ecc9ff;border-color:#a886bb;
+ background:linear-gradient(145deg,#765288,#3d3048);
+ box-shadow:inset 0 1px 18px #e5aaff16,0 10px 26px #b68ad526;
+}
+.achievement-card.achievement-study .achievement-foot>span{
+ color:#c9a6d9;
+}
+.achievement-card.achievement-study .achievement-progress>i{
+ background:linear-gradient(90deg,#a678bf,#d1a4e8);
+}
+html[data-theme="light"] .achievement-study-divider{border-color:#e7d7ed}
+html[data-theme="light"] .achievement-study-divider strong{color:#563669}
+html[data-theme="light"] .achievement-study-divider small{color:#82718b}
+html[data-theme="light"] .achievement-card.achievement-study{
+ background:linear-gradient(145deg,#fbf7ff,#f8f5fb);
+ border-color:#e7d7ed;
+}
+html[data-theme="light"] .achievement-card.achievement-study.unlocked{
+ background:radial-gradient(ellipse at 50% 12%,#f1e5fa,#faf7ff 75%);
+ border-color:#c9a3d9;
+}
+html[data-theme="light"] .achievement-card.achievement-study .achievement-tier,
+html[data-theme="light"] .achievement-card.achievement-study .achievement-foot>span{color:#82569a}
+@media(max-width:799px){
+ .achievement-study-divider{margin-top:10px;padding-top:18px}
+ .achievement-study-divider strong{font-size:17px}
+}
