@@ -16,7 +16,7 @@
     const root=$('checklistBlocks');
     if(!root)return null;
     let focusInstance=null,achievementInstance=null;
-    let tab='home',user=null,unsub=null,insightUnsub=null,blocks=[],dirty=false,saveTimer=null,selectedHabit='all',insightSection='overview',insightSelectionPending=false,
+    let tab='home',user=null,unsub=null,blocks=[],dirty=false,saveTimer=null,insightSection='overview',
         slashFor=null,slashMatches=types,slashSelected=0,sortable=null,saveSerial=0,listenerEpoch=0;
     let pendingWrite=Promise.resolve(),editRevision=0;
     let selectedHeatDay=null,transitionTimeout=null,transitionFrame=null;
@@ -121,9 +121,8 @@
     });
     function setUser(next){
       if(unsub){unsub();unsub=null;}
-      if(insightUnsub){insightUnsub();insightUnsub=null;}
       clearTimeout(saveTimer);editRevision++;
-      user=next;selectedHeatDay=null;focusInstance?.setUser(next);achievementInstance?.setUser(next);blocks=[];dirty=false;saveSerial++;clearDocumentSelection();resetHistory();selectedHabit='all';insightSection='overview';insightSelectionPending=false;
+      user=next;selectedHeatDay=null;focusInstance?.setUser(next);achievementInstance?.setUser(next);blocks=[];dirty=false;saveSerial++;clearDocumentSelection();resetHistory();insightSection='overview';
       tab=['insights','checklist'].includes(new URLSearchParams(location.search).get('view'))?
         new URLSearchParams(location.search).get('view'):'home';
       updateNav();
@@ -147,13 +146,6 @@
           $('checklistSyncStatus').textContent='Could not sync';
         });
       }catch(error){console.error('Checklist could not initialize',error);$('checklistSyncStatus').textContent='Sync unavailable';}
-      try{
-        insightUnsub=onSnapshot(doc(db,'users',user.uid,'settings','insights'),snapshot=>{
-          if(epoch!==listenerEpoch||!user||insightSelectionPending)return;
-          const choice=snapshot.exists()?snapshot.data().habitId:null;
-          if(typeof choice==='string'&&choice){selectedHabit=choice;if(tab==='insights')renderInsights();}
-        },error=>console.warn('Insights preference sync',error));
-      }catch(error){console.warn('Insights preference unavailable',error);}
       if(tab==='insights')renderInsights();
     }
     function normalizedType(t){return types.some(x=>x.id===t)?t:'text';}
@@ -2276,7 +2268,7 @@
       calendar:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4m8-4v4m-7 8 2 2 4-5"/></svg>'
     };
     function achievementItems(habits){
-      const chosen=selectedHabit==='all'?habits:habits.filter(h=>h.id===selectedHabit);
+      const chosen=habits;
       const longest=Math.max(0,...chosen.map(longestFor));
       const total=chosen.reduce((n,h)=>n+(h.completions||[]).length,0);
       const freezes=chosen.reduce((n,h)=>n+(h.cadence==='weekly'?protectedWeeklyHistory(h).protectedWeeks.length:(h.freezeDates||[]).length),0);
@@ -2291,7 +2283,7 @@
         {title:'Room for Life',detail:'A protected freeze day',icon:'freeze',goal:1,progress:freezes,tier:'BUILT-IN GRACE'},
         {title:'Many Paths',detail:'Check-ins in 3 different habits',icon:'layers',goal:3,progress:breadth,tier:'EXPLORING HABITS',allOnly:true}
       ];
-      return awards.filter(a=>!a.allOnly||selectedHabit==='all');
+      return awards;
     }
     function renderAchievements(habits){
       const items=achievementItems(habits);
@@ -2323,39 +2315,6 @@
       if(insightSection==='achievements')achievementInstance?.markRead();
       renderInsightTabs();renderInsights();
     }
-    function renderPicker(habits){
-      if(selectedHabit!=='all'&&!habits.some(h=>h.id===selectedHabit))selectedHabit='all';
-      const chosen=habits.find(h=>h.id===selectedHabit);
-      $('insightHabitLabel').textContent=chosen?.name||'All Habits';
-      $('insightHabitTrigger').querySelector('.insight-picker-avatar').innerHTML=chosen?flame:'✦';
-      const entries=[{id:'all',name:'All Habits',subtitle:'Your complete journey'},...habits.map(h=>({id:h.id,name:h.name,subtitle:'Individual habit'}))];
-      $('insightHabitMenu').innerHTML=entries.map(entry=>
-        '<button type="button" role="option" class="insight-option '+(entry.id===selectedHabit?'selected':'')+'" data-habit-id="'+safe(entry.id)+'" aria-selected="'+(entry.id===selectedHabit)+'">'+
-        '<span class="insight-option-symbol">'+(entry.id==='all'?'✦':flame)+'</span><span class="insight-option-text"><strong>'+safe(entry.name)+'</strong><small>'+safe(entry.subtitle)+'</small></span><span class="insight-option-check">'+(entry.id===selectedHabit?'✓':'')+'</span></button>'
-      ).join('');
-    }
-    function closePicker(){
-      $('insightHabitMenu').hidden=true;$('insightHabitTrigger').setAttribute('aria-expanded','false');
-      $('insightHabitPicker').classList.remove('open');
-    }
-    $('insightHabitTrigger').addEventListener('click',()=>{
-      const open=$('insightHabitMenu').hidden;
-      $('insightHabitMenu').hidden=!open;
-      $('insightHabitTrigger').setAttribute('aria-expanded',String(open));
-      $('insightHabitPicker').classList.toggle('open',open);
-    });
-    $('insightHabitMenu').addEventListener('click',event=>{
-      const item=event.target.closest('[data-habit-id]');if(!item)return;
-      selectedHabit=item.dataset.habitId;closePicker();renderInsights();
-      if(user){
-        const uid=user.uid;insightSelectionPending=true;
-        setDoc(doc(db,'users',uid,'settings','insights'),{habitId:selectedHabit},{merge:true})
-          .catch(e=>console.warn('Unable to save Insights selection',e))
-          .finally(()=>{insightSelectionPending=false;});
-      }
-    });
-    document.addEventListener('pointerdown',e=>{if(!e.target.closest('#insightHabitPicker'))closePicker();});
-    document.addEventListener('keydown',e=>{if(e.key==='Escape')closePicker();});
     $('insightOverviewTab').addEventListener('click',()=>chooseInsightSection('overview'));
     $('insightAchievementsTab').addEventListener('click',()=>chooseInsightSection('achievements'));
     $('insightViewAchievements').addEventListener('click',()=>chooseInsightSection('achievements'));
@@ -2394,9 +2353,9 @@
       const empty=$('insightEmpty'),content=$('insightsContent');
       empty.hidden=habits.length>0;content.hidden=habits.length===0;
       if(!habits.length){renderInsightTabs();return;}
-      renderPicker(habits);renderInsightTabs();
-      const all=selectedHabit==='all';
-      const chosen=all?habits:habits.filter(h=>h.id===selectedHabit);
+      renderInsightTabs();
+      const all=true;
+      const chosen=habits;
       const h=chosen[0]||habits[0];
       const completed=chosen.reduce((n,r)=>n+(r.completions||[]).length,0);
       const freezeCount=chosen.reduce((n,r)=>n+(r.cadence==='weekly'?protectedWeeklyHistory(r).protectedWeeks.length:(r.freezeDates||[]).length),0);
@@ -2409,7 +2368,7 @@
         {label:'Days completed',number:completed,icon:badgeArt.calendar,hint:all?'Across all habits':'Every check-in counts'},
         {label:'Protected freezes',number:freezeCount,icon:badgeArt.freeze,hint:'Days or weeks your streak was protected'}
       ];
-      $('insightContextNote').textContent=all?'A calm overview of all your habits. Every check-in counts; there is no daily completion quota.':weeklyHabit?'A closer look at '+h.name+'. Weekly goal: '+(h.weeklyTarget||2)+' sessions; one protected week per month.':'A closer look at '+h.name+'.';
+      $('insightContextNote').textContent='Your whole journey, together. Tap a day in the yearly heatmap to explore completed habits and German study time.';
       $('insightStatGrid').innerHTML=cards.map((x,i)=>
         '<div class="insight-stat-card"><span class="insight-stat-kicker">'+safe(x.label)+'</span><div class="insight-stat-main"><strong>'+x.number+'</strong><span class="insight-stat-icon '+(i===3?'icy':'')+'">'+x.icon+'</span></div><small>'+safe(x.hint)+'</small></div>'
       ).join('');
@@ -2449,7 +2408,7 @@
       selectedHeatDay=selectedHeatDay===button.dataset.heatDate?null:button.dataset.heatDate;
       // Refresh only the readout and selection; preserve heatmap scroll and focus.
       const day=selectedHeatDay,habits=getHabits();
-      const chosen=selectedHabit==='all'?habits:habits.filter(h=>h.id===selectedHabit);
+      const chosen=habits;
       const detail=$('insightDayDetail');
       $('insightYearGrid').querySelectorAll('button[data-heat-date]').forEach(b=>{
         const yes=b.dataset.heatDate===day;b.classList.toggle('is-selected',yes);b.setAttribute('aria-pressed',String(yes));
@@ -2463,7 +2422,7 @@
       $('insightYearGrid').querySelectorAll('button[data-heat-date]').forEach(b=>{b.classList.remove('is-selected');b.setAttribute('aria-pressed','false');});
     });
         function onHabitsChange(){achievementInstance?.onHabitsChange();if(tab==='insights')renderInsights();}
-    function dispose(){focusInstance?.dispose();achievementInstance?.dispose();if(unsub)unsub();if(insightUnsub)insightUnsub();clearTimeout(saveTimer);if(sortable)sortable.destroy();clearTimeout(transitionTimeout);if(transitionFrame)cancelAnimationFrame(transitionFrame);}
+    function dispose(){focusInstance?.dispose();achievementInstance?.dispose();if(unsub)unsub();clearTimeout(saveTimer);if(sortable)sortable.destroy();clearTimeout(transitionTimeout);if(transitionFrame)cancelAnimationFrame(transitionFrame);}
     try{achievementInstance=window.MyStreaksAchievements?.start({db,doc,onSnapshot,setDoc,getHabits,evaluateHabit,longestFor,visuals:badgeArt,weeklyProtectedFor:h=>h.cadence==='weekly'?protectedWeeklyHistory(h).protectedWeeks.length:0})||null;}catch(error){console.error('Achievement celebrations initialization failed',error);}
     // Focus Plans uses its own Firestore document, separate from checklist notes.
     try{focusInstance=window.MyStreaksFocus?.start({db,doc,onSnapshot,setDoc,onStudyChange:()=>{if(tab==='insights')renderInsights();}})||null;}catch(error){console.error('Focus Plans initialization failed',error);}
