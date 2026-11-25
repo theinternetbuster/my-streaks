@@ -115,6 +115,13 @@ function start({db,doc,onSnapshot,setDoc,onStudyChange}){
   if(todayBar){const total=Object.values(record()).reduce((n,r)=>n+(r.seconds||0),0);const max=Math.max(3600,...Array.from({length:7},(_,i)=>Object.values(plan.days[dayAt(mondayDate,i)]||{}).reduce((n,r)=>n+(r.seconds||0),0)));const fill=todayBar.querySelector('.focus-bar-fill');if(fill)fill.style.height=Math.max(2,Math.min(100,total/max*100))+'%';todayBar.title=format(total)+' · '+day();todayBar.setAttribute('aria-label','Today: '+format(total)+' studied');}
   if(selectedWeekDay===day())put('[data-focus-week-selected] span',format(Object.values(record()).reduce((n,r)=>n+(r.seconds||0),0))+' studied');
  }
+ function immersive(id){
+ const b=plan.blocks.find(x=>x.id===id);if(!b)return;
+ const panel=document.createElement('div');panel.className='focus-immersive';panel.dataset.scene='aurora';panel.setAttribute('role','dialog');panel.setAttribute('aria-modal','true');
+ panel.innerHTML='<button data-exit>Close ×</button><h2>'+escape(b.name)+'</h2><strong data-clock></strong><select aria-label="Environment"><option value="aurora">Aurora</option><option value="ocean">Ocean</option><option value="forest">Forest</option><option value="quiet">Quiet</option></select><button data-toggle></button>';
+ document.body.append(panel);const update=()=>{if(!user||!ready){close();return;}const secs=entry(id).seconds+(active===id?Math.max(0,Math.floor((Date.now()-activeSince)/1000)):0);panel.querySelector('[data-clock]').textContent=clock(Math.max(0,b.minutes*60-secs));panel.querySelector('[data-toggle]').textContent=active===id?'Pause':'Start / Continue';};
+ const close=()=>{clearInterval(tick);document.removeEventListener('keydown',escapeKey);panel.remove();};const escapeKey=e=>{if(e.key==='Escape')close();};document.addEventListener('keydown',escapeKey);panel.querySelector('[data-exit]').onclick=close;panel.querySelector('select').onchange=e=>panel.dataset.scene=e.target.value;panel.querySelector('[data-toggle]').onclick=()=>{root.querySelector('[data-focus="toggle"][data-id="'+id+'"]')?.click();update();};const tick=setInterval(update,250);update();panel.querySelector('[data-exit]').focus();
+ }
  function row(b,r){
   const running=active===b.id,seconds=Math.floor(r.seconds||0),target=b.minutes*60,remaining=Math.max(0,target-seconds);
   const percent=Math.min(100,seconds/target*100),open=expanded===b.id;
@@ -130,6 +137,7 @@ function start({db,doc,onSnapshot,setDoc,onStudyChange}){
    '<div class="focus-activity-bar" data-focus-bar="'+b.id+'"><span style="width:'+percent+'%"></span></div>'+
    '<div class="focus-activity-controls"><span class="focus-time" data-focus-countdown="'+b.id+'">'+(remaining?clock(remaining)+' left':'Plan time reached')+'</span>'+
    '<button type="button" data-focus="toggle" data-id="'+b.id+'">'+(running?'Ⅱ Pause':'▶ '+(seconds?'Continue':'Start'))+'</button>'+
+   '<button type="button" data-focus="immersive" data-id="'+b.id+'">⛶ Focus mode</button>'+ 
    '<button type="button" data-focus="manual" data-id="'+b.id+'" title="Correct or reset recorded study minutes">Edit time</button></div></div></article>';
  }
  function editUI(){
@@ -157,6 +165,7 @@ function start({db,doc,onSnapshot,setDoc,onStudyChange}){
  root.addEventListener('click',e=>{
   const button=e.target.closest('button[data-focus]');if(!button||!user||!ready)return;
   const action=button.dataset.focus,id=button.dataset.id,b=plan.blocks.find(x=>x.id===id);
+  if(action==='immersive'){immersive(id);return;}
   if(action==='expand'){expanded=expanded===id?null:id;render();return;}
   if(action==='week'){weekExpanded=!weekExpanded;if(!weekExpanded)selectedWeekDay=null;render();return;}
   if(action==='week-day'){selectedWeekDay=selectedWeekDay===button.dataset.date?null:button.dataset.date;render();return;}
