@@ -2293,7 +2293,8 @@
       const items=achievementItems(habits);
       $('insightAchievementGrid').innerHTML=items.map((a,i)=>{
         const unlocked=achievementInstance?.isUnlocked?.(['first','week','rhythm','month','century','fifty','freeze','many','german1','german10','german25','german100'][i])||(a.progress>=a.goal);
-        return '<article role="button" tabindex="0" aria-label="View '+safe(a.title)+' achievement" data-achievement-index="'+i+'" class="achievement-card '+(a.study?'achievement-study ':'')+(unlocked?'unlocked':'locked')+'" style="--badge-delay:'+Math.min(i*55,400)+'ms">'+
+        const section=i===8?'<div class="achievement-study-divider"><span class="achievement-study-divider-symbol" aria-hidden="true">✦</span><div><strong>German practice</strong><small>Milestones for hours recorded in Focus Plans</small></div></div>':'';
+        return section+'<article role="button" tabindex="0" aria-label="View '+safe(a.title)+' achievement" data-achievement-index="'+i+'" class="achievement-card '+(a.study?'achievement-study ':'')+(unlocked?'unlocked':'locked')+'" style="--badge-delay:'+Math.min(i*55,400)+'ms">'+
           '<div class="achievement-card-top"><span class="achievement-tier">'+safe(a.tier)+'</span><span class="achievement-state">'+(unlocked?'UNLOCKED':'TO DISCOVER')+'</span></div>'+
           '<div class="achievement-emblem achievement-emblem-'+safe(a.icon)+'">'+badgeArt[a.icon]+'</div>'+
           '<h3>'+safe(a.title)+'</h3><p>'+safe(a.detail)+'</p>'+
