@@ -50,7 +50,7 @@ const awardMessages={
  },
  "german1": {
   "earned": "Your first hour of German recorded in Focus Plans. A new chapter of your learning history begins.",
-  "locked": "Record one hour of German study in Focus Plans. Earlier untracked study is not counted.",
+  "locked": "Complete one hour of German practice to unlock this achievement.",
   "repeat": "Another hour of recorded German practice."
  },
  "german10": {
@@ -65,14 +65,14 @@ const awardMessages={
  },
  "german100": {
   "earned": "One hundred recorded hours of German practice. Every individual session built this total.",
-  "locked": "Reach one hundred recorded hours in Focus Plans; earlier study remains separate.",
+  "locked": "Reach 100 hours of German practice to earn this golden crest.",
   "repeat": "A hundred recorded study hours is a milestone worth recognizing."
  }
 };
 function start({db,doc,onSnapshot,setDoc,getHabits,evaluateHabit,longestFor,weeklyProtectedFor,getStudyHours,visuals={}}){
  const sheet=$('achievementCelebration'),dot=$('achievementUnreadDot');
  if(!sheet||!dot)return {setUser(){},onHabitsChange(){},markRead(){},openDetail(){},isUnlocked(){return false},dispose(){}};
- const awardIcons={first:'flame',week:'sunrise',rhythm:'star',month:'crown',century:'gem',fifty:'calendar',freeze:'freeze',many:'layers',german1:'star',german10:'sunrise',german25:'crown',german100:'gem'};
+ const awardIcons={first:'flame',week:'sunrise',rhythm:'star',month:'crown',century:'gem',fifty:'calendar',freeze:'freeze',many:'layers',german1:'studybook',german10:'studyspeech',german25:'studycompass',german100:'studylaurel'};
  let user=null,unsub=null,ready=false,habitsReady=false,pendingInitial=false,ledger=null,queue=[],showing=false,timer=null,saveQueue=Promise.resolve(),lastPreview=null;
  const clone=x=>JSON.parse(JSON.stringify(x));
  function measures(){
