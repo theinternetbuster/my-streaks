@@ -108,14 +108,14 @@ function setSync(message, online=false){ el('syncState').textContent=message; el
 let workspace=null;
 function display(view){
  if(view==='dashboard'&&user&&workspace&&workspace.tab()!=='home'){
-   view=workspace.tab()==='insights'?'insightsPanel':workspace.tab()==='goals'?'goalsPanel':'checklistPanel';
+   view=workspace.tab()==='insights'?'insightsPanel':'checklistPanel';
  }
- ['loginPanel','loadingPanel','dashboard','insightsPanel','checklistPanel','goalsPanel'].forEach(id=>
+ ['loginPanel','loadingPanel','dashboard','insightsPanel','checklistPanel'].forEach(id=>
    el(id).hidden=(id!==view && !(view==='detail'&&id==='dashboard')));
  el('detail').hidden=view!=='detail';
  document.body.classList.toggle('detail-mode',view==='detail');
  document.body.classList.toggle('detail-open',view==='detail');
- if(user && ['dashboard','insightsPanel','checklistPanel','goalsPanel'].includes(view))syncDesktopRoute();
+ if(user && ['dashboard','insightsPanel','checklistPanel'].includes(view))syncDesktopRoute();
 }
 function escapeHTML(str){ return String(str).replace(/[&<>"']/g, ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
 function normalise(raw){ return {id:raw.id,name:String(raw.name||'Habit'),createdDate:raw.createdDate||todayKey(),createdAt:Number(raw.createdAt)||0,order:Number.isFinite(raw.order)?raw.order:null,completions:Array.isArray(raw.completions)?[...new Set(raw.completions.filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x)))].sort():[],freezeDates:Array.isArray(raw.freezeDates)?[...new Set(raw.freezeDates.filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x)))].sort():[],freezeProcessedThrough:raw.freezeProcessedThrough||null,cadence:raw.cadence==='weekly'?'weekly':'daily',weeklyTarget:Math.max(1,Math.min(7,Number(raw.weeklyTarget)||2)),goalPeriodStart:/^\d{4}-\d{2}-\d{2}$/.test(raw.goalPeriodStart||'')?raw.goalPeriodStart:null,goalBaseline:Math.max(0,Number(raw.goalBaseline)||0),goalHistory:Array.isArray(raw.goalHistory)?raw.goalHistory:[],goalHistoricalBest:Math.max(0,Number(raw.goalHistoricalBest)||0)}; }

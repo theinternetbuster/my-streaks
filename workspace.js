@@ -19,20 +19,6 @@
     let tab='home',user=null,unsub=null,blocks=[],dirty=false,saveTimer=null,insightSection='overview',
         slashFor=null,slashMatches=types,slashSelected=0,sortable=null,saveSerial=0,listenerEpoch=0;
     let pendingWrite=Promise.resolve(),editRevision=0;
-    let activeList='school', listCatalog={}, listReady=false, listUnsub=null, listSwitching=false;
-    const listDoc=(uid,id)=>doc(db,'users',uid,'settings',id==='school'?'checklist':'checklist-'+id);
-    const catalogDoc=uid=>doc(db,'users',uid,'settings','checklist-lists');
-    const listBar=document.createElement('div');
-    listBar.className='checklist-list-bar';
-    listBar.style.cssText='display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 16px';
-    const listSelect=document.createElement('select');listSelect.setAttribute('aria-label','Checklist list');listSelect.style.cssText='font:inherit;color:inherit;background:transparent;border:1px solid currentColor;border-radius:10px;padding:8px;max-width:65%';
-    const newListButton=document.createElement('button');newListButton.type='button';newListButton.textContent='+ New list';newListButton.style.cssText='font:inherit;color:inherit;background:transparent;border:0;padding:8px';
-    listBar.append(listSelect,newListButton);root.before(listBar);
-    function paintLists(){listSelect.replaceChildren();for(const [id,name] of [['school','School'],['life','Life'],['projects','Projects'],...Object.entries(listCatalog).filter(([id,name])=>/^l[a-z0-9]+$/.test(id)&&typeof name==='string')]){const option=document.createElement('option');option.value=id;option.textContent=name;listSelect.append(option);}listSelect.value=activeList;listSelect.disabled=!listReady||listSwitching;newListButton.disabled=!listReady||listSwitching;}
-    listSelect.addEventListener('change',()=>switchList(listSelect.value));
-    newListButton.addEventListener('click',async()=>{if(!user||!listReady||listSwitching)return;const name=prompt('Name your new checklist');if(!name?.trim())return;const uid=user.uid,id='l'+uniqueId();listSwitching=true;paintLists();try{await setDoc(catalogDoc(uid),{lists:{[id]:name.trim().slice(0,60)}},{merge:true});if(user?.uid!==uid)return;listCatalog[id]=name.trim().slice(0,60);listSwitching=false;await switchList(id);}catch(err){console.error(err);$('checklistSyncStatus').textContent='Could not create list';}finally{listSwitching=false;paintLists();}});
-    function listenList(){const epoch=++listenerEpoch,uid=user.uid,id=activeList;listReady=false;paintLists();root.inert=true;$('checklistSyncStatus').textContent='Syncing…';unsub=onSnapshot(listDoc(uid,id),snapshot=>{if(epoch!==listenerEpoch||user?.uid!==uid||id!==activeList)return;if(!dirty){const incoming=snapshot.exists()?snapshot.data().blocks:[];const nextBlocks=Array.isArray(incoming)?migrateChecklistBlocks(incoming.filter(b=>b&&typeof b.text==='string').slice(0,500)):[];const nextJson=JSON.stringify(nextBlocks.map((b,i)=>({...b,order:i})));if(!listReady||nextJson!==serializeBlocks()){blocks=nextBlocks;renderChecklist(!listReady);resetHistory();}}listReady=true;root.inert=false;paintLists();if(!snapshot.metadata?.hasPendingWrites&&!dirty)$('checklistSyncStatus').textContent='';},error=>{console.error(error);$('checklistSyncStatus').textContent='Could not sync';});}
-    async function switchList(id){if(!user||!listReady||listSwitching||id===activeList)return;const uid=user.uid;listSwitching=true;paintLists();document.activeElement?.blur();root.inert=true;clearTimeout(saveTimer);try{if(dirty)await saveChecklist();else await pendingWrite;if(user?.uid!==uid)return;if(dirty){$('checklistSyncStatus').textContent='Save failed — list not switched';return;}closeBlockMenu();closeSlash();clearDocumentSelection();if(unsub)unsub();activeList=id;blocks=[];editRevision++;saveSerial++;resetHistory();listenList();}finally{listSwitching=false;root.inert=!listReady;paintLists();}}
     let selectedHeatDay=null,transitionTimeout=null,transitionFrame=null;
     const playPageEntrance=()=>{
       document.body.classList.remove('workspace-page-enter');
@@ -108,7 +94,7 @@
       document.querySelector('.workspace-bottom-pill')?.setAttribute('data-current',tab);
     }
     function selectTab(next,{history:pushHistory=true,silent=false}={}){
-      if(!['home','insights','checklist','goals'].includes(next)||!user)return;
+      if(!['home','insights','checklist'].includes(next)||!user)return;
       const changed=tab!==next;
       if(next!=='checklist')focusInstance?.pause?.();
       tab=next;updateNav();closeSlash();
@@ -118,7 +104,7 @@
       }
       if(!silent)onTabChange(tab);
       if(tab==='insights')renderInsights();
-      if(tab==='checklist')renderChecklist();if(tab==='goals')renderGoals();
+      if(tab==='checklist')renderChecklist();
       if(changed)playPageEntrance();
       window.scrollTo({top:0,behavior:'instant'});
     }
@@ -135,14 +121,31 @@
     });
     function setUser(next){
       if(unsub){unsub();unsub=null;}
-      if(listUnsub){listUnsub();listUnsub=null;}listenerEpoch++;activeList='school';listCatalog={};listReady=false;listSwitching=false;root.inert=true;paintLists();
       clearTimeout(saveTimer);editRevision++;
-      user=next;watchGoals();habitHistoryReady=false;selectedHeatDay=null;focusInstance?.setUser(next);achievementInstance?.setUser(next);blocks=[];dirty=false;saveSerial++;clearDocumentSelection();resetHistory();insightSection='overview';
-      tab=['insights','checklist','goals'].includes(new URLSearchParams(location.search).get('view'))?
+      user=next;habitHistoryReady=false;selectedHeatDay=null;focusInstance?.setUser(next);achievementInstance?.setUser(next);blocks=[];dirty=false;saveSerial++;clearDocumentSelection();resetHistory();insightSection='overview';
+      tab=['insights','checklist'].includes(new URLSearchParams(location.search).get('view'))?
         new URLSearchParams(location.search).get('view'):'home';
       updateNav();
       if(!user){renderChecklist();return;}
-      try{listenList();const uid=user.uid;listUnsub=onSnapshot(catalogDoc(uid),snapshot=>{if(user?.uid!==uid)return;listCatalog=snapshot.data()?.lists||{};paintLists();},error=>console.error('List catalog read failed',error));}catch(error){console.error(error);$('checklistSyncStatus').textContent='Sync unavailable';}
+      const epoch=++listenerEpoch;
+      $('checklistSyncStatus').textContent='Syncing…';
+      try{
+        unsub=onSnapshot(doc(db,'users',user.uid,'settings','checklist'),snapshot=>{
+          if(epoch!==listenerEpoch||!user)return;
+          if(!dirty){
+            const incoming=snapshot.exists()?snapshot.data().blocks:[];
+            const nextBlocks=Array.isArray(incoming)?migrateChecklistBlocks(incoming.filter(b=>b&&typeof b.text==='string').slice(0,500)):[];
+            const nextJson=JSON.stringify(nextBlocks.map((b,i)=>({...b,order:i})));
+            if(nextJson!==serializeBlocks()){
+              blocks=nextBlocks;resetHistory();renderChecklist();
+            }
+          }
+          if(!snapshot.metadata?.hasPendingWrites)$('checklistSyncStatus').textContent='';
+        },error=>{
+          console.error('Checklist read failed',error);
+          $('checklistSyncStatus').textContent='Could not sync';
+        });
+      }catch(error){console.error('Checklist could not initialize',error);$('checklistSyncStatus').textContent='Sync unavailable';}
       if(tab==='insights')renderInsights();
     }
     function normalizedType(t){return types.some(x=>x.id===t)?t:'text';}
@@ -199,7 +202,7 @@
       }
     }
     function scheduleSave(soon=false){
-      if(!user||!listReady)return;
+      if(!user)return;
       trackHistory();
       dirty=true;editRevision++;clearTimeout(saveTimer);
       $('checklistSyncStatus').textContent='Saving…';
@@ -207,17 +210,17 @@
     }
     async function saveChecklist(){
       if(!user)return;
-      const thisUser=user.uid,thisList=activeList;
+      const thisUser=user.uid;
       const payload=blocks.map((b,i)=>({...b,order:i}));
       const serial=++saveSerial,revision=editRevision;
       // Serialize writes so a slower earlier save cannot overwrite a newer edit.
       const run=async()=>{
         if(!user||user.uid!==thisUser)return;
         try{
-          await setDoc(listDoc(thisUser,thisList),{
+          await setDoc(doc(db,'users',thisUser,'settings','checklist'),{
             blocks:payload,updatedAt:Date.now()
           },{merge:true});
-          if(serial===saveSerial&&revision===editRevision&&user&&user.uid===thisUser&&activeList===thisList){
+          if(serial===saveSerial&&revision===editRevision&&user&&user.uid===thisUser){
             dirty=false;$('checklistSyncStatus').textContent='';
           }
         }catch(err){
@@ -2354,37 +2357,7 @@ studylaurel:'<svg class="study-art" viewBox="0 0 80 80" aria-hidden="true"><g cl
         ).join('')+'</div>':'<p class="insight-day-empty">No habit check-ins recorded on this date.</p>')+
         germanDayHtml(date);
     }
-    let goalUnsub=null,goalItems={},goalReady=false;
-    function watchGoals(){if(goalUnsub)goalUnsub();goalUnsub=null;goalItems={};goalReady=false;if(!user)return;const uid=user.uid;goalUnsub=onSnapshot(doc(db,'users',uid,'settings','goals'),s=>{if(user?.uid!==uid)return;goalItems=s.data()?.items||{};goalReady=true;renderGoals();},e=>console.error(e));}
-    function renderGoals(){
-      const host=$('goalsContent');if(!host||!user)return;
-      if(!goalReady){host.textContent='Loading goals…';return;}
-      const habits=getHabits();
-      host.innerHTML='<button type="button" class="checklist-new" data-goal-add>＋ New goal</button>'+Object.entries(goalItems).filter(([,g])=>g&&!g.deleted).map(([id,g])=>{
-        const value=g.kind==='study'?(focusInstance?.getStudyHours?.()||0):g.kind==='habit'?(habits.find(h=>h.id===g.habit)?.completions.length||0):Number(g.progress)||0;
-        const target=Math.max(1,Number(g.target)||1),pct=Math.min(100,Math.round(value/target*100));
-        return '<article class="insight-surface" style="margin-top:16px"><small>'+ (pct===100?'COMPLETED':'IN PROGRESS')+'</small><h2>'+safe(g.name)+'</h2><p>'+value+' / '+target+' '+(g.kind==='study'?'hours':g.kind==='habit'?'check-ins':'')+'</p><progress style="width:100%;accent-color:#a879ff" max="100" value="'+pct+'"></progress><p>Milestones: '+[25,50,75,100].map(n=>(pct>=n?'✓ ':'○ ')+n+'%').join(' · ')+'</p>'+(g.kind==='manual'?'<button data-goal-progress="'+safe(id)+'">Update progress</button> ':'')+'<button data-goal-delete="'+safe(id)+'">Remove</button></article>';
-      }).join('');
-      host.onclick=async e=>{const btn=e.target.closest('button');if(!btn||!user||!goalReady)return;const uid=user.uid;let id,item;
-        if(btn.hasAttribute('data-goal-add')){const name=prompt('Goal name');if(!name?.trim())return;const kind=prompt('Goal type: manual, study (German hours), or habit (check-ins)','manual');if(!['manual','study','habit'].includes(kind))return;let habit='';if(kind==='habit'){const choice=Number(prompt(habits.map((h,i)=>(i+1)+'. '+h.name).join('\n')));habit=habits[choice-1]?.id;if(!habit)return;}const target=Number(prompt('Target amount','100'));if(!Number.isFinite(target)||target<=0)return;id=uniqueId();item={name:name.trim().slice(0,100),kind,habit,target,progress:0};}
-        else if(btn.dataset.goalProgress){id=btn.dataset.goalProgress;const raw=prompt('Current progress',goalItems[id].progress);if(raw===null)return;const progress=Number(raw);if(!Number.isFinite(progress)||progress<0)return;item={progress};}
-        else if(btn.dataset.goalDelete){id=btn.dataset.goalDelete;if(!confirm('Remove this goal?'))return;item={deleted:true};}else return;
-        try{await setDoc(doc(db,'users',uid,'settings','goals'),{items:{[id]:item}},{merge:true});}catch(err){console.error(err);alert('Goal could not be saved.');}
-      };
-    }
-    let reportPeriod='week',reportOffset=0;
-    function renderReports(){
-      const host=$('periodicReports');if(!host||!user)return;const now=new Date(),start=reportPeriod==='week'?shift(weekStart(now),-7*reportOffset):reportPeriod==='month'?new Date(now.getFullYear(),now.getMonth()-reportOffset,1,12):new Date(now.getFullYear()-reportOffset,0,1,12);
-      const end=reportPeriod==='week'?shift(start,7):reportPeriod==='month'?new Date(start.getFullYear(),start.getMonth()+1,1,12):new Date(start.getFullYear()+1,0,1,12);
-      const a=key(start),z=key(end),habits=getHabits(),counts=habits.map(h=>({name:h.name,count:h.completions.filter(d=>d>=a&&d<z).length})).sort((a,b)=>b.count-a.count);
-      let seconds=0,days=0;for(let d=start;d<end&&key(d)<=key(now);d=shift(d,1)){const n=focusInstance?.getDay?.(key(d))?.total||0;seconds+=n;if(n>0)days++;}
-      const total=counts.reduce((n,h)=>n+h.count,0),label=(reportPeriod==='year'?String(start.getFullYear()):start.toLocaleDateString(undefined,{month:'long',year:'numeric'}))+(reportPeriod==='week'?' · '+a+' – '+key(shift(end,-1)):'');
-      host.innerHTML='<h2>Periodic reports</h2><p><select aria-label="Report period">'+['week','month','year'].map(p=>'<option '+(p===reportPeriod?'selected':'')+'>'+p+'</option>').join('')+'</select> <button data-report="older">‹</button> <button data-report="newer" '+(reportOffset===0?'disabled':'')+'>›</button></p><h3>'+safe(label)+'</h3><div class="insight-stat-grid"><div class="insight-stat-card"><small>Check-ins</small><strong>'+total+'</strong></div><div class="insight-stat-card"><small>German study</small><strong>'+Math.round(seconds/60)+'m</strong></div><div class="insight-stat-card"><small>Study days</small><strong>'+days+'</strong></div></div>'+counts.map(h=>'<p>'+safe(h.name)+' · '+h.count+'</p>').join('')+(reportPeriod!=='week'?'<button data-report="wrapped">✦ Replay Wrapped</button>':'');
-      host.querySelector('select').onchange=e=>{reportPeriod=e.target.value;reportOffset=0;renderReports();};
-      host.onclick=e=>{const action=e.target.closest('[data-report]')?.dataset.report;if(action==='older'){reportOffset++;renderReports();}if(action==='newer'){reportOffset=Math.max(0,reportOffset-1);renderReports();}if(action==='wrapped'){const dialog=document.createElement('dialog');dialog.className='streak-wrapped';dialog.innerHTML='<button data-close>Close ×</button><div class="wrapped-slide"></div><button data-next>Next →</button>';document.body.append(dialog);const slides=[['Your '+reportPeriod+' in review',label],['Showing up',total+' check-ins'],['Time invested',Math.round(seconds/60)+' German minutes'],['Most checked-in habit',counts[0]?.name||'A fresh start']];let i=0;const paint=()=>{const s=dialog.querySelector('.wrapped-slide');s.innerHTML='<small>MY STREAKS WRAPPED · '+(i+1)+' / '+slides.length+'</small><h1>'+safe(slides[i][0])+'</h1><p>'+safe(slides[i][1])+'</p>';if(!matchMedia('(prefers-reduced-motion: reduce)').matches)s.animate([{opacity:0,transform:'translateY(18px)'},{opacity:1,transform:'translateY(0)'}],{duration:500});};dialog.querySelector('[data-next]').onclick=()=>{i=(i+1)%slides.length;paint();};dialog.querySelector('[data-close]').onclick=()=>dialog.close();dialog.onclose=()=>dialog.remove();paint();dialog.showModal();}};
-    }
     function renderInsights(){
-      renderReports();
       const habits=getHabits();
       const empty=$('insightEmpty'),content=$('insightsContent');
       empty.hidden=habits.length>0;content.hidden=habits.length===0;
@@ -2456,11 +2429,11 @@ studylaurel:'<svg class="study-art" viewBox="0 0 80 80" aria-hidden="true"><g cl
       selectedHeatDay=null;$('insightDayDetail').hidden=true;$('insightDayDetail').innerHTML='';
       $('insightYearGrid').querySelectorAll('button[data-heat-date]').forEach(b=>{b.classList.remove('is-selected');b.setAttribute('aria-pressed','false');});
     });
-        function onHabitsChange(){if(tab==='goals')renderGoals();habitHistoryReady=true;achievementInstance?.onHabitsChange();if(tab==='insights')renderInsights();}
-    function dispose(){goalUnsub?.();focusInstance?.dispose();achievementInstance?.dispose();if(unsub)unsub();if(listUnsub)listUnsub();clearTimeout(saveTimer);if(sortable)sortable.destroy();clearTimeout(transitionTimeout);if(transitionFrame)cancelAnimationFrame(transitionFrame);}
+        function onHabitsChange(){habitHistoryReady=true;achievementInstance?.onHabitsChange();if(tab==='insights')renderInsights();}
+    function dispose(){focusInstance?.dispose();achievementInstance?.dispose();if(unsub)unsub();clearTimeout(saveTimer);if(sortable)sortable.destroy();clearTimeout(transitionTimeout);if(transitionFrame)cancelAnimationFrame(transitionFrame);}
     try{achievementInstance=window.MyStreaksAchievements?.start({db,doc,onSnapshot,setDoc,getHabits,evaluateHabit,longestFor,visuals:badgeArt,getStudyHours:()=>focusInstance?.getStudyHours?.()??null,weeklyProtectedFor:h=>h.cadence==='weekly'?protectedWeeklyHistory(h).protectedWeeks.length:0})||null;}catch(error){console.error('Achievement celebrations initialization failed',error);}
     // Focus Plans uses its own Firestore document, separate from checklist notes.
-    try{focusInstance=window.MyStreaksFocus?.start({db,doc,onSnapshot,setDoc,onStudyChange:({timerRunning=false}={})=>{if(habitHistoryReady&&!timerRunning)achievementInstance?.onHabitsChange();if(tab==='insights')renderInsights();if(tab==='goals')renderGoals();}})||null;}catch(error){console.error('Focus Plans initialization failed',error);}
+    try{focusInstance=window.MyStreaksFocus?.start({db,doc,onSnapshot,setDoc,onStudyChange:({timerRunning=false}={})=>{if(habitHistoryReady&&!timerRunning)achievementInstance?.onHabitsChange();if(tab==='insights')renderInsights();}})||null;}catch(error){console.error('Focus Plans initialization failed',error);}
     // Deep links should initialize consistently once the account loads.
     updateNav();
     return {setUser,selectTab,onHabitsChange,renderInsights,renderChecklist,tab:()=>tab,dispose};
