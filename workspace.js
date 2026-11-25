@@ -15,7 +15,7 @@
   function start({db,doc,onSnapshot,setDoc,getHabits,evaluateHabit,onTabChange}){
     const root=$('checklistBlocks');
     if(!root)return null;
-    let focusInstance=null,achievementInstance=null;
+    let focusInstance=null,achievementInstance=null,habitHistoryReady=false;
     let tab='home',user=null,unsub=null,blocks=[],dirty=false,saveTimer=null,insightSection='overview',
         slashFor=null,slashMatches=types,slashSelected=0,sortable=null,saveSerial=0,listenerEpoch=0;
     let pendingWrite=Promise.resolve(),editRevision=0;
@@ -122,7 +122,7 @@
     function setUser(next){
       if(unsub){unsub();unsub=null;}
       clearTimeout(saveTimer);editRevision++;
-      user=next;selectedHeatDay=null;focusInstance?.setUser(next);achievementInstance?.setUser(next);blocks=[];dirty=false;saveSerial++;clearDocumentSelection();resetHistory();insightSection='overview';
+      user=next;habitHistoryReady=false;selectedHeatDay=null;focusInstance?.setUser(next);achievementInstance?.setUser(next);blocks=[];dirty=false;saveSerial++;clearDocumentSelection();resetHistory();insightSection='overview';
       tab=['insights','checklist'].includes(new URLSearchParams(location.search).get('view'))?
         new URLSearchParams(location.search).get('view'):'home';
       updateNav();
@@ -2281,15 +2281,19 @@
         {title:'Century Club',detail:'A 100-day streak',icon:'gem',goal:100,progress:longest,tier:'RARE MILESTONE'},
         {title:'Every Day Counts',detail:'50 completed days',icon:'calendar',goal:50,progress:total,tier:'SHOWING UP'},
         {title:'Room for Life',detail:'A protected freeze day',icon:'freeze',goal:1,progress:freezes,tier:'BUILT-IN GRACE'},
-        {title:'Many Paths',detail:'Check-ins in 3 different habits',icon:'layers',goal:3,progress:breadth,tier:'EXPLORING HABITS',allOnly:true}
+        {title:'Many Paths',detail:'Check-ins in 3 different habits',icon:'layers',goal:3,progress:breadth,tier:'EXPLORING HABITS',allOnly:true},
+        {title:'First Focused Hour',detail:'1 hour of German recorded in Focus Plans',icon:'star',goal:1,progress:focusInstance?.getStudyHours?.()||0,tier:'GERMAN PRACTICE',study:true},
+        {title:'Ten Hours of German',detail:'10 recorded hours of German practice',icon:'sunrise',goal:10,progress:focusInstance?.getStudyHours?.()||0,tier:'GERMAN PRACTICE',study:true},
+        {title:'Twenty-Five Hours',detail:'25 recorded hours of German practice',icon:'crown',goal:25,progress:focusInstance?.getStudyHours?.()||0,tier:'GERMAN PRACTICE',study:true},
+        {title:'German Century',detail:'100 recorded hours of German practice',icon:'gem',goal:100,progress:focusInstance?.getStudyHours?.()||0,tier:'GERMAN PRACTICE',study:true}
       ];
       return awards;
     }
     function renderAchievements(habits){
       const items=achievementItems(habits);
       $('insightAchievementGrid').innerHTML=items.map((a,i)=>{
-        const unlocked=achievementInstance?.isUnlocked?.(['first','week','rhythm','month','century','fifty','freeze','many'][i])||(a.progress>=a.goal);
-        return '<article role="button" tabindex="0" aria-label="View '+safe(a.title)+' achievement" data-achievement-index="'+i+'" class="achievement-card '+(unlocked?'unlocked':'locked')+'" style="--badge-delay:'+Math.min(i*55,400)+'ms">'+
+        const unlocked=achievementInstance?.isUnlocked?.(['first','week','rhythm','month','century','fifty','freeze','many','german1','german10','german25','german100'][i])||(a.progress>=a.goal);
+        return '<article role="button" tabindex="0" aria-label="View '+safe(a.title)+' achievement" data-achievement-index="'+i+'" class="achievement-card '+(a.study?'achievement-study ':'')+(unlocked?'unlocked':'locked')+'" style="--badge-delay:'+Math.min(i*55,400)+'ms">'+
           '<div class="achievement-card-top"><span class="achievement-tier">'+safe(a.tier)+'</span><span class="achievement-state">'+(unlocked?'UNLOCKED':'TO DISCOVER')+'</span></div>'+
           '<div class="achievement-emblem achievement-emblem-'+safe(a.icon)+'">'+badgeArt[a.icon]+'</div>'+
           '<h3>'+safe(a.title)+'</h3><p>'+safe(a.detail)+'</p>'+
@@ -2368,7 +2372,6 @@
         {label:'Days completed',number:completed,icon:badgeArt.calendar,hint:all?'Across all habits':'Every check-in counts'},
         {label:'Protected freezes',number:freezeCount,icon:badgeArt.freeze,hint:'Days or weeks your streak was protected'}
       ];
-      $('insightContextNote').textContent='Your whole journey, together. Tap a day in the yearly heatmap to explore completed habits and German study time.';
       $('insightStatGrid').innerHTML=cards.map((x,i)=>
         '<div class="insight-stat-card"><span class="insight-stat-kicker">'+safe(x.label)+'</span><div class="insight-stat-main"><strong>'+x.number+'</strong><span class="insight-stat-icon '+(i===3?'icy':'')+'">'+x.icon+'</span></div><small>'+safe(x.hint)+'</small></div>'
       ).join('');
@@ -2421,11 +2424,11 @@
       selectedHeatDay=null;$('insightDayDetail').hidden=true;$('insightDayDetail').innerHTML='';
       $('insightYearGrid').querySelectorAll('button[data-heat-date]').forEach(b=>{b.classList.remove('is-selected');b.setAttribute('aria-pressed','false');});
     });
-        function onHabitsChange(){achievementInstance?.onHabitsChange();if(tab==='insights')renderInsights();}
+        function onHabitsChange(){habitHistoryReady=true;achievementInstance?.onHabitsChange();if(tab==='insights')renderInsights();}
     function dispose(){focusInstance?.dispose();achievementInstance?.dispose();if(unsub)unsub();clearTimeout(saveTimer);if(sortable)sortable.destroy();clearTimeout(transitionTimeout);if(transitionFrame)cancelAnimationFrame(transitionFrame);}
-    try{achievementInstance=window.MyStreaksAchievements?.start({db,doc,onSnapshot,setDoc,getHabits,evaluateHabit,longestFor,visuals:badgeArt,weeklyProtectedFor:h=>h.cadence==='weekly'?protectedWeeklyHistory(h).protectedWeeks.length:0})||null;}catch(error){console.error('Achievement celebrations initialization failed',error);}
+    try{achievementInstance=window.MyStreaksAchievements?.start({db,doc,onSnapshot,setDoc,getHabits,evaluateHabit,longestFor,visuals:badgeArt,getStudyHours:()=>focusInstance?.getStudyHours?.()??null,weeklyProtectedFor:h=>h.cadence==='weekly'?protectedWeeklyHistory(h).protectedWeeks.length:0})||null;}catch(error){console.error('Achievement celebrations initialization failed',error);}
     // Focus Plans uses its own Firestore document, separate from checklist notes.
-    try{focusInstance=window.MyStreaksFocus?.start({db,doc,onSnapshot,setDoc,onStudyChange:()=>{if(tab==='insights')renderInsights();}})||null;}catch(error){console.error('Focus Plans initialization failed',error);}
+    try{focusInstance=window.MyStreaksFocus?.start({db,doc,onSnapshot,setDoc,onStudyChange:()=>{if(habitHistoryReady)achievementInstance?.onHabitsChange();if(tab==='insights')renderInsights();}})||null;}catch(error){console.error('Focus Plans initialization failed',error);}
     // Deep links should initialize consistently once the account loads.
     updateNav();
     return {setUser,selectTab,onHabitsChange,renderInsights,renderChecklist,tab:()=>tab,dispose};
