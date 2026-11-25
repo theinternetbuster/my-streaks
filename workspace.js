@@ -15,7 +15,7 @@
   function start({db,doc,onSnapshot,setDoc,getHabits,evaluateHabit,onTabChange}){
     const root=$('checklistBlocks');
     if(!root)return null;
-    let focusInstance=null,achievementInstance=null,habitHistoryReady=false;
+    let focusInstance=null,achievementInstance=null,progressInstance=null,habitHistoryReady=false;
     let tab='home',user=null,unsub=null,blocks=[],dirty=false,saveTimer=null,insightSection='overview',
         slashFor=null,slashMatches=types,slashSelected=0,sortable=null,saveSerial=0,listenerEpoch=0;
     let pendingWrite=Promise.resolve(),editRevision=0;
@@ -42,7 +42,7 @@
           const incoming=snapshot.exists()?snapshot.data().blocks:[];
           const nextBlocks=Array.isArray(incoming)?migrateChecklistBlocks(incoming.filter(b=>b&&typeof b.text==='string').slice(0,500)):[];
           const nextJson=JSON.stringify(nextBlocks.map((b,i)=>({...b,order:i})));
-          if(!checklistReady||nextJson!==serializeBlocks()){blocks=nextBlocks;resetHistory();renderChecklist(true);}
+          if(!checklistReady||nextJson!==serializeBlocks()){blocks=nextBlocks;resetHistory();renderChecklist(!checklistReady);}
           if(!checklistReady){checklistReady=true;renderListBar();}
         }
         if(!snapshot.metadata?.hasPendingWrites&&!dirty)$('checklistSyncStatus').textContent='';
@@ -148,7 +148,7 @@
       document.querySelector('.workspace-bottom-pill')?.setAttribute('data-current',tab);
     }
     function selectTab(next,{history:pushHistory=true,silent=false}={}){
-      if(!['home','insights','checklist'].includes(next)||!user)return;
+      if(!['home','insights','checklist','goals'].includes(next)||!user)return;
       const changed=tab!==next;
       if(next!=='checklist')focusInstance?.pause?.();
       tab=next;updateNav();closeSlash();
@@ -159,6 +159,7 @@
       if(!silent)onTabChange(tab);
       if(tab==='insights')renderInsights();
       if(tab==='checklist')renderChecklist();
+      if(tab==='goals')progressInstance?.refresh();
       if(changed)playPageEntrance();
       window.scrollTo({top:0,behavior:'instant'});
     }
@@ -177,8 +178,9 @@
       if(unsub){unsub();unsub=null;}if(listUnsub){listUnsub();listUnsub=null;}listenerEpoch++;
       clearTimeout(saveTimer);editRevision++;
       user=next;habitHistoryReady=false;selectedHeatDay=null;focusInstance?.setUser(next);achievementInstance?.setUser(next);blocks=[];dirty=false;saveSerial++;clearDocumentSelection();resetHistory();insightSection='overview';
+      progressInstance?.setUser(next);
       listId='school';lists={school:{name:'School',icon:'🎓',color:'#60a5fa'}};listReady=false;checklistReady=false;listSwitching=false;
-      tab=['insights','checklist'].includes(new URLSearchParams(location.search).get('view'))?new URLSearchParams(location.search).get('view'):'home';
+      tab=['insights','checklist','goals'].includes(new URLSearchParams(location.search).get('view'))?new URLSearchParams(location.search).get('view'):'home';
       updateNav();renderListBar();
       if(!user){renderChecklist(true);return;}
       const uid=user.uid;
@@ -276,6 +278,7 @@
       await pendingWrite;
     }
     function addBlock(afterId=null,type='todo',text='',forcedParentId=null){
+      if(!checklistReady||listSwitching)return null;
       const preceding=blocks.find(x=>x.id===afterId);
       const parentId=forcedParentId!==null?forcedParentId:(preceding?.parentId||'');
       const b={id:uniqueId(),type,text,parentId,checked:false,collapsed:false,detailsOpen:type==='todoList',note:'',detailsMode:'tasks',subtasks:[],dueDate:'',order:blocks.length,createdAt:Date.now()};
@@ -2352,24 +2355,18 @@ studylaurel:'<svg class="study-art" viewBox="0 0 80 80" aria-hidden="true"><g cl
     $('insightAchievementGrid').addEventListener('click',e=>{const card=e.target.closest('[data-achievement-index]');if(card)achievementInstance?.openDetail(card.dataset.achievementIndex);});
     $('insightAchievementGrid').addEventListener('keydown',e=>{if(e.key!=='Enter'&&e.key!==' ')return;const card=e.target.closest('[data-achievement-index]');if(!card)return;e.preventDefault();achievementInstance?.openDetail(card.dataset.achievementIndex);});
     function renderInsightTabs(){
-      const achievements=insightSection==='achievements';
-      $('insightOverview').hidden=achievements;
-      $('insightAchievements').hidden=!achievements;
-      document.querySelector('.insight-section-tabs')?.setAttribute('data-selected',achievements?'achievements':'overview');
-      for(const [id,active] of [['insightOverviewTab',!achievements],['insightAchievementsTab',achievements]]){
-        $(id).classList.toggle('active',active);
-        $(id).setAttribute('aria-selected',String(active));
-        $(id).tabIndex=active?0:-1;
+      for(const [section,panel,button] of [['overview','insightOverview','insightOverviewTab'],['achievements','insightAchievements','insightAchievementsTab'],['reports','insightReports','insightReportsTab']]){
+        const active=insightSection===section;
+        $(panel).hidden=!active;$(button).classList.toggle('active',active);$(button).setAttribute('aria-selected',String(active));$(button).tabIndex=active?0:-1;
       }
+      document.querySelector('.ms-insight-tabs')?.setAttribute('data-selected',insightSection);
     }
     function chooseInsightSection(which){
-      insightSection=which==='achievements'?'achievements':'overview';
+      insightSection=['overview','achievements','reports'].includes(which)?which:'overview';
       if(insightSection==='achievements')achievementInstance?.markRead();
       renderInsightTabs();renderInsights();
     }
-    $('insightOverviewTab').addEventListener('click',()=>chooseInsightSection('overview'));
-    $('insightAchievementsTab').addEventListener('click',()=>chooseInsightSection('achievements'));
-    $('insightViewAchievements').addEventListener('click',()=>chooseInsightSection('achievements'));
+    for(const [id,section] of [['insightOverviewTab','overview'],['insightAchievementsTab','achievements'],['insightReportsTab','reports'],['insightViewAchievements','achievements']])$(id).addEventListener('click',()=>chooseInsightSection(section));
     const formatStudyTime=seconds=>{
       const minutes=Math.floor(Math.max(0,seconds||0)/60);
       return minutes>=60?Math.floor(minutes/60)+'h '+String(minutes%60).padStart(2,'0')+'m':minutes+'m';
@@ -2403,7 +2400,8 @@ studylaurel:'<svg class="study-art" viewBox="0 0 80 80" aria-hidden="true"><g cl
     function renderInsights(){
       const habits=getHabits();
       const empty=$('insightEmpty'),content=$('insightsContent');
-      empty.hidden=habits.length>0;content.hidden=habits.length===0;
+      empty.hidden=habits.length>0||insightSection!=='overview';content.hidden=false;
+      if(insightSection==='reports'){renderInsightTabs();progressInstance?.refresh();return;}
       if(!habits.length){renderInsightTabs();return;}
       renderInsightTabs();
       const all=true;
@@ -2472,11 +2470,12 @@ studylaurel:'<svg class="study-art" viewBox="0 0 80 80" aria-hidden="true"><g cl
       selectedHeatDay=null;$('insightDayDetail').hidden=true;$('insightDayDetail').innerHTML='';
       $('insightYearGrid').querySelectorAll('button[data-heat-date]').forEach(b=>{b.classList.remove('is-selected');b.setAttribute('aria-pressed','false');});
     });
-        function onHabitsChange(){habitHistoryReady=true;achievementInstance?.onHabitsChange();if(tab==='insights')renderInsights();}
-    function dispose(){focusInstance?.dispose();achievementInstance?.dispose();if(listUnsub)listUnsub();if(unsub)unsub();clearTimeout(saveTimer);if(sortable)sortable.destroy();clearTimeout(transitionTimeout);if(transitionFrame)cancelAnimationFrame(transitionFrame);}
+        function onHabitsChange(){habitHistoryReady=true;achievementInstance?.onHabitsChange();if(tab==='insights')renderInsights();if(tab==='goals')progressInstance?.refresh();}
+    function dispose(){progressInstance?.dispose();focusInstance?.dispose();achievementInstance?.dispose();if(listUnsub)listUnsub();if(unsub)unsub();clearTimeout(saveTimer);if(sortable)sortable.destroy();clearTimeout(transitionTimeout);if(transitionFrame)cancelAnimationFrame(transitionFrame);}
     try{achievementInstance=window.MyStreaksAchievements?.start({db,doc,onSnapshot,setDoc,getHabits,evaluateHabit,longestFor,visuals:badgeArt,getStudyHours:()=>focusInstance?.getStudyHours?.()??null,weeklyProtectedFor:h=>h.cadence==='weekly'?protectedWeeklyHistory(h).protectedWeeks.length:0})||null;}catch(error){console.error('Achievement celebrations initialization failed',error);}
     // Focus Plans uses its own Firestore document, separate from checklist notes.
-    try{focusInstance=window.MyStreaksFocus?.start({db,doc,onSnapshot,setDoc,onStudyChange:({timerRunning=false}={})=>{if(habitHistoryReady&&!timerRunning)achievementInstance?.onHabitsChange();if(tab==='insights')renderInsights();}})||null;}catch(error){console.error('Focus Plans initialization failed',error);}
+    try{focusInstance=window.MyStreaksFocus?.start({db,doc,onSnapshot,setDoc,onStudyChange:({timerRunning=false}={})=>{if(habitHistoryReady&&!timerRunning)achievementInstance?.onHabitsChange();if(tab==='insights')renderInsights();if(tab==='goals')progressInstance?.refresh();}})||null;}catch(error){console.error('Focus Plans initialization failed',error);}
+    try{progressInstance=window.MyStreaksProgress?.start({db,doc,onSnapshot,setDoc,getHabits,getHistory:()=>focusInstance?.getHistory?.()??null})||null;}catch(error){console.error('Progress initialization failed',error);}
     // Deep links should initialize consistently once the account loads.
     updateNav();
     return {setUser,selectTab,onHabitsChange,renderInsights,renderChecklist,tab:()=>tab,dispose};
