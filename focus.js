@@ -80,10 +80,10 @@ function start({db,doc,onSnapshot,setDoc,onStudyChange}){
   onStudyChange?.({timerRunning:!!active});
   const write=()=>{
    if(!user)return;
-   const uid=user.uid,id=planId,payload=JSON.parse(JSON.stringify(plan));models[id]=plan;
+   const uid=user.uid,id=planId,epoch=generation,payload=JSON.parse(JSON.stringify(plan));models[id]=plan;
    lastSnapshot=JSON.stringify(payload);
    saveQueue=saveQueue.catch(()=>{}).then(()=>setDoc(doc(db,'users',uid,'settings',planPath(id)),payload,{merge:false})).then(()=>{
-    if(user?.uid===uid&&planId===id){$('focusSyncLabel').textContent='';dirty=false;}
+    if(user?.uid===uid&&generation===epoch&&planId===id){$('focusSyncLabel').textContent='';if(JSON.stringify(plan)===JSON.stringify(payload))dirty=false;}
    }).catch(e=>{$('focusSyncLabel').textContent='Save failed';console.error('Focus plan save error',e);});
    $('focusSyncLabel').textContent='Saving…';
   };
