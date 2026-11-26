@@ -25,9 +25,12 @@
     listBar.className='checklist-list-bar';
     listBar.setAttribute('aria-label','Your checklists');
     $('checklistOriginal').prepend(listBar);
+    const listIcons={school:'<path d="m2 9 10-5 10 5-10 5-10-5Z"/><path d="M6 11v6c4 3 8 3 12 0v-6m4-2v7"/>',life:'<path d="M20 4C8 3 3 8 5 15c6 5 14 0 15-11ZM3 21l11-11"/>',projects:'<path d="M4 7h6l2 3h8v10H4zM4 7V4h6l2 3h8v3"/>',home:'<path d="m3 10 9-7 9 7v10H3zM9 20v-7h6v7"/>',work:'<rect x="3" y="7" width="18" height="14" rx="2"/><path d="M8 7V4h8v3M3 13h18"/>',book:'<path d="M3 5c4-1 7 0 9 2 2-2 5-3 9-2v14c-4-1-7 0-9 2-2-2-5-3-9-2zM12 7v14"/>',star:'<path d="m12 3 3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1Z"/>',list:'<rect x="4" y="3" width="16" height="18" rx="3"/><path d="m7 8 1.5 1.5L11 7m2 2h4m-10 5 1.5 1.5L11 13m2 2h4"/>'};
+    const iconFor=(v,id)=>Object.hasOwn(listIcons,v?.icon)?v.icon:id==='school'||/school|college/i.test(v?.name||'')?'school':/life|personal/i.test(v?.name||'')?'life':/project/i.test(v?.name||'')?'projects':'list';
+    const listSvg=n=>'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+listIcons[n]+'</svg>';
     function renderListBar(){
-      listBar.innerHTML='<div class="checklist-list-heading"><strong>My lists</strong><button type="button" data-list-action="new" '+(!listReady||listSwitching?'disabled':'')+'>＋ New list</button></div><div class="checklist-list-options">'+Object.entries(lists).map(([id,v])=>'<button type="button" data-list-id="'+safe(id)+'" aria-pressed="'+(id===listId)+'" '+(!checklistReady||listSwitching?'disabled':'')+' style="--list-color:'+safe(v.color)+'"><span aria-hidden="true">'+safe(v.icon)+'</span><span>'+safe(v.name)+'</span></button>').join('')+'</div><div class="checklist-list-actions"><span>'+safe(lists[listId]?.name||'School')+'</span><button type="button" data-list-action="rename" '+(!listReady||listSwitching?'disabled':'')+'>Edit list</button></div>';
-      const title=document.querySelector('.checklist-document-top>span:first-child');if(title){const label=Array.from(title.childNodes).find(n=>n.nodeType===3);if(label)label.textContent=' '+(lists[listId]?.name||'School').toUpperCase();}
+      const count=blocks.filter(b=>['todo','todoList','todoNote'].includes(b.type)&&b.text.trim()).length,done=blocks.filter(b=>['todo','todoList','todoNote'].includes(b.type)&&b.text.trim()&&b.checked).length;
+      listBar.innerHTML='<div class="checklist-list-heading"><strong>My lists</strong><button type="button" data-list-action="new" '+(!listReady||listSwitching?'disabled':'')+'>＋ New list</button></div><div class="checklist-list-options">'+Object.entries(lists).map(([id,v])=>'<button type="button" data-list-id="'+safe(id)+'" aria-pressed="'+(id===listId)+'" '+(!checklistReady||listSwitching?'disabled':'')+' style="--list-color:'+safe(v.color)+'"><span class="ms-list-icon">'+listSvg(iconFor(v,id))+'</span><span>'+safe(v.name)+'</span>'+(id===listId&&checklistReady?'<small>'+(count-done)+' remaining</small>':'')+'</button>').join('')+'</div><div class="checklist-list-actions"><span>'+safe(lists[listId]?.name||'School')+'</span><div><small data-list-count>'+ (checklistReady?done+'/'+count:'')+'</small><button type="button" data-list-action="rename" aria-label="Edit list" title="Edit list" '+(!listReady||listSwitching?'disabled':'')+'>⋯</button></div></div>';
       root.inert=!checklistReady||listSwitching;
       for(const id of ['checklistAdd','checklistAddBottom','checklistEmpty'])$(id).disabled=!checklistReady||listSwitching;
     }
@@ -37,7 +40,7 @@
     function openListDialog(editing){
       editingList=editing?listId:null;
       const previous=editing?lists[listId]:null;
-      listDialog.innerHTML='<form class="ms-feature-card ms-goal-form"><h3>'+(editing?'Edit list':'Create a checklist')+'</h3><label>Name<input name="name" required maxlength="40" value="'+safe(previous?.name||'')+'" placeholder="Life, Projects, School…"></label><label>Icon or emoji<input name="icon" maxlength="12" value="'+safe(previous?.icon||'🌿')+'"></label><label>Color<select name="color">'+listColors.map((c,i)=>'<option value="'+c+'" '+((previous?.color||listColors[Object.keys(lists).length%listColors.length])===c?'selected':'')+'>'+['Blue','Green','Purple','Gold','Pink','Slate'][i]+'</option>').join('')+'</select></label><div class="ms-goal-actions"><button type="button" data-list-cancel>Cancel</button><button type="submit" class="ms-primary">Save list</button></div><p data-list-error role="status"></p></form>';
+      listDialog.innerHTML='<form class="ms-feature-card ms-goal-form"><h3>'+(editing?'Edit list':'Create a checklist')+'</h3><label>Name<input name="name" required maxlength="40" value="'+safe(previous?.name||'')+'" placeholder="Life, Projects, School…"></label><label>Icon<select name="icon">'+Object.keys(listIcons).map(n=>'<option value="'+n+'" '+(iconFor(previous,editingList)===n?'selected':'')+'>'+n[0].toUpperCase()+n.slice(1)+'</option>').join('')+'</select></label><label>Color<select name="color">'+listColors.map((c,i)=>'<option value="'+c+'" '+((previous?.color||listColors[Object.keys(lists).length%listColors.length])===c?'selected':'')+'>'+['Blue','Green','Purple','Gold','Pink','Slate'][i]+'</option>').join('')+'</select></label><div class="ms-goal-actions"><button type="button" data-list-cancel>Cancel</button><button type="submit" class="ms-primary">Save list</button></div><p data-list-error role="status"></p></form>';
       listDialog.showModal();
     }
     listDialog.addEventListener('click',e=>{if(e.target.closest('[data-list-cancel]'))listDialog.close();});
@@ -45,7 +48,7 @@
       e.preventDefault();if(!user||!listReady||listSwitching)return;
       const form=e.target,id=editingList||uniqueId(),uid=user.uid,name=form.elements.name.value.trim().slice(0,40);
       if(!name)return;
-      const item={name,icon:form.elements.icon.value.trim().slice(0,12)||'•',color:listColors.includes(form.elements.color.value)?form.elements.color.value:listColors[0]};
+      const item={name,icon:Object.hasOwn(listIcons,form.elements.icon.value)?form.elements.icon.value:'list',color:listColors.includes(form.elements.color.value)?form.elements.color.value:listColors[0]};
       const submit=form.querySelector('button[type="submit"]');submit.disabled=true;
       try{await setDoc(doc(db,'users',uid,'settings','checklistLists'),{lists:{[id]:item}},{merge:true});if(user?.uid!==uid)return;lists[id]=item;listDialog.close();renderListBar();if(!editingList)await switchList(id);}
       catch(error){console.error('List metadata save failed',error);form.querySelector('[data-list-error]').textContent='Could not save list. Try again.';submit.disabled=false;}
@@ -1273,6 +1276,7 @@
       root.querySelectorAll('textarea').forEach(resizeField);
       setupSortable();
       paintBlockSelection();
+      if(checklistReady)renderListBar();
     }
     function resizeField(field){
       field.style.height='auto';field.style.height=Math.max(26,field.scrollHeight)+'px';
@@ -1806,7 +1810,7 @@
 
       const input=e.target.closest('[data-toggle-check]');if(!input)return;
       const b=blocks.find(x=>x.id===input.dataset.toggleCheck);if(!b)return;
-      b.checked=input.checked;input.closest('.checklist-line').classList.toggle('is-done',b.checked);scheduleSave(true);
+      b.checked=input.checked;input.closest('.checklist-line').classList.toggle('is-done',b.checked);scheduleSave(true);renderListBar();
     });
     // On iOS a tap on the contextual + blurs the editor and hides its own
     // button before click fires. Insert on pointerdown for touch/pen instead.
