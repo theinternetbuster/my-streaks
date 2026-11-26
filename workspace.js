@@ -20,18 +20,22 @@
         slashFor=null,slashMatches=types,slashSelected=0,sortable=null,saveSerial=0,listenerEpoch=0;
     let pendingWrite=Promise.resolve(),editRevision=0;
     let listDetail=false,listId='school',lists={school:{name:'School',icon:'🎓',color:'#60a5fa'}},listUnsub=null,listReady=false,listSwitching=false,checklistReady=false;
+    let countListeners=new Map(),listCounts={};
+    const taskCounts=items=>{const tasks=items.filter(b=>['todo','todoList','todoNote'].includes(b.type)&&String(b.text||'').trim()&&!b.checked);return {left:tasks.length,urgent:tasks.filter(b=>b.blockBackground&&b.blockBackground!=='default'&&Object.hasOwn(backgroundPalette,b.blockBackground)).length};};
+    function watchListCounts(uid){for(const [id,off] of countListeners)if(!lists[id]){off();countListeners.delete(id);delete listCounts[id];}for(const id of Object.keys(lists)){if(countListeners.has(id))continue;const off=onSnapshot(doc(db,'users',uid,'settings',listDocument(id)),snap=>{if(user?.uid!==uid)return;const data=snap.data()?.blocks;listCounts[id]=taskCounts(migrateChecklistBlocks(Array.isArray(data)?data.filter(b=>b&&typeof b.text==='string').slice(0,500):[]));if(!listDetail)renderListBar();},err=>{console.error('Checklist summary sync',err);});countListeners.set(id,off);}}
+    function summaryHtml(id){const c=id===listId&&checklistReady?taskCounts(blocks):listCounts[id];if(!c)return '<small>Loading tasks…</small>';return '<small>'+c.left+' '+(c.left===1?'task':'tasks')+' left'+(c.urgent?' <span class="ms-library-dot">·</span> <span class="ms-urgent-count">'+c.urgent+' urgent</span>':'')+'</small>';}
     const listDocument=id=>id==='school'?'checklist':'checklist-'+id;
     const listBar=document.createElement('section');
     listBar.className='checklist-list-bar';
     listBar.setAttribute('aria-label','Your checklists');
     $('checklistOriginal').prepend(listBar);
-    const listIcons={school:'<path d="m2 9 10-5 10 5-10 5-10-5Z"/><path d="M6 11v6c4 3 8 3 12 0v-6m4-2v7"/>',life:'<path d="M20 4C8 3 3 8 5 15c6 5 14 0 15-11ZM3 21l11-11"/>',projects:'<path d="M4 7h6l2 3h8v10H4zM4 7V4h6l2 3h8v3"/>',home:'<path d="m3 10 9-7 9 7v10H3zM9 20v-7h6v7"/>',work:'<rect x="3" y="7" width="18" height="14" rx="2"/><path d="M8 7V4h8v3M3 13h18"/>',book:'<path d="M3 5c4-1 7 0 9 2 2-2 5-3 9-2v14c-4-1-7 0-9 2-2-2-5-3-9-2zM12 7v14"/>',star:'<path d="m12 3 3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1Z"/>',list:'<rect x="4" y="3" width="16" height="18" rx="3"/><path d="m7 8 1.5 1.5L11 7m2 2h4m-10 5 1.5 1.5L11 13m2 2h4"/>'};
-    const iconFor=(v,id)=>Object.hasOwn(listIcons,v?.icon)?v.icon:id==='school'||/school|college/i.test(v?.name||'')?'school':/life|personal/i.test(v?.name||'')?'life':/project/i.test(v?.name||'')?'projects':'list';
-    const listSvg=n=>'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+listIcons[n]+'</svg>';
+    const icons=window.MyStreaksIcons;
+    const iconFor=(v,id)=>icons.valid(v?.icon)?v.icon:id==='school'||/school|college/i.test(v?.name||'')?'school':/life|personal/i.test(v?.name||'')?'life':/project/i.test(v?.name||'')?'projects':'list';
+    const listSvg=icons.svg;
     function renderListBar(){
       const count=blocks.filter(b=>['todo','todoList','todoNote'].includes(b.type)&&b.text.trim()).length,done=blocks.filter(b=>['todo','todoList','todoNote'].includes(b.type)&&b.text.trim()&&b.checked).length;
       const documentCard=$('checklistOriginal').querySelector('.checklist-document');documentCard.hidden=!listDetail;
-      listBar.innerHTML=listDetail?'<button type="button" class="ms-library-back" data-list-action="back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m15 6-6 6 6 6"/></svg> All lists</button><div class="checklist-list-actions ms-checklist-detail-heading"><h2>'+safe(lists[listId]?.name||'School')+'</h2><button type="button" data-list-action="rename" aria-label="Edit list" title="Edit list" '+(!listReady||listSwitching?'disabled':'')+'>⋯</button></div>':'<div class="ms-library"><div class="ms-library-heading"><h2>Checklists</h2><button class="ms-library-new" type="button" data-list-action="new" '+(!listReady||listSwitching?'disabled':'')+'>＋ New list</button></div><div class="ms-library-items">'+Object.entries(lists).map(([id,v])=>'<button class="ms-library-row" type="button" data-list-id="'+safe(id)+'" '+(!checklistReady||listSwitching?'disabled':'')+' style="--list-color:'+safe(v.color)+'"><span class="ms-library-icon">'+listSvg(iconFor(v,id))+'</span><span class="ms-library-copy"><strong>'+safe(v.name)+'</strong></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>').join('')+'</div></div>';
+      listBar.innerHTML=listDetail?'<button type="button" class="ms-library-back" data-list-action="back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m15 6-6 6 6 6"/></svg> All lists</button><div class="checklist-list-actions ms-checklist-detail-heading"><h2>'+safe(lists[listId]?.name||'School')+'</h2><button type="button" data-list-action="rename" aria-label="Edit list" title="Edit list" '+(!listReady||listSwitching?'disabled':'')+'>⋯</button></div>':'<div class="ms-library"><div class="ms-library-heading"><h2>Checklists</h2><button class="ms-library-new" type="button" data-list-action="new" '+(!listReady||listSwitching?'disabled':'')+'>＋ New list</button></div><div class="ms-library-items">'+Object.entries(lists).map(([id,v])=>'<button class="ms-library-row" type="button" data-list-id="'+safe(id)+'" '+(!checklistReady||listSwitching?'disabled':'')+' style="--list-color:'+safe(v.color)+'"><span class="ms-library-icon">'+listSvg(iconFor(v,id))+'</span><span class="ms-library-copy"><strong>'+safe(v.name)+'</strong>'+summaryHtml(id)+'</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>').join('')+'</div></div>';
 
       root.inert=!listDetail||!checklistReady||listSwitching;
       for(const id of ['checklistAdd','checklistAddBottom','checklistEmpty'])$(id).disabled=!checklistReady||listSwitching;
@@ -42,17 +46,17 @@
     function openListDialog(editing){
       editingList=editing?listId:null;
       const previous=editing?lists[listId]:null;
-      listDialog.innerHTML='<form class="ms-feature-card ms-goal-form"><h3>'+(editing?'Edit list':'Create a checklist')+'</h3><label>Name<input name="name" required maxlength="40" value="'+safe(previous?.name||'')+'" placeholder="Life, Projects, School…"></label><label>Icon<select name="icon">'+Object.keys(listIcons).map(n=>'<option value="'+n+'" '+(iconFor(previous,editingList)===n?'selected':'')+'>'+n[0].toUpperCase()+n.slice(1)+'</option>').join('')+'</select></label><label>Color<select name="color">'+listColors.map((c,i)=>'<option value="'+c+'" '+((previous?.color||listColors[Object.keys(lists).length%listColors.length])===c?'selected':'')+'>'+['Blue','Green','Purple','Gold','Pink','Slate'][i]+'</option>').join('')+'</select></label><div class="ms-goal-actions"><button type="button" data-list-cancel>Cancel</button><button type="submit" class="ms-primary">Save list</button></div><p data-list-error role="status"></p></form>';
-      listDialog.showModal();
+      listDialog.innerHTML='<form class="ms-feature-card ms-goal-form"><h3>'+(editing?'Edit list':'Create a checklist')+'</h3><label>Name<input name="name" required maxlength="40" value="'+safe(previous?.name||'')+'" placeholder="Life, Projects, School…"></label>'+icons.markup(iconFor(previous,editingList),previous?.color||listColors[Object.keys(lists).length%listColors.length])+'<div class="ms-goal-actions"><button type="button" data-list-cancel>Cancel</button><button type="submit" class="ms-primary">Save list</button></div><p data-list-error role="status"></p></form>';
+      icons.mount(listDialog.querySelector('form'));listDialog.showModal();
     }
     listDialog.addEventListener('click',e=>{if(e.target.closest('[data-list-cancel]'))listDialog.close();});
     listDialog.addEventListener('submit',async e=>{
       e.preventDefault();if(!user||!listReady||listSwitching)return;
       const form=e.target,id=editingList||uniqueId(),uid=user.uid,name=form.elements.name.value.trim().slice(0,40);
       if(!name)return;
-      const item={name,icon:Object.hasOwn(listIcons,form.elements.icon.value)?form.elements.icon.value:'list',color:listColors.includes(form.elements.color.value)?form.elements.color.value:listColors[0]};
+      const item={name,icon:icons.valid(form.elements.icon.value)?form.elements.icon.value:'list',color:icons.color(form.elements.color.value)};
       const submit=form.querySelector('button[type="submit"]');submit.disabled=true;
-      try{await setDoc(doc(db,'users',uid,'settings','checklistLists'),{lists:{[id]:item}},{merge:true});if(user?.uid!==uid)return;lists[id]=item;listDialog.close();renderListBar();if(!editingList)await switchList(id);}
+      try{await setDoc(doc(db,'users',uid,'settings','checklistLists'),{lists:{[id]:item}},{merge:true});if(user?.uid!==uid)return;lists[id]=item;watchListCounts(uid);listDialog.close();renderListBar();if(!editingList)await switchList(id);}
       catch(error){console.error('List metadata save failed',error);form.querySelector('[data-list-error]').textContent='Could not save list. Try again.';submit.disabled=false;}
     });
     function listenChecklist(id){
@@ -191,7 +195,7 @@
       selectTab(new URLSearchParams(location.search).get('view')||'home',{history:false});
     });
     function setUser(next){
-      if(listDialog.open)listDialog.close();if(unsub){unsub();unsub=null;}if(listUnsub){listUnsub();listUnsub=null;}listenerEpoch++;
+      for(const off of countListeners.values())off();countListeners.clear();listCounts={};if(listDialog.open)listDialog.close();if(unsub){unsub();unsub=null;}if(listUnsub){listUnsub();listUnsub=null;}listenerEpoch++;
       clearTimeout(saveTimer);editRevision++;
       user=next;listDetail=false;habitHistoryReady=false;selectedHeatDay=null;focusInstance?.setUser(next);achievementInstance?.setUser(next);blocks=[];dirty=false;saveSerial++;clearDocumentSelection();resetHistory();insightSection='overview';
       progressInstance?.setUser(next);
@@ -205,7 +209,7 @@
         const incoming=snapshot.data()?.lists||{};
         const clean={school:{name:'School',icon:'🎓',color:'#60a5fa'}};
         for(const [id,v] of Object.entries(incoming))if(/^[a-z0-9_-]{1,50}$/i.test(id)&&v&&typeof v.name==='string')clean[id]={name:v.name.slice(0,40),icon:String(v.icon||'•').slice(0,12),color:/^#[0-9a-f]{6}$/i.test(v.color)?v.color:'#60a5fa'};
-        lists=clean;listReady=true;renderListBar();
+        lists=clean;listReady=true;watchListCounts(uid);renderListBar();
       },error=>{console.error('List metadata sync failed',error);});
       listenChecklist('school');
       if(tab==='insights')renderInsights();
@@ -2486,7 +2490,7 @@ studylaurel:'<svg class="study-art" viewBox="0 0 80 80" aria-hidden="true"><g cl
       $('insightYearGrid').querySelectorAll('button[data-heat-date]').forEach(b=>{b.classList.remove('is-selected');b.setAttribute('aria-pressed','false');});
     });
         function onHabitsChange(){habitHistoryReady=true;achievementInstance?.onHabitsChange();if(tab==='insights')renderInsights();if(tab==='goals')progressInstance?.refresh();}
-    function dispose(){listDialog.remove();progressInstance?.dispose();focusInstance?.dispose();achievementInstance?.dispose();if(listUnsub)listUnsub();if(unsub)unsub();clearTimeout(saveTimer);if(sortable)sortable.destroy();clearTimeout(transitionTimeout);if(transitionFrame)cancelAnimationFrame(transitionFrame);}
+    function dispose(){for(const off of countListeners.values())off();countListeners.clear();listDialog.remove();progressInstance?.dispose();focusInstance?.dispose();achievementInstance?.dispose();if(listUnsub)listUnsub();if(unsub)unsub();clearTimeout(saveTimer);if(sortable)sortable.destroy();clearTimeout(transitionTimeout);if(transitionFrame)cancelAnimationFrame(transitionFrame);}
     try{achievementInstance=window.MyStreaksAchievements?.start({db,doc,onSnapshot,setDoc,getHabits,evaluateHabit,longestFor,visuals:badgeArt,getStudyHours:()=>focusInstance?.getStudyHours?.()??null,weeklyProtectedFor:h=>h.cadence==='weekly'?protectedWeeklyHistory(h).protectedWeeks.length:0})||null;}catch(error){console.error('Achievement celebrations initialization failed',error);}
     // Focus Plans uses its own Firestore document, separate from checklist notes.
     try{focusInstance=window.MyStreaksFocus?.start({db,doc,onSnapshot,setDoc,onStudyChange:({timerRunning=false}={})=>{if(habitHistoryReady&&!timerRunning)achievementInstance?.onHabitsChange();if(tab==='insights')renderInsights();if(tab==='goals')progressInstance?.refresh();}})||null;}catch(error){console.error('Focus Plans initialization failed',error);}
