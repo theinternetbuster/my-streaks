@@ -423,3 +423,26 @@ html[data-theme="light"] .ms-library-copy .ms-urgent-count{color:#a64c20}
 .ms-personal-award .achievement-progress>i{background:var(--award-color)!important}
 .ms-personal-remove{position:absolute;bottom:5px;right:9px;border:0;background:transparent;color:var(--ms-muted);font-size:20px;cursor:pointer;line-height:1}
 .ms-personal-award .achievement-foot{margin-bottom:12px}
+
+/* Backup & Restore — unified settings rows matching the approved preview. */
+#accountBackupDetail{display:block;width:100%;min-width:0}
+#accountBackupDetail .ms-backup-desktop-title{display:none}
+#accountBackupDetail .ms-backup-actions{display:grid;gap:12px;width:100%;max-width:630px}
+#accountBackupDetail .ms-backup-row{display:flex;align-items:center;gap:12px;width:100%;min-height:58px;padding:15px 17px;margin:0;box-sizing:border-box;background:#242426;color:#f4f4f7;border:1px solid transparent;border-radius:15px;text-align:left;line-height:1.3;font-family:'DM Sans',system-ui,sans-serif;box-shadow:none}
+#accountBackupDetail .ms-backup-row:hover{background:#303034}
+#accountBackupDetail .ms-backup-row:active{background:#333338}
+#accountBackupDetail .ms-backup-row:focus-visible{outline:2px solid #a78bfa;outline-offset:3px}
+#accountBackupDetail .ms-backup-symbol{width:22px;height:22px;flex:0 0 22px}
+#accountBackupDetail .ms-backup-copy{display:grid;flex:1;min-width:0;gap:5px}
+#accountBackupDetail .ms-backup-copy strong{font-size:17px;font-weight:650;letter-spacing:-.015em}
+#accountBackupDetail .ms-backup-copy small{font-size:13px;font-weight:400;color:#a5a5af}
+#accountBackupDetail .ms-backup-chevron{width:17px;height:17px;flex:0 0 17px;color:#92929b}
+#accountBackupDetail .ms-backup-separator{height:1px;background:#ffffff14;margin:12px 0}
+#accountBackupDetail #accountConfigImport .ms-backup-symbol{color:#a78bfa}
+html[data-theme="light"] #accountBackupDetail .ms-backup-row{background:#f1f2f5;color:#202638;border-color:transparent}
+html[data-theme="light"] #accountBackupDetail .ms-backup-row:hover{background:#e8e9ee}
+html[data-theme="light"] #accountBackupDetail .ms-backup-copy small{color:#596478}
+html[data-theme="light"] #accountBackupDetail .ms-backup-separator{background:#e0e3ea}
+html[data-theme="light"] #accountBackupDetail #accountConfigImport .ms-backup-symbol{color:#7952c5}
+@media(min-width:800px){body.desktop-settings-route #accountBackupDetail .ms-backup-desktop-title{display:block;margin:0 0 22px!important}}
+@media(max-width:799px){#accountBackupDetail .ms-backup-actions{padding-top:4px}#accountBackupDetail .ms-backup-row{min-height:58px;padding:15px 16px}}
