@@ -651,6 +651,7 @@ try{
    onTabChange:()=>{if(user){display('dashboard');}}
  })||null;
 }catch(error){console.error('Optional workspace failed to initialize',error);}
+try{window.MyStreaksConfig?.start({db,doc,runTransaction,getUser:()=>user,getHabits:()=>habits,today:todayKey,yesterday:yesterdayKey});}catch(error){console.error('Configuration import initialization failed',error);}
 onAuthStateChanged(auth,u=>{
  if(unsubscribe){unsubscribe();unsubscribe=null;}
  clearTimeout(initialLoadTimer);
