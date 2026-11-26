@@ -53,7 +53,7 @@ function start({db,doc,onSnapshot,setDoc,onStudyChange}){
   immersive.innerHTML='<div class="ms-focus-inner"><div class="ms-focus-stars" aria-hidden="true">'+Array.from({length:36},(_,i)=>'<i style="--x:'+((i*73+13)%100)+'%;--y:'+((i*47+7)%100)+'%;--delay:'+(-(i%9))+'s"></i>').join('')+'</div><div class="ms-focus-top"><button type="button" data-immersive-close aria-label="Minimize focus view">'+focusIcon('min')+'<span>Minimize</span></button><span>'+escape(catalog[planId]?.name||'Focus')+' · FOCUS</span></div><div class="ms-focus-ring" data-immersive-ring><div><small>'+escape(b.name)+'</small><strong data-immersive-time>00:00</strong><span data-immersive-status></span></div></div><div class="ms-focus-controls"><button type="button" data-immersive-toggle></button><button type="button" data-immersive-done></button></div><div class="ms-focus-themes" role="group" aria-label="Focus environment">'+themes.map(t=>'<button type="button" data-immersive-theme="'+t+'" aria-pressed="'+(t===immersiveTheme)+'">'+t[0].toUpperCase()+t.slice(1)+'</button>').join('')+'</div></div>';
   if(!immersive.open)immersive.showModal();paintImmersive();paintMini();
  }
- immersive.addEventListener('click',e=>{const button=e.target.closest('button');if(!button||!user)return;if(button.hasAttribute('data-immersive-close')){immersive.close();return;}if(button.dataset.immersiveTheme){immersiveTheme=button.dataset.immersiveTheme;immersive.dataset.environment=immersiveTheme;immersive.querySelectorAll('[data-immersive-theme]').forEach(x=>x.setAttribute('aria-pressed',String(x===button)));return;}const action=button.hasAttribute('data-immersive-toggle')?'toggle':button.hasAttribute('data-immersive-done')?'done':'';if(!action)return;const original=root.querySelector('[data-focus="'+action+'"][data-id="'+immersiveId+'"]');original?.click();paintImmersive();});
+ immersive.addEventListener('click',e=>{const button=e.target.closest('button');if(!button||!user)return;if(button.hasAttribute('data-immersive-close')){immersive.close();return;}if(button.dataset.immersiveTheme){immersiveTheme=button.dataset.immersiveTheme;immersive.dataset.environment=immersiveTheme;immersive.querySelectorAll('[data-immersive-theme]').forEach(x=>x.setAttribute('aria-pressed',String(x===button)));return;}const action=button.hasAttribute('data-immersive-toggle')?'toggle':button.hasAttribute('data-immersive-done')?'done':'';if(!action)return;const id=immersiveId,b=plan.blocks.find(x=>x.id===id);if(!b)return;runActivityAction(action,b);paintImmersive();});
  immersive.addEventListener('close',()=>{immersiveId=null;paintMini();});
  const record=()=>{const d=day();if(!plan.days[d])plan.days[d]={};return plan.days[d];};
  const entry=(id)=>{const r=record();if(!r[id])r[id]={seconds:0,done:false};return r[id];};
@@ -188,6 +188,16 @@ function start({db,doc,onSnapshot,setDoc,onStudyChange}){
   }
   plan.blocks=blocks;editing=false;scheduleSave();render();
  }
+ function runActivityAction(action,b){const id=b.id;
+  if(action==='toggle'){
+   if(active===id){stop();}else{stop();active=id;expanded=id;activeSince=Date.now();overtime=entry(id).seconds>=b.minutes*60;}
+   scheduleSave();render();return;
+  }
+  if(action==='done'){
+   if(active===id)stop();
+   entry(id).done=!entry(id).done;scheduleSave();render();return;
+  }
+ }
  root.addEventListener('click',e=>{
   const button=e.target.closest('button[data-focus]');if(!button||!user||!ready||switching)return;
   const action=button.dataset.focus,id=button.dataset.id,b=plan.blocks.find(x=>x.id===id);
@@ -209,14 +219,7 @@ function start({db,doc,onSnapshot,setDoc,onStudyChange}){
   if(action==='resetadjust'){if(!confirm('Reset this activity’s recorded time for today to zero? This will not change any other dates.'))return;entry(adjusting).seconds=0;entry(adjusting).done=false;adjusting=null;scheduleSave(true);render();return;}
   if(!b)return;
   if(action==='immersive'){openImmersive(b);return;}
-  if(action==='toggle'){
-   if(active===id){stop();}else{stop();active=id;expanded=id;activeSince=Date.now();overtime=entry(id).seconds>=b.minutes*60;}
-   scheduleSave();render();return;
-  }
-  if(action==='done'){
-   if(active===id)stop();
-   entry(id).done=!entry(id).done;scheduleSave();render();return;
-  }
+  if(action==='toggle'||action==='done'){runActivityAction(action,b);return;}
   if(action==='manual'){
    stop();adjusting=id;render();
 
@@ -247,12 +250,13 @@ function start({db,doc,onSnapshot,setDoc,onStudyChange}){
  function getPlanHistory(id='german'){if(!user||!loaded.has(id))return null;const p=models[id];return Object.fromEntries(Object.entries(p.days).map(([d,items])=>[d,Object.entries(items).filter(([,r])=>r.seconds>0).map(([key,r])=>({id:key,name:p.blocks.find(b=>b.id===key)?.name||key,seconds:r.seconds,color:p.blocks.find(b=>b.id===key)?.color||catalog[id].color}))]));}
  function getAllHistory(){if(!user||Object.keys(catalog).some(id=>!loaded.has(id)))return null;const result={};for(const {id,name,color} of getPlans())for(const [d,items] of Object.entries(getPlanHistory(id))){const seconds=items.reduce((n,x)=>n+x.seconds,0);if(seconds)(result[d]??=[]).push({id,name,color,seconds});}return result;}
 
- function getDay(date){const h=getPlanHistory();if(h===null)return null;const activities=h[date]||[];return {total:activities.reduce((n,x)=>n+x.seconds,0),activities};}
+ function getPlanDay(id,date){if(!user||!loaded.has(id))return null;const p=models[id],items=p.days[date]||{},activities=Object.entries(items).filter(([,r])=>r.seconds>0).map(([key,r])=>({id:key,name:p.blocks.find(b=>b.id===key)?.name||key,seconds:r.seconds,color:p.blocks.find(b=>b.id===key)?.color||catalog[id].color}));return {total:activities.reduce((n,x)=>n+x.seconds,0),activities};}
+ function getDay(date){return getPlanDay('german',date);}
  function getHistory(){return getPlanHistory();}
  function getStudyHours(){const h=getHistory();return h===null?null:Math.floor(Object.values(h).flat().reduce((n,x)=>n+x.seconds,0)/3600);}
  function pause(){stop();if(!root.hidden)render();}
  function dispose(){stop();mini.remove();planDialog.remove();for(const l of listeners)l.off();immersive.remove();clearTimeout(saveTimer);clearInterval(tickTimer);if(unsub)unsub();document.removeEventListener('visibilitychange',onHidden);}
- return {setUser,dispose,render,pause,getDay,getStudyHours,getHistory,getPlans,getPlanHistory,getAllHistory};
+ return {setUser,dispose,render,pause,getDay,getStudyHours,getHistory,getPlans,getPlanHistory,getAllHistory,getPlanDay};
 }
 window.MyStreaksFocus={start};
 })();
