@@ -446,3 +446,10 @@ html[data-theme="light"] #accountBackupDetail .ms-backup-separator{background:#e
 html[data-theme="light"] #accountBackupDetail #accountConfigImport .ms-backup-symbol{color:#7952c5}
 @media(min-width:800px){body.desktop-settings-route #accountBackupDetail .ms-backup-desktop-title{display:block;margin:0 0 22px!important}}
 @media(max-width:799px){#accountBackupDetail .ms-backup-actions{padding-top:4px}#accountBackupDetail .ms-backup-row{min-height:58px;padding:15px 16px}}
+
+/* Edit dialogs initially focus their heading, not a text field. */
+.ms-editor-title:focus{outline:none}
+.ms-editor-actions .ms-delete-action{margin-right:auto}
+.ms-goal-actions .ms-delete-action,.focus-edit-actions .ms-delete-action{color:#f87171;border-color:#f8717140;background:transparent}
+.ms-goal-actions .ms-delete-action:hover,.focus-edit-actions .ms-delete-action:hover{background:#f8717114}
+html[data-theme="light"] .ms-goal-actions .ms-delete-action,html[data-theme="light"] .focus-edit-actions .ms-delete-action{color:#b42318;border-color:#e6b7b3}
