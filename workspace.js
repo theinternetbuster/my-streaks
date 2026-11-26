@@ -19,7 +19,7 @@
     let tab='home',user=null,unsub=null,blocks=[],dirty=false,saveTimer=null,insightSection='overview',
         slashFor=null,slashMatches=types,slashSelected=0,sortable=null,saveSerial=0,listenerEpoch=0;
     let pendingWrite=Promise.resolve(),editRevision=0;
-    let listId='school',lists={school:{name:'School',icon:'🎓',color:'#60a5fa'}},listUnsub=null,listReady=false,listSwitching=false,checklistReady=false;
+    let listDetail=false,listId='school',lists={school:{name:'School',icon:'🎓',color:'#60a5fa'}},listUnsub=null,listReady=false,listSwitching=false,checklistReady=false;
     const listDocument=id=>id==='school'?'checklist':'checklist-'+id;
     const listBar=document.createElement('section');
     listBar.className='checklist-list-bar';
@@ -30,8 +30,10 @@
     const listSvg=n=>'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+listIcons[n]+'</svg>';
     function renderListBar(){
       const count=blocks.filter(b=>['todo','todoList','todoNote'].includes(b.type)&&b.text.trim()).length,done=blocks.filter(b=>['todo','todoList','todoNote'].includes(b.type)&&b.text.trim()&&b.checked).length;
-      listBar.innerHTML='<div class="checklist-list-heading"><strong>My lists</strong><button type="button" data-list-action="new" '+(!listReady||listSwitching?'disabled':'')+'>＋ New list</button></div><div class="checklist-list-options">'+Object.entries(lists).map(([id,v])=>'<button type="button" data-list-id="'+safe(id)+'" aria-pressed="'+(id===listId)+'" '+(!checklistReady||listSwitching?'disabled':'')+' style="--list-color:'+safe(v.color)+'"><span class="ms-list-icon">'+listSvg(iconFor(v,id))+'</span><span>'+safe(v.name)+'</span>'+(id===listId&&checklistReady?'<small>'+(count-done)+' remaining</small>':'')+'</button>').join('')+'</div><div class="checklist-list-actions"><span>'+safe(lists[listId]?.name||'School')+'</span><div><small data-list-count>'+ (checklistReady?done+'/'+count:'')+'</small><button type="button" data-list-action="rename" aria-label="Edit list" title="Edit list" '+(!listReady||listSwitching?'disabled':'')+'>⋯</button></div></div>';
-      root.inert=!checklistReady||listSwitching;
+      const documentCard=$('checklistOriginal').querySelector('.checklist-document');documentCard.hidden=!listDetail;
+      listBar.innerHTML=listDetail?'<button type="button" class="ms-library-back" data-list-action="back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m15 6-6 6 6 6"/></svg> All lists</button><div class="checklist-list-actions ms-checklist-detail-heading"><h2>'+safe(lists[listId]?.name||'School')+'</h2><button type="button" data-list-action="rename" aria-label="Edit list" title="Edit list" '+(!listReady||listSwitching?'disabled':'')+'>⋯</button></div>':'<div class="ms-library"><div class="ms-library-heading"><h2>Checklists</h2><button class="ms-library-new" type="button" data-list-action="new" '+(!listReady||listSwitching?'disabled':'')+'>＋ New list</button></div><div class="ms-library-items">'+Object.entries(lists).map(([id,v])=>'<button class="ms-library-row" type="button" data-list-id="'+safe(id)+'" '+(!checklistReady||listSwitching?'disabled':'')+' style="--list-color:'+safe(v.color)+'"><span class="ms-library-icon">'+listSvg(iconFor(v,id))+'</span><span class="ms-library-copy"><strong>'+safe(v.name)+'</strong></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>').join('')+'</div></div>';
+
+      root.inert=!listDetail||!checklistReady||listSwitching;
       for(const id of ['checklistAdd','checklistAddBottom','checklistEmpty'])$(id).disabled=!checklistReady||listSwitching;
     }
     const listColors=['#60a5fa','#34d399','#a78bfa','#f59e0b','#f472b6','#64748b'];
@@ -71,18 +73,19 @@
       },error=>{if(epoch!==listenerEpoch)return;console.error('Checklist read failed',error);$('checklistSyncStatus').textContent='Could not sync';});
     }
     async function switchList(id){
-      if(!user||!lists[id]||id===listId||listSwitching||!checklistReady)return;
+      if(!user||!lists[id]||listSwitching||!checklistReady)return;if(id===listId){listDetail=true;renderListBar();window.scrollTo(0,0);return;}
       const uid=user.uid;listSwitching=true;
       document.activeElement?.blur?.();closeSlash();closeBlockMenu();closeDateMenu();clearDocumentSelection();
       clearTimeout(saveTimer);renderListBar();
       if(dirty)await saveChecklist();else await pendingWrite;
       if(user?.uid!==uid)return;
       if(dirty){listSwitching=false;renderListBar();return;}
-      listId=id;listSwitching=false;editRevision++;saveSerial++;listenChecklist(id);
+      listId=id;listDetail=true;listSwitching=false;editRevision++;saveSerial++;listenChecklist(id);
     }
     listBar.addEventListener('click',async e=>{
       const button=e.target.closest('button');if(!button||!user||listSwitching)return;
       if(button.dataset.listId){switchList(button.dataset.listId);return;}
+      if(button.dataset.listAction==='back'){document.activeElement?.blur?.();closeSlash();closeBlockMenu();closeDateMenu();clearDocumentSelection();listDetail=false;if(dirty){clearTimeout(saveTimer);saveChecklist();}renderListBar();window.scrollTo(0,0);return;}
       if(!listReady)return;
       if(button.dataset.listAction==='new'||button.dataset.listAction==='rename')openListDialog(button.dataset.listAction==='rename');
     });
@@ -190,7 +193,7 @@
     function setUser(next){
       if(listDialog.open)listDialog.close();if(unsub){unsub();unsub=null;}if(listUnsub){listUnsub();listUnsub=null;}listenerEpoch++;
       clearTimeout(saveTimer);editRevision++;
-      user=next;habitHistoryReady=false;selectedHeatDay=null;focusInstance?.setUser(next);achievementInstance?.setUser(next);blocks=[];dirty=false;saveSerial++;clearDocumentSelection();resetHistory();insightSection='overview';
+      user=next;listDetail=false;habitHistoryReady=false;selectedHeatDay=null;focusInstance?.setUser(next);achievementInstance?.setUser(next);blocks=[];dirty=false;saveSerial++;clearDocumentSelection();resetHistory();insightSection='overview';
       progressInstance?.setUser(next);
       listId='school';lists={school:{name:'School',icon:'🎓',color:'#60a5fa'}};listReady=false;checklistReady=false;listSwitching=false;
       tab=['insights','checklist','goals'].includes(new URLSearchParams(location.search).get('view'))?new URLSearchParams(location.search).get('view'):'home';
@@ -2386,14 +2389,10 @@ studylaurel:'<svg class="study-art" viewBox="0 0 80 80" aria-hidden="true"><g cl
       return minutes>=60?Math.floor(minutes/60)+'h '+String(minutes%60).padStart(2,'0')+'m':minutes+'m';
     };
     function germanDayHtml(date){
-      const study=focusInstance?.getDay?.(date);
-      if(!study)return '<div class="insight-german-day"><span class="insight-german-icon" aria-hidden="true">DE</span><div class="insight-german-main"><small>GERMAN PRACTICE</small><strong>Loading study history…</strong></div></div>';
-      return '<section class="insight-german-day" aria-label="German study time"><span class="insight-german-icon" aria-hidden="true">DE</span>'+
-        '<div class="insight-german-main"><small>GERMAN PRACTICE</small><strong>'+formatStudyTime(study.total)+' studied</strong>'+
-        (study.activities.length?'<div class="insight-german-breakdown">'+study.activities.map(x=>
-          '<span class="insight-german-chip"><i style="--activity-color:'+safe(x.color)+'"></i>'+safe(x.name)+' · '+formatStudyTime(x.seconds)+'</span>'
-        ).join('')+'</div>':'<p>No timer time recorded for German on this date.</p>')+
-        '</div></section>';
+      const plans=focusInstance?.getPlans?.()||[];
+      const entries=plans.map(p=>{const h=focusInstance?.getPlanHistory?.(p.id);const activities=h?.[date]||[];return {...p,activities,total:activities.reduce((sum,x)=>sum+x.seconds,0)};}).filter(p=>p.total>0);
+      if(!entries.length)return '';
+      return '<details class="ms-heat-focus"><summary><span>Focus time</span><strong>'+formatStudyTime(entries.reduce((n,p)=>n+p.total,0))+'</strong><span aria-hidden="true">⌄</span></summary><div class="ms-heat-focus-plans">'+entries.map(p=>'<details class="ms-heat-plan"><summary><i style="--plan-color:'+safe(p.color)+'"></i><span>'+safe(p.name)+'</span><strong>'+formatStudyTime(p.total)+'</strong></summary><div class="insight-german-breakdown">'+p.activities.map(x=>'<span class="insight-german-chip"><i style="--activity-color:'+safe(x.color)+'"></i>'+safe(x.name)+' · '+formatStudyTime(x.seconds)+'</span>').join('')+'</div></details>').join('')+'</div></details>';
     }
     function renderHeatDetails(date,chosen){
       const detail=$('insightDayDetail');
@@ -2401,6 +2400,7 @@ studylaurel:'<svg class="study-art" viewBox="0 0 80 80" aria-hidden="true"><g cl
       const earliest=key(shift(weekStart(new Date()),-52*7));
       if(!date||date<earliest||date>key(new Date())){detail.hidden=true;detail.innerHTML='';return;}
       const matched=chosen.filter(h=>(h.completions||[]).includes(date));
+      const focusOpen=detail.querySelector('.ms-heat-focus')?.open&&detail.dataset.date===date;const planOpen=focusOpen?Array.from(detail.querySelectorAll('.ms-heat-plan')).map(x=>x.open):[];detail.dataset.date=date;
       detail.hidden=false;
       detail.innerHTML='<div class="insight-day-heading"><div><span class="insight-kicker">DAY DETAILS</span><h3>'+
         parse(date).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'})+
@@ -2410,6 +2410,7 @@ studylaurel:'<svg class="study-art" viewBox="0 0 80 80" aria-hidden="true"><g cl
           '<span class="insight-day-habit"><span aria-hidden="true">✦</span>'+safe(h.name)+'</span>'
         ).join('')+'</div>':'<p class="insight-day-empty">No habit check-ins recorded on this date.</p>')+
         germanDayHtml(date);
+      if(focusOpen&&detail.querySelector('.ms-heat-focus')){detail.querySelector('.ms-heat-focus').open=true;detail.querySelectorAll('.ms-heat-plan').forEach((x,i)=>x.open=!!planOpen[i]);}
     }
     function renderInsights(){
       const habits=getHabits();
