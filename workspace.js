@@ -22,7 +22,7 @@
     let listDetail=false,listId='school',lists={school:{name:'School',icon:'🎓',color:'#60a5fa'}},listUnsub=null,listReady=false,listSwitching=false,checklistReady=false;
     let countListeners=new Map(),listCounts={};
     const taskCounts=items=>{const tasks=items.filter(b=>['todo','todoList','todoNote'].includes(b.type)&&String(b.text||'').trim()&&!b.checked);return {left:tasks.length,urgent:tasks.filter(b=>b.blockBackground&&b.blockBackground!=='default'&&Object.hasOwn(backgroundPalette,b.blockBackground)).length};};
-    function watchListCounts(uid){for(const [id,off] of countListeners)if(!lists[id]){off();countListeners.delete(id);delete listCounts[id];}for(const id of Object.keys(lists)){if(countListeners.has(id))continue;const off=onSnapshot(doc(db,'users',uid,'settings',listDocument(id)),snap=>{if(user?.uid!==uid)return;const data=snap.data()?.blocks;listCounts[id]=taskCounts(migrateChecklistBlocks(Array.isArray(data)?data.filter(b=>b&&typeof b.text==='string').slice(0,500):[]));if(!listDetail)renderListBar();},err=>{console.error('Checklist summary sync',err);});countListeners.set(id,off);}}
+    function watchListCounts(uid){for(const [id,off] of countListeners)if(!lists[id]||lists[id].deleted){off();countListeners.delete(id);delete listCounts[id];}for(const id of Object.keys(lists).filter(id=>!lists[id].deleted)){if(countListeners.has(id))continue;const off=onSnapshot(doc(db,'users',uid,'settings',listDocument(id)),snap=>{if(user?.uid!==uid)return;const data=snap.data()?.blocks;listCounts[id]=taskCounts(migrateChecklistBlocks(Array.isArray(data)?data.filter(b=>b&&typeof b.text==='string').slice(0,500):[]));if(!listDetail)renderListBar();},err=>{console.error('Checklist summary sync',err);});countListeners.set(id,off);}}
     function summaryHtml(id){const c=id===listId&&checklistReady?taskCounts(blocks):listCounts[id];if(!c)return '<small>Loading tasks…</small>';return '<small>'+c.left+' '+(c.left===1?'task':'tasks')+' left'+(c.urgent?' <span class="ms-library-dot">·</span> <span class="ms-urgent-count">'+c.urgent+' urgent</span>':'')+'</small>';}
     const listDocument=id=>id==='school'?'checklist':'checklist-'+id;
     const listBar=document.createElement('section');
@@ -35,7 +35,7 @@
     function renderListBar(){
       const count=blocks.filter(b=>['todo','todoList','todoNote'].includes(b.type)&&b.text.trim()).length,done=blocks.filter(b=>['todo','todoList','todoNote'].includes(b.type)&&b.text.trim()&&b.checked).length;
       const documentCard=$('checklistOriginal').querySelector('.checklist-document');documentCard.hidden=!listDetail;
-      listBar.innerHTML=listDetail?'<button type="button" class="ms-library-back" data-list-action="back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m15 6-6 6 6 6"/></svg> All lists</button><div class="checklist-list-actions ms-checklist-detail-heading"><h2>'+safe(lists[listId]?.name||'School')+'</h2><button type="button" data-list-action="rename" aria-label="Edit list" title="Edit list" '+(!listReady||listSwitching?'disabled':'')+'>⋯</button></div>':'<div class="ms-library"><div class="ms-library-heading"><h2>Checklists</h2><button class="ms-library-new" type="button" data-list-action="new" '+(!listReady||listSwitching?'disabled':'')+'>＋ New list</button></div><div class="ms-library-items">'+Object.entries(lists).map(([id,v])=>'<button class="ms-library-row" type="button" data-list-id="'+safe(id)+'" '+(!checklistReady||listSwitching?'disabled':'')+' style="--list-color:'+safe(v.color)+'"><span class="ms-library-icon">'+listSvg(iconFor(v,id))+'</span><span class="ms-library-copy"><strong>'+safe(v.name)+'</strong>'+summaryHtml(id)+'</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>').join('')+'</div></div>';
+      listBar.innerHTML=listDetail?'<button type="button" class="ms-library-back" data-list-action="back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m15 6-6 6 6 6"/></svg> All lists</button><div class="checklist-list-actions ms-checklist-detail-heading"><h2>'+safe(lists[listId]?.name||'School')+'</h2><button type="button" data-list-action="rename" aria-label="Edit list" title="Edit list" '+(!listReady||listSwitching?'disabled':'')+'>⋯</button></div>':'<div class="ms-library"><div class="ms-library-heading"><h2>Checklists</h2><button class="ms-library-new" type="button" data-list-action="new" '+(!listReady||listSwitching?'disabled':'')+'>＋ New list</button></div><div class="ms-library-items">'+Object.entries(lists).filter(([,v])=>!v.deleted).map(([id,v])=>'<button class="ms-library-row" type="button" data-list-id="'+safe(id)+'" '+(!checklistReady||listSwitching?'disabled':'')+' style="--list-color:'+safe(v.color)+'"><span class="ms-library-icon">'+listSvg(iconFor(v,id))+'</span><span class="ms-library-copy"><strong>'+safe(v.name)+'</strong>'+summaryHtml(id)+'</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>').join('')+'</div></div>';
 
       root.inert=!listDetail||!checklistReady||listSwitching;
       for(const id of ['checklistAdd','checklistAddBottom','checklistEmpty'])$(id).disabled=!checklistReady||listSwitching;
@@ -46,15 +46,31 @@
     function openListDialog(editing){
       editingList=editing?listId:null;
       const previous=editing?lists[listId]:null;
-      listDialog.innerHTML='<form class="ms-feature-card ms-goal-form"><h3>'+(editing?'Edit list':'Create a checklist')+'</h3><label>Name<input name="name" required maxlength="40" value="'+safe(previous?.name||'')+'" placeholder="Life, Projects, School…"></label>'+icons.markup(iconFor(previous,editingList),previous?.color||listColors[Object.keys(lists).length%listColors.length])+'<div class="ms-goal-actions"><button type="button" data-list-cancel>Cancel</button><button type="submit" class="ms-primary">Save list</button></div><p data-list-error role="status"></p></form>';
-      icons.mount(listDialog.querySelector('form'));listDialog.showModal();
+      listDialog.innerHTML='<form class="ms-feature-card ms-goal-form"><h3 tabindex="-1" autofocus class="ms-editor-title">'+(editing?'Edit list':'Create a checklist')+'</h3><label>Name<input name="name" autocomplete="off" required maxlength="40" value="'+safe(previous?.name||'')+'" placeholder="Life, Projects, School…"></label>'+icons.markup(iconFor(previous,editingList),previous?.color||listColors[Object.keys(lists).length%listColors.length])+'<div class="ms-goal-actions ms-editor-actions">'+(editing?'<button type="button" class="ms-delete-action" data-list-delete>Delete</button>':'')+'<button type="button" data-list-cancel>Cancel</button><button type="submit" class="ms-primary">Save list</button></div><p data-list-error role="status"></p></form>';
+      icons.mount(listDialog.querySelector('form'));listDialog.showModal();listDialog.querySelector('.ms-editor-title').focus({preventScroll:true});
     }
-    listDialog.addEventListener('click',e=>{if(e.target.closest('[data-list-cancel]'))listDialog.close();});
+    let deletingList=false;
+    listDialog.addEventListener('cancel',e=>{if(deletingList)e.preventDefault();});
+    listDialog.addEventListener('click',async e=>{
+      if(deletingList)return;
+      if(e.target.closest('[data-list-cancel]')){listDialog.close();return;}
+      if(!e.target.closest('[data-list-delete]')||!user||!editingList||listSwitching)return;
+      const id=editingList,uid=user.uid,item=lists[id];if(!item||item.deleted)return;
+      if(!confirm('Delete "'+item.name+'"? It will be removed from your checklist library. Its saved contents will be retained in storage.'))return;
+      deletingList=true;listSwitching=true;const form=listDialog.querySelector('form');form.querySelectorAll('button,input').forEach(x=>x.disabled=true);
+      try{
+        clearTimeout(saveTimer);if(dirty)await saveChecklist();else await pendingWrite;
+        if(user?.uid!==uid)return;if(dirty)throw Error('Save your checklist before deleting it.');
+        await setDoc(doc(db,'users',uid,'settings','checklistLists'),{lists:{[id]:{...item,deleted:true}}},{merge:true});
+        if(user?.uid!==uid)return;lists[id]={...item,deleted:true};listDetail=false;watchListCounts(uid);listDialog.close();window.scrollTo(0,0);
+      }catch(error){console.error('List removal failed',error);form.querySelector('[data-list-error]').textContent='Could not delete list. Try again.';}
+      finally{deletingList=false;if(user?.uid===uid){listSwitching=false;renderListBar();form.querySelectorAll('button,input').forEach(x=>x.disabled=false);}}
+    });
     listDialog.addEventListener('submit',async e=>{
-      e.preventDefault();if(!user||!listReady||listSwitching)return;
+      e.preventDefault();if(!user||!listReady||listSwitching||deletingList)return;
       const form=e.target,id=editingList||uniqueId(),uid=user.uid,name=form.elements.name.value.trim().slice(0,40);
       if(!name)return;
-      const item={name,icon:icons.valid(form.elements.icon.value)?form.elements.icon.value:'list',color:icons.color(form.elements.color.value)};
+      const item={name,deleted:false,icon:icons.valid(form.elements.icon.value)?form.elements.icon.value:'list',color:icons.color(form.elements.color.value)};
       const submit=form.querySelector('button[type="submit"]');submit.disabled=true;
       try{await setDoc(doc(db,'users',uid,'settings','checklistLists'),{lists:{[id]:item}},{merge:true});if(user?.uid!==uid)return;lists[id]=item;watchListCounts(uid);listDialog.close();renderListBar();if(!editingList)await switchList(id);}
       catch(error){console.error('List metadata save failed',error);form.querySelector('[data-list-error]').textContent='Could not save list. Try again.';submit.disabled=false;}
@@ -77,7 +93,7 @@
       },error=>{if(epoch!==listenerEpoch)return;console.error('Checklist read failed',error);$('checklistSyncStatus').textContent='Could not sync';});
     }
     async function switchList(id){
-      if(!user||!lists[id]||listSwitching||!checklistReady)return;if(id===listId){listDetail=true;renderListBar();window.scrollTo(0,0);return;}
+      if(!user||!lists[id]||lists[id].deleted||listSwitching||!checklistReady)return;if(id===listId){listDetail=true;renderListBar();window.scrollTo(0,0);return;}
       const uid=user.uid;listSwitching=true;
       document.activeElement?.blur?.();closeSlash();closeBlockMenu();closeDateMenu();clearDocumentSelection();
       clearTimeout(saveTimer);renderListBar();
@@ -210,8 +226,8 @@
         if(user?.uid!==uid)return;
         const incoming=snapshot.data()?.lists||{};
         const clean={school:{name:'School',icon:'🎓',color:'#60a5fa'}};
-        for(const [id,v] of Object.entries(incoming))if(/^[a-z0-9_-]{1,50}$/i.test(id)&&v&&typeof v.name==='string')clean[id]={name:v.name.slice(0,40),icon:String(v.icon||'•').slice(0,12),color:/^#[0-9a-f]{6}$/i.test(v.color)?v.color:'#60a5fa'};
-        lists=clean;listReady=true;watchListCounts(uid);renderListBar();
+        for(const [id,v] of Object.entries(incoming))if(/^[a-z0-9_-]{1,50}$/i.test(id)&&v&&typeof v.name==='string')clean[id]={name:v.name.slice(0,40),icon:String(v.icon||'•').slice(0,12),color:/^#[0-9a-f]{6}$/i.test(v.color)?v.color:'#60a5fa',deleted:v.deleted===true};
+        lists=clean;listReady=true;if(lists[listId]?.deleted){listDetail=false;if(listDialog.open&&!deletingList&&editingList===listId)listDialog.close();}watchListCounts(uid);renderListBar();
       },error=>{console.error('List metadata sync failed',error);});
       listenChecklist('school');
       if(tab==='insights')renderInsights();
