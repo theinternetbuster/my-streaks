@@ -59,10 +59,10 @@ async function apply(deps,c){
   if(data[receiptKey].applied)return {duplicate:true};
   const taken=await Promise.all([...prefs,...lrefs,...hrefs].map(ref=>tx.get(ref)));
   if(taken.some(s=>s.exists()))fail('Import ID collision. Try again.');
-  const existingPlans=Object.entries({german:{name:'German Practice'},...(data.focusPlanCatalog.plans||{})}).map(([id,m])=>({id,name:m.name}));
+  const existingPlans=Object.entries({german:{name:'German Practice'},...(data.focusPlanCatalog.plans||{})}).filter(([,m])=>!m.deleted).map(([id,m])=>({id,name:m.name}));
   function ensureNew(incoming,existing,label){for(const x of incoming)if(existing.some(y=>String(y.name).toLowerCase()===x.name.toLowerCase()))fail(label+' "'+x.name+'" already exists. Remove it from this configuration; existing items are never overwritten.');}
   ensureNew(c.plans,existingPlans,'Plan');ensureNew(c.habits,existingHabits,'Habit');
-  ensureNew(c.checklists,Object.values({school:{name:'School'},...(data.checklistLists.lists||{})}),'Checklist');
+  ensureNew(c.checklists,Object.values({school:{name:'School'},...(data.checklistLists.lists||{})}).filter(x=>!x.deleted),'Checklist');
   ensureNew(c.goals,Object.values(data.goals.goals||{}).filter(g=>!g.deleted),'Goal');ensureNew(c.achievements,Object.values(data.personalAchievements.awards||{}),'Achievement');
   const planMap=[...existingPlans,...c.plans.map((p,i)=>({id:pids[i],name:p.name}))];
   const habitMap=[...existingHabits,...c.habits.map((p,i)=>({id:hids[i],name:p.name}))],now=Date.now();
