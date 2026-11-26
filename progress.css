@@ -364,3 +364,32 @@ html[data-theme="light"] .ms-report-switch::before{background:#ede6fb}
 .ms-mini-timer[data-paused="true"] button[data-mini="toggle"]{color:#a78bfa}
 .ms-mini-timer button{flex:none}
 @media(max-width:420px){.ms-mini-timer[data-paused="true"]{gap:6px;padding:10px}.ms-mini-timer[data-paused="true"] button{width:30px;height:30px;padding:6px}.ms-mini-timer[data-paused="true"]>span{font-size:17px}}
+
+/* Shared library metadata and compact, searchable icon customization. */
+.ms-library-copy small .ms-library-dot{margin:0 3px;color:var(--ms-muted)}
+.ms-library-copy .ms-urgent-count{color:#ffad7c;font-weight:600}
+html[data-theme="light"] .ms-library-copy .ms-urgent-count{color:#a64c20}
+.ms-icon-picker{display:grid;gap:12px;min-width:0}
+.ms-icon-preview{display:flex;align-items:center;gap:12px;padding:12px;background:var(--ms-track);border:1px solid var(--ms-border);border-radius:14px}
+.ms-icon-preview>div{display:grid;gap:3px}
+.ms-icon-preview strong{font:700 15px 'DM Sans',sans-serif}
+.ms-icon-preview small{font:400 11px 'DM Sans',sans-serif;color:var(--ms-muted)}
+.ms-icon-preview .ms-library-icon{width:46px;height:46px;flex-basis:46px}
+.ms-picker-label{font-size:12px;color:var(--ms-muted);font-weight:650}
+.ms-icon-colors{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:7px;align-items:center}
+.ms-icon-picker .ms-icon-colors button,.ms-custom-color{aspect-ratio:1;width:100%;border-radius:50%;padding:0;min-width:0;min-height:0;box-sizing:border-box;background:var(--swatch);border:2px solid transparent;cursor:pointer;position:relative}
+.ms-icon-picker .ms-icon-colors button[aria-pressed="true"]{border-color:var(--ms-ink);box-shadow:0 0 0 2px var(--ms-card) inset}
+.ms-custom-color{display:grid!important;place-items:center;background:var(--ms-track);border:1px dashed var(--ms-muted);color:var(--ms-muted);font-size:17px;overflow:hidden}
+.ms-custom-color input{position:absolute;inset:0;width:100%!important;height:100%;opacity:0;padding:0;cursor:pointer}
+.ms-custom-color span{pointer-events:none}
+.ms-icon-scroll{max-height:min(35dvh,260px);overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;padding:0 3px 4px 0;display:grid;gap:13px}
+.ms-icon-scroll section>small{font-size:11px;color:var(--ms-muted);font-weight:650;display:block;margin:0 0 7px}
+.ms-icon-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
+.ms-icon-picker .ms-icon-grid button{display:grid;place-items:center;aspect-ratio:1;padding:7px;min-width:0;background:var(--ms-track);border:1px solid transparent;border-radius:10px;color:var(--ms-muted)}
+.ms-icon-picker .ms-icon-grid button svg{width:22px;height:22px}
+.ms-icon-picker .ms-icon-grid button[aria-pressed="true"]{border-color:#a78bfa;background:#a78bfa20;color:#a78bfa}
+.ms-icon-picker .ms-icon-grid button:hover{color:var(--ms-ink);border-color:var(--ms-border)}
+.ms-list-dialog:has(.ms-icon-picker){max-height:calc(100dvh - 32px);width:min(94vw,460px)}
+.ms-list-dialog:has(.ms-icon-picker) .ms-goal-form{gap:12px;padding:18px}
+.ms-list-dialog:has(.ms-icon-picker) .ms-goal-actions{position:sticky;bottom:-18px;background:var(--ms-card);padding:10px 0 4px;z-index:2}
+@media(max-width:380px){.ms-icon-grid{grid-template-columns:repeat(5,minmax(0,1fr))}.ms-icon-colors{gap:5px}}
