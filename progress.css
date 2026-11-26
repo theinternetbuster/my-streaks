@@ -129,3 +129,80 @@ html[data-ambient="off"] .ms-focus-stars i{animation:none}
 .ms-list-dialog .ms-feature-card{border:0}
 .ms-list-dialog [data-list-error]{margin:0;color:#e57546}
 html[data-ambient="subtle"] .ms-focus-stars i:nth-child(even){animation:none;opacity:.15}
+
+/* November polish: compact, consistent surfaces and a dedicated recap identity. */
+.ms-goal-form,.ms-goal-form label{min-width:0}
+.ms-goal-form input,.ms-goal-form textarea,.ms-goal-form select{max-width:100%;min-inline-size:0;box-sizing:border-box}
+.ms-goal-form input[type="date"]{display:block;appearance:none;-webkit-appearance:none;width:100%;min-height:46px;padding:10px 12px}
+.ms-goal-form input[type="date"]::-webkit-date-and-time-value{text-align:left;min-width:0}
+.ms-report-header{display:grid;gap:14px}
+.ms-report-header h2{margin:0;font:750 26px 'Outfit',system-ui,sans-serif;letter-spacing:-.035em}
+.ms-report-switch{width:100%;box-sizing:border-box}
+.ms-report-switch button{min-width:0;padding:10px 8px}
+.ms-report-header .ms-period strong{font-size:14px}
+.ms-report-grid{gap:10px}
+.ms-stat{display:grid;align-content:start;gap:5px;min-height:105px;padding:15px}
+.ms-stat-icon{display:block;width:23px;height:23px;color:var(--stat-color)}
+.ms-stat-icon svg,.ms-personal-insight h3 svg,.ms-recap-kicker svg{width:100%;height:100%;display:block}
+.ms-stat strong{color:var(--stat-color);margin:0;font-size:clamp(22px,5vw,32px)}
+html[data-theme="light"] .ms-stat strong,html[data-theme="light"] .ms-stat-icon{color:color-mix(in srgb,var(--stat-color) 68%,#222)}
+.ms-report-chart .ms-chart{height:122px;margin-top:13px;gap:5px;overflow:hidden}
+.ms-report-chart .ms-chart-column{background:none;border:0;padding:0;min-width:0;flex:1;border-radius:5px;gap:6px}
+.ms-report-chart .ms-chart-track{height:98px;width:100%;max-width:45px;background:transparent}
+.ms-report-chart .ms-chart-track i{min-height:0;background:#a78bfa}
+.ms-report-chart .ms-chart-column.selected .ms-chart-track i{background:#d8b4fe}
+.ms-report-chart .ms-chart-column small{height:13px}
+.ms-report-chart .ms-chart-readout{font-size:11px;text-align:center;margin-top:8px}
+.ms-personal-insight h3{display:flex;align-items:center;gap:9px}
+.ms-personal-insight h3 svg{width:21px;height:21px;color:#a78bfa;flex:none}
+.ms-personal-insight p{font-size:14px}
+.ms-recap-card{gap:10px;background:radial-gradient(ellipse at 50% 23%,#6d4aa52b,transparent 56%),#171122;color:#f8f5ff;border-color:#4d3d65;padding:22px}
+.ms-recap-kicker{display:flex;align-items:center;gap:7px;letter-spacing:.11em;color:#c4b5fd}
+.ms-recap-kicker svg{width:18px;height:18px}
+.ms-recap-emblem{width:100%;height:165px;color:#c4b5fd;display:block}
+.ms-recap-card h3{text-align:center;font:750 28px 'Outfit',system-ui,sans-serif;letter-spacing:-.025em}
+.ms-recap-card>p{text-align:center;margin:0;color:#bfb3d5}
+.ms-recap-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;text-align:center;margin:12px 0}
+.ms-recap-stats strong{display:block;font:700 clamp(17px,4.5vw,25px) 'Outfit',system-ui,sans-serif;color:#c4b5fd;overflow-wrap:anywhere}
+.ms-recap-stats>div:nth-child(2) strong{color:#fdba74}
+.ms-recap-stats>div:nth-child(3) strong{color:#fde68a}
+.ms-recap-stats small{display:block;font-size:11px;color:#bfb3d5;margin-top:4px}
+.ms-recap-card .ms-primary{background:#302346;border-color:#594275;color:#e3ceff}
+.ms-recap-archive{display:grid;gap:9px;padding-top:9px;border-top:1px solid #ffffff12}
+.ms-recap-archive .ms-switch,.ms-recap-archive button{background:#241b33;border-color:#ffffff16;color:#bfb3d5}
+.ms-recap-archive .ms-switch button[aria-pressed="true"]{color:#e3ceff;background:#63449466}
+.ms-recap-archive .ms-period strong{font-size:13px;color:#d5c9e6}
+.ms-recap-inner .ms-recap-art{width:min(100%,340px);aspect-ratio:auto;border:0;border-radius:0;background:none;box-shadow:none}
+.ms-recap-inner .ms-recap-art .ms-recap-emblem{height:210px}
+.ms-recap-inner h2{animation:ms-complete-in .5s ease both}
+.checklist-list-bar{gap:10px;margin-bottom:12px}
+.checklist-list-options{gap:10px}
+.checklist-list-options button{background:var(--ms-card);border-color:var(--ms-border);min-width:calc((100% - 20px)/3);max-width:160px;min-height:92px;flex:0 0 auto;padding:13px;gap:6px;box-sizing:border-box}
+.checklist-list-options button[aria-pressed="true"]{background:color-mix(in srgb,var(--list-color) 9%,var(--ms-card));border-color:color-mix(in srgb,var(--list-color) 65%,var(--ms-border))}
+.checklist-list-options .ms-list-icon{color:var(--list-color);height:24px;width:24px}
+.checklist-list-options .ms-list-icon svg{width:24px;height:24px;display:block}
+.checklist-list-options button>span:nth-child(2){font-size:15px;font-weight:700}
+.checklist-list-options button small{font-size:11px;color:var(--ms-muted);white-space:nowrap}
+.checklist-list-actions>div{display:flex;align-items:center;gap:10px}
+.checklist-list-actions small{font-size:12px;color:var(--ms-muted)}
+.checklist-list-actions button{font-size:22px;border:0;padding:0 6px;background:transparent}
+.checklist-page .checklist-document{background:var(--ms-card)!important;border:1px solid var(--ms-border)!important;border-radius:19px!important;padding:17px 18px 25px!important;min-height:180px!important;box-shadow:none!important}
+.checklist-page .checklist-document-top{border:0!important;padding:0!important;margin:0!important;min-height:0!important;justify-content:flex-end}
+.checklist-page .checklist-document-top>span:first-child{display:none!important}
+.checklist-page .checklist-document-top:has(#checklistSyncStatus:empty){display:none}
+.checklist-page .checklist-blocks{min-height:150px!important}
+.checklist-page .checklist-line-inner{min-width:0}
+.checklist-page .checklist-line{padding-block:5px}
+.achievement-card.achievement-study.locked .achievement-emblem svg,.achievement-card.achievement-study.locked .achievement-emblem .study-art{filter:grayscale(1);opacity:.55!important}
+.achievement-card.achievement-study.locked .achievement-foot{filter:grayscale(1);opacity:.75}
+@media(max-width:799px){
+ #reportsRoot{gap:12px;padding-bottom:20px}
+ .ms-report-grid{gap:9px}
+ .ms-stat{padding:13px;min-height:100px}
+ .ms-recap-card{padding:17px}
+ .ms-recap-emblem{height:150px}
+ .checklist-page .checklist-document{padding:14px 15px 24px!important}
+ .checklist-list-options button{min-height:88px;padding:10px}
+ .checklist-list-options button small{font-size:10px}
+}
+@media(prefers-reduced-motion:reduce){.ms-recap-inner h2{animation:none}}
