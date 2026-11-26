@@ -206,3 +206,43 @@ html[data-theme="light"] .ms-stat strong,html[data-theme="light"] .ms-stat-icon{
  .checklist-list-options button small{font-size:10px}
 }
 @media(prefers-reduced-motion:reduce){.ms-recap-inner h2{animation:none}}
+
+/* Progress refinement: retain unique earned artwork, unify German progress in purple. */
+.achievement-card.achievement-study.locked .achievement-foot{filter:none;opacity:1}
+.achievement-card.achievement-study .achievement-progress>i{background:#a78bfa}
+.achievement-card.achievement-study.locked .achievement-foot>span{color:var(--ms-muted)}
+.ms-chart-readout:empty{display:none}
+.ms-personal-insight p+p{border-top:1px solid var(--ms-border);padding-top:10px;margin-top:10px}
+.ms-recap-inner{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;min-height: min(620px,90dvh);padding:72px 24px 30px;box-sizing:border-box}
+.ms-recap-progress{position:absolute;top:24px;left:24px;right:80px;width:auto;padding:0}
+.ms-recap-close{position:absolute;top:12px;right:16px;width:44px;height:44px;display:grid;place-items:center;background:#ffffff12;border:1px solid #ffffff25;border-radius:50%;z-index:4;padding:10px}
+.ms-recap-close svg{width:22px;height:22px;pointer-events:none}
+.ms-recap-inner .ms-recap-art{flex:none}
+.ms-recap-inner .ms-recap-art .ms-recap-emblem{height:clamp(120px,25vh,220px)}
+.ms-recap-controls{margin-top:18px;max-width:420px}
+.ms-recap-exit{border:0;background:transparent;color:#c4b5fd;padding:10px 24px;min-height:44px;font:650 14px 'DM Sans',sans-serif}
+.ms-focus-dialog{inset:0;width:100%;max-width:none;height:100dvh;max-height:none;margin:0;border:0;border-radius:0;box-shadow:none}
+.ms-focus-inner{min-height:100dvh;box-sizing:border-box;justify-content:center;gap:clamp(18px,4vh,40px);padding:88px 24px 36px}
+.ms-focus-top{position:absolute;top:24px;left:24px;right:24px;width:auto}
+.ms-focus-ring{width:min(65vw,36vh,340px);flex:none}
+.ms-focus-dialog button,.focus-activity-controls button[data-focus="immersive"]{display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.ms-focus-dialog button svg,.focus-activity-controls button[data-focus="immersive"] svg{width:19px;height:19px;flex:none}
+.ms-focus-controls button[data-immersive-toggle]{background:color-mix(in srgb,var(--focus-glow) 15%,#101822);border-color:color-mix(in srgb,var(--focus-glow) 45%,transparent);color:var(--focus-glow)}
+.ms-focus-dialog button:focus:not(:focus-visible),.ms-recap-dialog button:focus:not(:focus-visible){outline:none;box-shadow:none}
+.ms-focus-dialog button:focus-visible,.ms-recap-dialog button:focus-visible{outline:2px solid #c4b5fd;outline-offset:3px}
+.ms-focus-themes{margin-top:8px}
+.checklist-list-options button{justify-content:flex-start;min-height:99px;gap:7px}
+.checklist-list-options button>span:nth-child(2){line-height:1.25}
+.checklist-list-options button small{margin-top:auto}
+.checklist-list-actions{margin-top:2px}
+.checklist-page .checklist-document{padding-top:12px!important}
+.checklist-page .checklist-line{padding-block:4px}
+@media(max-width:799px){
+ .ms-recap-inner{min-height:100dvh;padding-top:max(92px,calc(env(safe-area-inset-top,0px) + 62px));padding-bottom:max(24px,calc(env(safe-area-inset-bottom,0px) + 12px))}
+ .ms-recap-close{top:max(58px,calc(env(safe-area-inset-top,0px) + 10px));right:18px}
+ .ms-recap-progress{top:max(76px,calc(env(safe-area-inset-top,0px) + 28px));left:20px;right:80px}
+ .ms-focus-top{top:max(58px,calc(env(safe-area-inset-top,0px) + 10px));left:20px;right:20px}
+ .ms-focus-inner{padding-top:max(110px,calc(env(safe-area-inset-top,0px) + 72px));padding-bottom:max(28px,env(safe-area-inset-bottom,0px));gap:clamp(18px,4vh,36px)}
+ .ms-focus-ring{width:min(67vw,36vh,300px)}
+ .checklist-list-options button{min-height:90px}
+}
