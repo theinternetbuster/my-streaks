@@ -393,3 +393,33 @@ html[data-theme="light"] .ms-library-copy .ms-urgent-count{color:#a64c20}
 .ms-list-dialog:has(.ms-icon-picker) .ms-goal-form{gap:12px;padding:18px}
 .ms-list-dialog:has(.ms-icon-picker) .ms-goal-actions{position:sticky;bottom:-18px;background:var(--ms-card);padding:10px 0 4px;z-index:2}
 @media(max-width:380px){.ms-icon-grid{grid-template-columns:repeat(5,minmax(0,1fr))}.ms-icon-colors{gap:5px}}
+
+/* Settings-only configuration import. */
+.ms-config-entry{margin-top:14px;padding-top:14px;border-top:1px solid var(--ms-border)}
+.ms-config-entry p{margin:0 0 10px;font-size:12px;color:var(--ms-muted);line-height:1.5}
+.ms-config-entry button{width:100%;display:flex;align-items:center;gap:9px;text-align:left}
+.ms-config-entry button svg{width:19px;height:19px;flex:none}
+.ms-config-entry button span{flex:1}
+.ms-config-dialog{width:min(94vw,540px);max-height:calc(100dvh - 32px)}
+.ms-config-dialog .ms-feature-card{display:grid;gap:13px}
+.ms-config-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.ms-config-heading h3{font:750 22px 'Outfit',sans-serif}
+.ms-config-heading button{padding:6px 12px;font-size:20px}
+.ms-config-dialog textarea{box-sizing:border-box;width:100%;resize:vertical;min-height:96px;max-height:35dvh;padding:12px;border:1px solid var(--ms-border);border-radius:12px;background:var(--ms-track);color:var(--ms-ink);font:13px ui-monospace,monospace}
+.ms-config-controls{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.ms-config-file{cursor:pointer;border:1px solid var(--ms-border);padding:10px 12px;border-radius:12px;font-size:13px;font-weight:650}
+.ms-config-preview{display:grid;gap:12px;max-height:32dvh;overflow:auto;overscroll-behavior:contain}
+.ms-config-preview:empty{display:none}
+.ms-config-preview section{border:1px solid var(--ms-border);border-radius:13px;padding:12px}
+.ms-config-preview h4{font-size:12px;color:var(--ms-muted);margin:0 0 8px}
+.ms-config-preview section>div{display:grid;gap:3px;padding:7px 0}
+.ms-config-preview strong{font-size:14px}
+.ms-config-preview small{font-size:12px;color:var(--ms-muted);overflow-wrap:anywhere}
+.ms-config-dialog [data-config-status]:empty{display:none}
+.ms-config-dialog [data-config-status]{margin:0;overflow-wrap:anywhere}
+.ms-personal-award{position:relative;cursor:default}
+.ms-personal-award.unlocked .ms-personal-emblem{color:var(--award-color);background:color-mix(in srgb,var(--award-color) 20%,var(--ms-card));border-color:var(--award-color)}
+.ms-personal-award .ms-personal-emblem svg{width:58%;height:58%}
+.ms-personal-award .achievement-progress>i{background:var(--award-color)!important}
+.ms-personal-remove{position:absolute;bottom:5px;right:9px;border:0;background:transparent;color:var(--ms-muted);font-size:20px;cursor:pointer;line-height:1}
+.ms-personal-award .achievement-foot{margin-bottom:12px}
