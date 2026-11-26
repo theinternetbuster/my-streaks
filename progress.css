@@ -346,3 +346,21 @@ html[data-theme="light"] .ms-report-switch::before{background:#ede6fb}
 .ms-heat-plan summary i{width:8px;height:8px;border-radius:50%;background:var(--plan-color);flex:none}
 .ms-heat-plan .insight-german-breakdown{margin:0 0 6px}
 @media(max-width:799px){#checklistOriginal .checklist-document{padding:4px 5px 25px!important}.ms-library-heading h2,.ms-checklist-detail-heading h2{font-size:25px}#focusPlansRoot .ms-three-stats>div{padding:11px 8px}}
+
+/* Combined report drill-down and compact paused timer. */
+.ms-report-plan-detail{margin-top:15px}
+.ms-report-plan-detail summary{display:grid;grid-template-columns:9px minmax(0,1fr) auto 15px;align-items:center;gap:8px;list-style:none;cursor:pointer;padding:6px 0}
+.ms-report-plan-detail summary::-webkit-details-marker{display:none}
+.ms-report-plan-detail summary>.ms-progress{grid-column:1/-1;margin-top:3px}
+.ms-plan-dot{width:8px;height:8px;border-radius:50%;background:var(--plan-color)}
+.ms-report-plan-detail summary>span:nth-child(2){font-size:14px;overflow-wrap:anywhere}
+.ms-report-plan-detail summary>strong{font-size:14px;white-space:nowrap}
+.ms-plan-chevron{color:var(--ms-muted);transition:transform .2s}
+.ms-report-plan-detail[open] .ms-plan-chevron{transform:rotate(180deg)}
+.ms-report-activities{padding:2px 0 10px 16px;border-left:1px solid var(--ms-border);margin:10px 0 0 4px}
+.ms-report-activities .ms-breakdown{margin-top:12px;font-size:12px}
+.ms-mini-timer[data-paused="true"]{border-color:var(--ms-border)}
+.ms-mini-timer[data-paused="true"]>span{color:var(--ms-muted)}
+.ms-mini-timer[data-paused="true"] button[data-mini="toggle"]{color:#a78bfa}
+.ms-mini-timer button{flex:none}
+@media(max-width:420px){.ms-mini-timer[data-paused="true"]{gap:6px;padding:10px}.ms-mini-timer[data-paused="true"] button{width:30px;height:30px;padding:6px}.ms-mini-timer[data-paused="true"]>span{font-size:17px}}
