@@ -163,7 +163,7 @@
     function selectTab(next,{history:pushHistory=true,silent=false}={}){
       if(!['home','insights','checklist','goals'].includes(next)||!user)return;
       const changed=tab!==next;
-      if(next!=='checklist')focusInstance?.pause?.();
+      /* Focus timer continues across internal navigation. */
       tab=next;updateNav();closeSlash();
       if(pushHistory){
         const url='/my-streaks/'+(tab==='home'?'':'?view='+tab);
@@ -2489,7 +2489,7 @@ studylaurel:'<svg class="study-art" viewBox="0 0 80 80" aria-hidden="true"><g cl
     try{achievementInstance=window.MyStreaksAchievements?.start({db,doc,onSnapshot,setDoc,getHabits,evaluateHabit,longestFor,visuals:badgeArt,getStudyHours:()=>focusInstance?.getStudyHours?.()??null,weeklyProtectedFor:h=>h.cadence==='weekly'?protectedWeeklyHistory(h).protectedWeeks.length:0})||null;}catch(error){console.error('Achievement celebrations initialization failed',error);}
     // Focus Plans uses its own Firestore document, separate from checklist notes.
     try{focusInstance=window.MyStreaksFocus?.start({db,doc,onSnapshot,setDoc,onStudyChange:({timerRunning=false}={})=>{if(habitHistoryReady&&!timerRunning)achievementInstance?.onHabitsChange();if(tab==='insights')renderInsights();if(tab==='goals')progressInstance?.refresh();}})||null;}catch(error){console.error('Focus Plans initialization failed',error);}
-    try{progressInstance=window.MyStreaksProgress?.start({db,doc,onSnapshot,setDoc,getHabits,getHistory:()=>focusInstance?.getHistory?.()??null})||null;}catch(error){console.error('Progress initialization failed',error);}
+    try{progressInstance=window.MyStreaksProgress?.start({db,doc,onSnapshot,setDoc,getHabits,getHistory:()=>focusInstance?.getHistory?.()??null,getPlans:()=>focusInstance?.getPlans?.()||[],getPlanHistory:id=>focusInstance?.getPlanHistory?.(id)??null,getAllHistory:()=>focusInstance?.getAllHistory?.()??null})||null;}catch(error){console.error('Progress initialization failed',error);}
     // Deep links should initialize consistently once the account loads.
     updateNav();
     return {setUser,selectTab,onHabitsChange,renderInsights,renderChecklist,tab:()=>tab,dispose};

@@ -22,10 +22,23 @@ function start({db,doc,onSnapshot,setDoc,onStudyChange}){
  const root=$('focusPlansRoot'),toggle=$('checklistViewToggle');
  if(!root||!toggle)return {setUser(){},dispose(){}};
  let user=null,unsub=null,plan={blocks:cleanBlocks(defaults),days:{}},ready=false,dirty=false,editing=false,adjusting=null,expanded=null,weekExpanded=false,selectedWeekDay=null,active=null,activeSince=0,overtime=false,saveQueue=Promise.resolve(),saveTimer=null,tickTimer=null,lastSnapshot='';
+ let planId='german',catalog={german:{name:'German Practice',color:'#9159E8'}},models={},loaded=new Set(),listeners=[],generation=0;
+ const planPath=id=>id==='german'?'focusPlans':'focusPlan-'+id;
+ const mini=document.createElement('aside');mini.className='ms-mini-timer';mini.hidden=true;document.body.append(mini);
+ function paintMini(){const b=plan.blocks.find(x=>x.id===active);mini.hidden=!active||!b||immersive.open;if(mini.hidden)return;const label=catalog[planId]?.name||'Focus';if(mini.dataset.activity!==planId+active){mini.dataset.activity=planId+active;mini.innerHTML='<div><small>'+escape(label)+'</small><strong>'+escape(b.name)+'</strong></div><span data-mini-time></span><button data-mini="pause" aria-label="Pause timer">'+focusIcon('pause')+'</button><button data-mini="expand" aria-label="Expand timer">'+focusIcon('expand')+'</button>';}mini.querySelector('[data-mini-time]').textContent=clock(entry(active).seconds);}
+ mini.addEventListener('click',e=>{const b=e.target.closest('[data-mini]');if(!b||!active)return;if(b.dataset.mini==='pause'){stop();render();}else{const activity=plan.blocks.find(x=>x.id===active);if(activity)openImmersive(activity);}});
+ let switching=false;
+ async function switchPlan(id){if(switching||!loaded.has(id)||id===planId)return;switching=true;const epoch=generation;stop();if(dirty)scheduleSave(true);clearTimeout(saveTimer);await saveQueue;if(epoch!==generation){switching=false;return;}if(dirty){switching=false;return;}models[planId]=plan;planId=id;plan=models[id];dirty=false;editing=false;adjusting=null;expanded=null;weekExpanded=false;selectedWeekDay=null;lastSnapshot='';mini.dataset.activity='';switching=false;render();}
+ function listenPlan(id,uid,epoch){if(listeners.some(x=>x.id===id))return;const off=onSnapshot(doc(db,'users',uid,'settings',planPath(id)),snap=>{if(epoch!==generation)return;const data=snap.exists()?snap.data():null;if(id===planId&&loaded.has(id)&&(dirty||active||snap.metadata?.hasPendingWrites))return;const next=normalize(data||(id==='german'?null:{blocks:[{id:'first',name:'Reading',minutes:20,color:'#397CF2'}]}));models[id]=next;loaded.add(id);if(id===planId){plan=next;ready=true;render();}else if(ready&&!editing&&!adjusting)render();onStudyChange?.({timerRunning:!!active});},err=>{console.error('Focus plan sync',err);$('focusSyncLabel').textContent='Sync unavailable';});listeners.push({id,off});}
+ function planSelector(){return '<div class="ms-plan-picker"><div class="checklist-list-heading"><strong>My plans</strong><button data-focus="newplan" type="button">＋ New plan</button></div><div class="checklist-list-options">'+Object.entries(catalog).map(([id,m])=>'<button type="button" data-focus="selectplan" data-id="'+escape(id)+'" aria-pressed="'+(id===planId)+'" '+(!loaded.has(id)?'disabled':'')+' style="--list-color:'+m.color+'"><span class="ms-list-icon">'+focusIcon('plan')+'</span><span>'+escape(m.name)+'</span><small>'+format(Object.values(models[id]?.days[day()]||{}).reduce((n,x)=>n+x.seconds,0))+' today</small></button>').join('')+'</div></div>';}
+ const planDialog=document.createElement('dialog');planDialog.className='ms-list-dialog';document.body.append(planDialog);
+ function openPlanEditor(id=null){const m=catalog[id];planDialog.innerHTML='<form class="ms-feature-card ms-goal-form"><h3>'+(m?'Edit plan details':'New Focus Plan')+'</h3><label>Name<input name="name" maxlength="55" required value="'+escape(m?.name||'')+'"></label><label>Color<input name="color" type="color" value="'+(m?.color||palette[Object.keys(catalog).length%palette.length])+'"></label><div class="ms-goal-actions"><button type="button" data-plan-cancel>Cancel</button><button class="ms-primary" type="submit">Save plan</button></div><p data-plan-error role="status"></p></form>';planDialog.dataset.id=id||'';planDialog.showModal();}
+ planDialog.addEventListener('click',e=>{if(e.target.closest('[data-plan-cancel]'))planDialog.close();});
+ planDialog.addEventListener('submit',async e=>{e.preventDefault();if(!user)return;const form=e.target,name=form.elements.name.value.trim();if(!name)return;const id=planDialog.dataset.id||'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),uid=user.uid,epoch=generation,button=form.querySelector('[type="submit"]');button.disabled=true;try{await setDoc(doc(db,'users',uid,'settings','focusPlanCatalog'),{plans:{[id]:{name,color:form.elements.color.value}}},{merge:true});if(epoch!==generation)return;planDialog.close();}catch(error){form.querySelector('[data-plan-error]').textContent='Could not save plan.';button.disabled=false;}});
  let immersiveId=null,immersiveTheme='aurora';
  const immersive=document.createElement('dialog');immersive.className='ms-focus-dialog';immersive.setAttribute('aria-label','Immersive focus timer');document.body.append(immersive);
  const themes=['aurora','space','forest','embers'];
- const focusIcons={min:'<path d="M9 3v6H3m12 12v-6h6M9 9 3 3m12 12 6 6"/>',play:'<path d="m8 5 12 7-12 7z"/>',pause:'<path d="M9 5v14M15 5v14"/>',check:'<path d="m5 12 4 4L19 6"/>',undo:'<path d="M3 10h12a5 5 0 0 1 0 10M3 10l5-5m-5 5 5 5"/>',expand:'<path d="M14 3h7v7M21 3l-7 7M10 21H3v-7m0 7 7-7"/>'};
+ const focusIcons={plan:'<rect x="4" y="3" width="16" height="18" rx="3"/><path d="M8 8h8M8 12h8M8 16h5"/>',min:'<path d="M9 3v6H3m12 12v-6h6M9 9 3 3m12 12 6 6"/>',play:'<path d="m8 5 12 7-12 7z"/>',pause:'<path d="M9 5v14M15 5v14"/>',check:'<path d="m5 12 4 4L19 6"/>',undo:'<path d="M3 10h12a5 5 0 0 1 0 10M3 10l5-5m-5 5 5 5"/>',expand:'<path d="M14 3h7v7M21 3l-7 7M10 21H3v-7m0 7 7-7"/>'};
  const focusIcon=n=>'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+focusIcons[n]+'</svg>';
  function paintImmersive(){
   if(!immersive.open||!immersiveId)return;
@@ -36,11 +49,11 @@ function start({db,doc,onSnapshot,setDoc,onStudyChange}){
  }
  function openImmersive(b){
   immersiveId=b.id;immersive.dataset.environment=immersiveTheme;
-  immersive.innerHTML='<div class="ms-focus-inner"><div class="ms-focus-stars" aria-hidden="true">'+Array.from({length:36},(_,i)=>'<i style="--x:'+((i*73+13)%100)+'%;--y:'+((i*47+7)%100)+'%;--delay:'+(-(i%9))+'s"></i>').join('')+'</div><div class="ms-focus-top"><button type="button" data-immersive-close aria-label="Minimize focus view">'+focusIcon('min')+'<span>Minimize</span></button><span>GERMAN · FOCUS</span></div><div class="ms-focus-ring" data-immersive-ring><div><small>'+escape(b.name)+'</small><strong data-immersive-time>00:00</strong><span data-immersive-status></span></div></div><div class="ms-focus-controls"><button type="button" data-immersive-toggle></button><button type="button" data-immersive-done></button></div><div class="ms-focus-themes" role="group" aria-label="Focus environment">'+themes.map(t=>'<button type="button" data-immersive-theme="'+t+'" aria-pressed="'+(t===immersiveTheme)+'">'+t[0].toUpperCase()+t.slice(1)+'</button>').join('')+'</div></div>';
-  if(!immersive.open)immersive.showModal();paintImmersive();
+  immersive.innerHTML='<div class="ms-focus-inner"><div class="ms-focus-stars" aria-hidden="true">'+Array.from({length:36},(_,i)=>'<i style="--x:'+((i*73+13)%100)+'%;--y:'+((i*47+7)%100)+'%;--delay:'+(-(i%9))+'s"></i>').join('')+'</div><div class="ms-focus-top"><button type="button" data-immersive-close aria-label="Minimize focus view">'+focusIcon('min')+'<span>Minimize</span></button><span>'+escape(catalog[planId]?.name||'Focus')+' · FOCUS</span></div><div class="ms-focus-ring" data-immersive-ring><div><small>'+escape(b.name)+'</small><strong data-immersive-time>00:00</strong><span data-immersive-status></span></div></div><div class="ms-focus-controls"><button type="button" data-immersive-toggle></button><button type="button" data-immersive-done></button></div><div class="ms-focus-themes" role="group" aria-label="Focus environment">'+themes.map(t=>'<button type="button" data-immersive-theme="'+t+'" aria-pressed="'+(t===immersiveTheme)+'">'+t[0].toUpperCase()+t.slice(1)+'</button>').join('')+'</div></div>';
+  if(!immersive.open)immersive.showModal();paintImmersive();paintMini();
  }
  immersive.addEventListener('click',e=>{const button=e.target.closest('button');if(!button||!user)return;if(button.hasAttribute('data-immersive-close')){immersive.close();return;}if(button.dataset.immersiveTheme){immersiveTheme=button.dataset.immersiveTheme;immersive.dataset.environment=immersiveTheme;immersive.querySelectorAll('[data-immersive-theme]').forEach(x=>x.setAttribute('aria-pressed',String(x===button)));return;}const action=button.hasAttribute('data-immersive-toggle')?'toggle':button.hasAttribute('data-immersive-done')?'done':'';if(!action)return;const original=root.querySelector('[data-focus="'+action+'"][data-id="'+immersiveId+'"]');original?.click();paintImmersive();});
- immersive.addEventListener('close',()=>{immersiveId=null;});
+ immersive.addEventListener('close',()=>{immersiveId=null;paintMini();});
  const record=()=>{const d=day();if(!plan.days[d])plan.days[d]={};return plan.days[d];};
  const entry=(id)=>{const r=record();if(!r[id])r[id]={seconds:0,done:false};return r[id];};
  const normalize=raw=>{
@@ -60,17 +73,17 @@ function start({db,doc,onSnapshot,setDoc,onStudyChange}){
   const now=Date.now(),elapsed=Math.max(0,Math.floor((now-activeSince)/1000));
   if(elapsed>0){entry(active).seconds+=elapsed;activeSince+=elapsed*1000;dirty=true;}
  }
- function stop(save=true){if(!active)return;flushActive();active=null;overtime=false;if(save)scheduleSave(true);paintImmersive();}
+ function stop(save=true){if(!active)return;flushActive();active=null;overtime=false;if(save)scheduleSave(true);paintImmersive();paintMini();}
  function scheduleSave(immediate=false){
   if(!user||!ready)return;
   dirty=true;clearTimeout(saveTimer);
   onStudyChange?.({timerRunning:!!active});
   const write=()=>{
    if(!user)return;
-   const uid=user.uid,payload=JSON.parse(JSON.stringify(plan));
+   const uid=user.uid,id=planId,epoch=generation,payload=JSON.parse(JSON.stringify(plan));models[id]=plan;
    lastSnapshot=JSON.stringify(payload);
-   saveQueue=saveQueue.catch(()=>{}).then(()=>setDoc(doc(db,'users',uid,'settings','focusPlans'),payload,{merge:false})).then(()=>{
-    if(user?.uid===uid){$('focusSyncLabel').textContent='';dirty=false;}
+   saveQueue=saveQueue.catch(()=>{}).then(()=>setDoc(doc(db,'users',uid,'settings',planPath(id)),payload,{merge:false})).then(()=>{
+    if(user?.uid===uid&&generation===epoch&&planId===id){$('focusSyncLabel').textContent='';if(JSON.stringify(plan)===JSON.stringify(payload))dirty=false;}
    }).catch(e=>{$('focusSyncLabel').textContent='Save failed';console.error('Focus plan save error',e);});
    $('focusSyncLabel').textContent='Saving…';
   };
@@ -91,8 +104,8 @@ function start({db,doc,onSnapshot,setDoc,onStudyChange}){
     const seconds=Math.max(0,today[b.id]?.seconds||0),portion=Math.min(100,seconds/(b.minutes*60)*100);
     return '<span class="focus-segment" data-focus-segment="'+b.id+'" style="flex:'+b.minutes+';--segment:'+b.color+'" title="'+escape(b.name)+' · '+format(seconds)+' recorded"><span class="focus-segment-fill" style="width:'+portion+'%"></span></span>';
   }).join('');
-  const message=finished===blocks.length?'Gut gemacht! All sections checked off for today.':active?'Your study time is being recorded. Keep your attention on the activity, not the clock.':actual>0?'Every bit of practice counts. Come back whenever you are ready.':'Start with any section. Your study time saves as you go.';
-  root.innerHTML='<div class="focus-topline"><div><span class="focus-eyebrow">YOUR STUDY SPACE</span><h2>German Practice <span class="focus-language-code" aria-label="German language">DE</span></h2><p>One section at a time, at your pace.</p></div><button type="button" class="focus-edit-trigger" data-focus="edit">Edit plan</button></div>'+
+  const message=finished===blocks.length?'All sections checked off for today.':active?'Your study time is being recorded. Keep your attention on the activity, not the clock.':actual>0?'Every bit of practice counts. Come back whenever you are ready.':'Start with any section. Your study time saves as you go.';
+  paintMini();root.innerHTML=planSelector()+'<div class="focus-topline"><div><span class="focus-eyebrow">YOUR STUDY SPACE</span><h2>'+escape(catalog[planId]?.name||'Focus plan')+(planId==='german'?' <span class="focus-language-code" aria-label="German language">DE</span>':'')+'</h2><p>One section at a time, at your pace.</p></div><div class="ms-plan-actions"><button type="button" class="focus-edit-trigger" data-focus="planmeta">Details</button><button type="button" class="focus-edit-trigger" data-focus="edit">Edit plan</button></div></div>'+
     '<div class="focus-stats"><div><small>Planned today</small><strong>'+format(planned)+'</strong></div><div><small>Studied today</small><strong data-focus-live="today">'+format(actual)+'</strong></div><div><small>This week</small><strong data-focus-live="week-total">'+format(weekly)+'</strong></div><div class="focus-stat-lifetime"><small>Total studied</small><strong data-focus-live="lifetime">'+format(lifetime)+'</strong></div></div>'+
     '<div class="focus-timeline">'+progress+'</div><div class="focus-summary"><span>'+finished+' / '+blocks.length+' sections complete</span><span data-focus-live="recorded">'+format(actual)+' recorded</span></div>'+
     '<div class="focus-activities">'+blocks.map(b=>row(b,today[b.id]||{seconds:0,done:false})).join('')+'</div>'+
@@ -104,8 +117,8 @@ function start({db,doc,onSnapshot,setDoc,onStudyChange}){
     Focus view every second used to restart the card entrance animation and
     move the entire expanded box while someone was trying to study. */
  function updateLiveTimer(){
-  if(!active||root.hidden||!ready)return;
-  paintImmersive();
+  if(!active||!ready)return;
+  paintMini();paintImmersive();
   const b=plan.blocks.find(item=>item.id===active);
   if(!b)return;
   const today=record(),seconds=Math.floor(today[b.id]?.seconds||0);
@@ -153,7 +166,7 @@ function start({db,doc,onSnapshot,setDoc,onStudyChange}){
    '<button type="button" data-focus="manual" data-id="'+b.id+'" title="Correct or reset recorded study minutes">Edit time</button><button type="button" data-focus="immersive" data-id="'+b.id+'" aria-label="Expand focus timer">'+focusIcon('expand')+'<span>Focus view</span></button></div></div></article>';
  }
  function editUI(){
-  return '<div class="focus-edit-shade"><div class="focus-edit-dialog" role="dialog" aria-modal="true" aria-label="Edit German plan"><div class="focus-edit-head"><h3>Edit study plan</h3><button data-focus="close">✕</button></div><p>Choose activities, minutes and colors. Changes apply to future study; already recorded time stays saved.</p>'+
+  return '<div class="focus-edit-shade"><div class="focus-edit-dialog" role="dialog" aria-modal="true" aria-label="Edit focus plan"><div class="focus-edit-head"><h3>Edit study plan</h3><button data-focus="close">✕</button></div><p>Choose activities, minutes and colors. Changes apply to future study; already recorded time stays saved.</p>'+
   plan.blocks.map(b=>'<div class="focus-edit-row"><input type="text" maxlength="55" value="'+escape(b.name)+'" data-field="name" data-id="'+b.id+'" aria-label="Activity name"><input type="number" min="1" max="240" value="'+b.minutes+'" data-field="minutes" data-id="'+b.id+'" aria-label="Planned minutes"><input type="color" value="'+b.color+'" data-field="color" data-id="'+b.id+'" aria-label="Activity color"><button data-focus="remove" data-id="'+b.id+'" aria-label="Remove activity">×</button></div>').join('')+
   '<div class="focus-edit-actions"><button data-focus="add">+ Add section</button><button data-focus="saveedit">Save plan</button></div></div></div>';
  }
@@ -175,8 +188,11 @@ function start({db,doc,onSnapshot,setDoc,onStudyChange}){
   plan.blocks=blocks;editing=false;scheduleSave();render();
  }
  root.addEventListener('click',e=>{
-  const button=e.target.closest('button[data-focus]');if(!button||!user||!ready)return;
+  const button=e.target.closest('button[data-focus]');if(!button||!user||!ready||switching)return;
   const action=button.dataset.focus,id=button.dataset.id,b=plan.blocks.find(x=>x.id===id);
+  if(action==='selectplan'){switchPlan(id);return;}
+  if(action==='newplan'){openPlanEditor();return;}
+  if(action==='planmeta'){openPlanEditor(planId);return;}
   if(action==='expand'){expanded=expanded===id?null:id;render();return;}
   if(action==='week'){weekExpanded=!weekExpanded;if(!weekExpanded)selectedWeekDay=null;render();return;}
   if(action==='week-day'){selectedWeekDay=selectedWeekDay===button.dataset.date?null:button.dataset.date;render();return;}
@@ -206,7 +222,7 @@ function start({db,doc,onSnapshot,setDoc,onStudyChange}){
  });
  toggle.addEventListener('click',e=>{
   const b=e.target.closest('button[data-checklist-view]');if(!b)return;
-  if(b.dataset.checklistView==='notes'){stop();}else render();
+  if(b.dataset.checklistView==='focus')render();
   toggle.dataset.current=b.dataset.checklistView;
   toggle.dataset.selected=b.dataset.checklistView==='focus'?'achievements':'overview';
   for(const button of toggle.querySelectorAll('button')){button.setAttribute('aria-selected',String(button===b));button.classList.toggle('active',button===b);}
@@ -216,28 +232,25 @@ function start({db,doc,onSnapshot,setDoc,onStudyChange}){
  const onHidden=()=>{if(document.visibilityState==='hidden'){stop();}else if(!root.hidden)render();};
  document.addEventListener('visibilitychange',onHidden);
  window.addEventListener('pagehide',()=>stop());
- tickTimer=setInterval(()=>{if(active&&!root.hidden){flushActive();updateLiveTimer();if(!overtime&&entry(active).seconds>=plan.blocks.find(b=>b.id===active).minutes*60){stop();render();}else if(entry(active).seconds%10===0)scheduleSave();}},1000);
+ tickTimer=setInterval(()=>{if(active){flushActive();updateLiveTimer();if(!overtime&&entry(active).seconds>=plan.blocks.find(b=>b.id===active).minutes*60){stop();render();}else if(entry(active).seconds%10===0)scheduleSave();}},1000);
  function setUser(next){
-  stop(false);if(immersive.open)immersive.close();clearTimeout(saveTimer);if(unsub)unsub();unsub=null;user=next;ready=false;dirty=false;active=null;editing=false;adjusting=null;
+  stop(false);switching=false;generation++;for(const l of listeners)l.off();listeners=[];loaded=new Set();models={};catalog={german:{name:'German Practice',color:'#9159E8'}};planId='german';mini.hidden=true;if(immersive.open)immersive.close();if(planDialog.open)planDialog.close();clearTimeout(saveTimer);if(unsub)unsub();unsub=null;user=next;ready=false;dirty=false;active=null;editing=false;adjusting=null;
   plan={blocks:cleanBlocks(defaults),days:{}};expanded=null;weekExpanded=false;selectedWeekDay=null;
   if(!user){root.innerHTML='';return;}
-  const uid=user.uid;
-  unsub=onSnapshot(doc(db,'users',uid,'settings','focusPlans'),snap=>{
-   if(user?.uid!==uid)return;
-   const data=snap.exists()?snap.data():null;
-   if(!ready){plan=normalize(data);ready=true;render();onStudyChange?.();return;}
-   // Ignore our own pending writes to avoid rolling back a running stopwatch.
-   if(dirty||snap.metadata?.hasPendingWrites)return;
-   const incoming=normalize(data);
-   if(JSON.stringify(incoming)!==JSON.stringify(plan)){plan=incoming;if(!root.hidden)render();onStudyChange?.();}
-  },err=>{console.error('Focus Plan sync',err);$('focusSyncLabel').textContent='Sync unavailable';if(!ready){ready=true;render();}});
+  const uid=user.uid,epoch=generation;
+  listenPlan('german',uid,epoch);
+  unsub=onSnapshot(doc(db,'users',uid,'settings','focusPlanCatalog'),snap=>{if(epoch!==generation)return;const incoming=snap.data()?.plans||{};for(const [id,m] of Object.entries(incoming)){if((id!=='german'&&!/^p[a-z0-9]{1,30}$/.test(id))||!m?.name)continue;catalog[id]={name:String(m.name).slice(0,55),color:/^#[0-9a-f]{6}$/i.test(m.color)?m.color:palette[0]};listenPlan(id,uid,epoch);}if(ready&&!editing&&!adjusting)render();onStudyChange?.({timerRunning:!!active});},err=>console.error('Plan catalog sync',err));
  }
- function getDay(date){if(!ready||!user)return null;const items=plan.days[date]||{};return {total:Object.values(items).reduce((sum,r)=>sum+(r.seconds||0),0),activities:Object.entries(items).filter(([,r])=>r.seconds>0).map(([id,r])=>({id,name:plan.blocks.find(b=>b.id===id)?.name||id,seconds:r.seconds,color:plan.blocks.find(b=>b.id===id)?.color||'#b08bcb'}))};}
- function getHistory(){if(!ready||!user)return null;return Object.fromEntries(Object.keys(plan.days).map(d=>[d,getDay(d).activities]));}
- function getStudyHours(){if(!ready||!user)return null;return Math.floor(Object.values(plan.days).reduce((sum,entries)=>sum+Object.values(entries).reduce((n,r)=>n+(r.seconds||0),0),0)/3600);}
+ function getPlans(){return Object.entries(catalog).map(([id,m])=>({id,...m}));}
+ function getPlanHistory(id='german'){if(!user||!loaded.has(id))return null;const p=models[id];return Object.fromEntries(Object.entries(p.days).map(([d,items])=>[d,Object.entries(items).filter(([,r])=>r.seconds>0).map(([key,r])=>({id:key,name:p.blocks.find(b=>b.id===key)?.name||key,seconds:r.seconds,color:p.blocks.find(b=>b.id===key)?.color||catalog[id].color}))]));}
+ function getAllHistory(){if(!user||Object.keys(catalog).some(id=>!loaded.has(id)))return null;const result={};for(const {id,name,color} of getPlans())for(const [d,items] of Object.entries(getPlanHistory(id))){const seconds=items.reduce((n,x)=>n+x.seconds,0);if(seconds)(result[d]??=[]).push({id,name,color,seconds});}return result;}
+
+ function getDay(date){const h=getPlanHistory();if(h===null)return null;const activities=h[date]||[];return {total:activities.reduce((n,x)=>n+x.seconds,0),activities};}
+ function getHistory(){return getPlanHistory();}
+ function getStudyHours(){const h=getHistory();return h===null?null:Math.floor(Object.values(h).flat().reduce((n,x)=>n+x.seconds,0)/3600);}
  function pause(){stop();if(!root.hidden)render();}
- function dispose(){stop();immersive.remove();clearTimeout(saveTimer);clearInterval(tickTimer);if(unsub)unsub();document.removeEventListener('visibilitychange',onHidden);}
- return {setUser,dispose,render,pause,getDay,getStudyHours,getHistory};
+ function dispose(){stop();mini.remove();planDialog.remove();for(const l of listeners)l.off();immersive.remove();clearTimeout(saveTimer);clearInterval(tickTimer);if(unsub)unsub();document.removeEventListener('visibilitychange',onHidden);}
+ return {setUser,dispose,render,pause,getDay,getStudyHours,getHistory,getPlans,getPlanHistory,getAllHistory};
 }
 window.MyStreaksFocus={start};
 })();

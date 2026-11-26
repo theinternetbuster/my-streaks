@@ -286,3 +286,19 @@ html[data-theme="light"] .ms-report-switch::before{background:#ede6fb}
 .ms-report-chart .ms-chart-column{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .ms-report-chart .ms-chart-track i{transition:background .16s ease}
 @media(prefers-reduced-motion:reduce){.ms-report-switch::before,.ms-report-switch button,.ms-report-chart .ms-chart-track i{transition:none}}
+
+.ms-plan-picker{max-width:890px;margin:0 auto 24px;display:grid;gap:12px}
+.ms-plan-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.ms-plan-picker .checklist-list-options{grid-template-columns:repeat(auto-fit,minmax(135px,1fr))}
+.ms-plan-picker .checklist-list-options button{min-height:88px}
+.ms-mini-timer{position:fixed;z-index:1100;bottom:22px;right:22px;width:min(390px,calc(100vw - 32px));box-sizing:border-box;display:flex;align-items:center;gap:10px;padding:12px 15px;background:var(--ms-card);color:var(--ms-ink);border:1px solid #a78bfa77;border-radius:17px;box-shadow:0 8px 35px #0005}
+.ms-mini-timer[hidden]{display:none}
+.ms-mini-timer>div{flex:1;min-width:0;display:grid;gap:3px}
+.ms-mini-timer small{font-size:11px;color:var(--ms-muted)}
+.ms-mini-timer strong{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ms-mini-timer>span{font:700 19px 'Outfit',sans-serif;color:#a78bfa;font-variant-numeric:tabular-nums}
+.ms-mini-timer button{width:34px;height:34px;padding:7px;border:1px solid var(--ms-border);border-radius:10px;background:transparent;color:var(--ms-ink)}
+.ms-mini-timer svg{width:100%;height:100%}
+.ms-report-filter{display:flex;align-items:center;gap:12px;color:var(--ms-muted);font-size:13px}
+.ms-report-filter select{flex:1;min-width:0;padding:10px 13px;border:1px solid var(--ms-border);border-radius:12px;background:var(--ms-card);color:var(--ms-ink);font:inherit}
+@media(max-width:799px){.ms-mini-timer{bottom:calc(92px + env(safe-area-inset-bottom,0px));left:16px;right:16px;width:auto}.ms-plan-picker .checklist-list-options{grid-template-columns:repeat(2,minmax(0,1fr))}}
