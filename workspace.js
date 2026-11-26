@@ -15,7 +15,7 @@
   function start({db,doc,onSnapshot,setDoc,getHabits,evaluateHabit,onTabChange}){
     const root=$('checklistBlocks');
     if(!root)return null;
-    let focusInstance=null,achievementInstance=null,progressInstance=null,habitHistoryReady=false;
+    let focusInstance=null,achievementInstance=null,progressInstance=null,habitHistoryReady=false,personalAwards={},personalAwardsUnsub=null;
     let tab='home',user=null,unsub=null,blocks=[],dirty=false,saveTimer=null,insightSection='overview',
         slashFor=null,slashMatches=types,slashSelected=0,sortable=null,saveSerial=0,listenerEpoch=0;
     let pendingWrite=Promise.resolve(),editRevision=0;
@@ -195,6 +195,7 @@
       selectTab(new URLSearchParams(location.search).get('view')||'home',{history:false});
     });
     function setUser(next){
+      if(personalAwardsUnsub)personalAwardsUnsub();personalAwardsUnsub=null;personalAwards={};
       for(const off of countListeners.values())off();countListeners.clear();listCounts={};if(listDialog.open)listDialog.close();if(unsub){unsub();unsub=null;}if(listUnsub){listUnsub();listUnsub=null;}listenerEpoch++;
       clearTimeout(saveTimer);editRevision++;
       user=next;listDetail=false;habitHistoryReady=false;selectedHeatDay=null;focusInstance?.setUser(next);achievementInstance?.setUser(next);blocks=[];dirty=false;saveSerial++;clearDocumentSelection();resetHistory();insightSection='overview';
@@ -204,6 +205,7 @@
       updateNav();renderListBar();
       if(!user){renderChecklist(true);return;}
       const uid=user.uid;
+      personalAwardsUnsub=onSnapshot(doc(db,'users',uid,'settings','personalAchievements'),snap=>{if(user?.uid!==uid)return;personalAwards=snap.data()?.awards||{};if(tab==='insights'&&insightSection==='achievements')renderAchievements(getHabits());},err=>console.error('Personal achievement sync',err));
       listUnsub=onSnapshot(doc(db,'users',uid,'settings','checklistLists'),snapshot=>{
         if(user?.uid!==uid)return;
         const incoming=snapshot.data()?.lists||{};
@@ -2371,8 +2373,10 @@ studylaurel:'<svg class="study-art" viewBox="0 0 80 80" aria-hidden="true"><g cl
           '<h3>'+safe(a.title)+'</h3><p>'+safe(a.detail)+'</p>'+
           '<div class="achievement-foot"><span>'+ (unlocked?'✦ Earned':Math.min(a.progress,a.goal)+' / '+a.goal) +'</span><div class="achievement-progress"><i style="width:'+Math.round(Math.min(1,a.progress/a.goal)*100)+'%"></i></div></div>'+
           '</article>';
-      }).join('');
+      }).join('')+personalAwardsHtml(habits);
     }
+    function personalAwardsHtml(habits){const items=Object.entries(personalAwards).filter(([,a])=>a&&!a.deleted&&typeof a.name==='string'&&Number(a.target)>0&&['study','habit'].includes(a.type));if(!items.length)return '';return '<div class="achievement-study-divider"><span class="achievement-study-divider-symbol" aria-hidden="true">✦</span><div><strong>Personal achievements</strong><small>Your imported milestones</small></div></div>'+items.map(([id,a])=>{const h=a.type==='study'?focusInstance?.getPlanHistory?.(a.planId||'german'):null;const linkedHabit=habits.find(x=>x.id===a.habit);const progress=a.type==='study'?(h===null||h===undefined?null:Math.floor(Object.values(h).flat().reduce((n,x)=>n+(Number(x.seconds)||0),0)/3600)):(linkedHabit?new Set(linkedHabit.completions||[]).size:null);const target=Number(a.target),unlocked=progress!==null&&progress>=target,c=icons.color(a.color),label=a.type==='study'?'hours':'check-ins',linked=a.type==='study'?focusInstance?.getPlans?.().find(p=>p.id===a.planId)?.name:linkedHabit?.name;return '<article class="achievement-card achievement-study ms-personal-award '+(unlocked?'unlocked':'locked')+'" style="--award-color:'+c+'"><div class="achievement-card-top"><span class="achievement-tier">PERSONAL</span><span class="achievement-state">'+(unlocked?'UNLOCKED':'TO DISCOVER')+'</span></div><div class="achievement-emblem ms-personal-emblem">'+icons.svg(a.icon)+'</div><h3>'+safe(a.name)+'</h3><p>'+safe(a.description||target+' recorded '+label+(linked?' · '+linked:''))+'</p><div class="achievement-foot"><span>'+(progress===null?'Unavailable':unlocked?'✦ Earned':Math.min(progress,target)+' / '+target)+'</span><div class="achievement-progress"><i style="width:'+Math.max(0,Math.min(100,(progress||0)/target*100))+'%"></i></div></div><button type="button" class="ms-personal-remove" data-personal-remove="'+safe(id)+'" aria-label="Remove '+safe(a.name)+'">⋯</button></article>';}).join('');}
+    $('insightAchievementGrid').addEventListener('click',async e=>{const b=e.target.closest('[data-personal-remove]');if(!b||!user)return;const id=b.dataset.personalRemove,a=personalAwards[id];if(!a||!confirm('Remove this personal achievement? Recorded activity will not change.'))return;try{await setDoc(doc(db,'users',user.uid,'settings','personalAchievements'),{awards:{[id]:{deleted:true}}},{merge:true});}catch(err){console.error(err);alert('Could not remove achievement.');}});
     $('insightAchievementGrid').addEventListener('click',e=>{const card=e.target.closest('[data-achievement-index]');if(card)achievementInstance?.openDetail(card.dataset.achievementIndex);});
     $('insightAchievementGrid').addEventListener('keydown',e=>{if(e.key!=='Enter'&&e.key!==' ')return;const card=e.target.closest('[data-achievement-index]');if(!card)return;e.preventDefault();achievementInstance?.openDetail(card.dataset.achievementIndex);});
     function renderInsightTabs(){
@@ -2490,7 +2494,7 @@ studylaurel:'<svg class="study-art" viewBox="0 0 80 80" aria-hidden="true"><g cl
       $('insightYearGrid').querySelectorAll('button[data-heat-date]').forEach(b=>{b.classList.remove('is-selected');b.setAttribute('aria-pressed','false');});
     });
         function onHabitsChange(){habitHistoryReady=true;achievementInstance?.onHabitsChange();if(tab==='insights')renderInsights();if(tab==='goals')progressInstance?.refresh();}
-    function dispose(){for(const off of countListeners.values())off();countListeners.clear();listDialog.remove();progressInstance?.dispose();focusInstance?.dispose();achievementInstance?.dispose();if(listUnsub)listUnsub();if(unsub)unsub();clearTimeout(saveTimer);if(sortable)sortable.destroy();clearTimeout(transitionTimeout);if(transitionFrame)cancelAnimationFrame(transitionFrame);}
+    function dispose(){if(personalAwardsUnsub)personalAwardsUnsub();for(const off of countListeners.values())off();countListeners.clear();listDialog.remove();progressInstance?.dispose();focusInstance?.dispose();achievementInstance?.dispose();if(listUnsub)listUnsub();if(unsub)unsub();clearTimeout(saveTimer);if(sortable)sortable.destroy();clearTimeout(transitionTimeout);if(transitionFrame)cancelAnimationFrame(transitionFrame);}
     try{achievementInstance=window.MyStreaksAchievements?.start({db,doc,onSnapshot,setDoc,getHabits,evaluateHabit,longestFor,visuals:badgeArt,getStudyHours:()=>focusInstance?.getStudyHours?.()??null,weeklyProtectedFor:h=>h.cadence==='weekly'?protectedWeeklyHistory(h).protectedWeeks.length:0})||null;}catch(error){console.error('Achievement celebrations initialization failed',error);}
     // Focus Plans uses its own Firestore document, separate from checklist notes.
     try{focusInstance=window.MyStreaksFocus?.start({db,doc,onSnapshot,setDoc,onStudyChange:({timerRunning=false}={})=>{if(habitHistoryReady&&!timerRunning)achievementInstance?.onHabitsChange();if(tab==='insights')renderInsights();if(tab==='goals')progressInstance?.refresh();}})||null;}catch(error){console.error('Focus Plans initialization failed',error);}
