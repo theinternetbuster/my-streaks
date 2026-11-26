@@ -2390,7 +2390,7 @@ studylaurel:'<svg class="study-art" viewBox="0 0 80 80" aria-hidden="true"><g cl
     };
     function germanDayHtml(date){
       const plans=focusInstance?.getPlans?.()||[];
-      const entries=plans.map(p=>{const h=focusInstance?.getPlanHistory?.(p.id);const activities=h?.[date]||[];return {...p,activities,total:activities.reduce((sum,x)=>sum+x.seconds,0)};}).filter(p=>p.total>0);
+      const entries=plans.map(p=>{const day=focusInstance?.getPlanDay?.(p.id,date);const activities=day?.activities||[];return {...p,activities,total:activities.reduce((sum,x)=>sum+x.seconds,0)};}).filter(p=>p.total>0);
       if(!entries.length)return '';
       return '<details class="ms-heat-focus"><summary><span>Focus time</span><strong>'+formatStudyTime(entries.reduce((n,p)=>n+p.total,0))+'</strong><span aria-hidden="true">⌄</span></summary><div class="ms-heat-focus-plans">'+entries.map(p=>'<details class="ms-heat-plan"><summary><i style="--plan-color:'+safe(p.color)+'"></i><span>'+safe(p.name)+'</span><strong>'+formatStudyTime(p.total)+'</strong></summary><div class="insight-german-breakdown">'+p.activities.map(x=>'<span class="insight-german-chip"><i style="--activity-color:'+safe(x.color)+'"></i>'+safe(x.name)+' · '+formatStudyTime(x.seconds)+'</span>').join('')+'</div></details>').join('')+'</div></details>';
     }
