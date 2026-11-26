@@ -11,7 +11,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="My Streaks" />
   <meta name="mobile-web-app-capable" content="yes" />
-  <link rel="manifest" href="manifest.webmanifest?v=20261126-config-import1" />
+  <link rel="manifest" href="manifest.webmanifest?v=20261126-backup-polish1" />
   <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon-v3.png" />
   <link rel="icon" type="image/svg+xml" href="app-icon.svg" />
   <meta name="description" content="A private streak tracker with weekly freezes and cloud sync." />
@@ -41,11 +41,11 @@
       (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
     if(window.MyStreaksIPadLayout)document.documentElement.classList.add('ipad-ios-layout');
   </script>
-  <link rel="stylesheet" href="styles.css?v=20261126-config-import1" />
-  <link rel="stylesheet" href="ambient.css?v=20261126-config-import1" />
-  <link rel="stylesheet" href="focus.css?v=20261126-config-import1" />
-  <link rel="stylesheet" href="workspace.css?v=20261126-config-import1" />
-  <link rel="stylesheet" href="progress.css?v=20261126-config-import1" />
+  <link rel="stylesheet" href="styles.css?v=20261126-backup-polish1" />
+  <link rel="stylesheet" href="ambient.css?v=20261126-backup-polish1" />
+  <link rel="stylesheet" href="focus.css?v=20261126-backup-polish1" />
+  <link rel="stylesheet" href="workspace.css?v=20261126-backup-polish1" />
+  <link rel="stylesheet" href="progress.css?v=20261126-backup-polish1" />
   <style id="critical-landing-styles">
 /* Critical inline fallback is scoped to logged-out view so signed-in themes are unchanged. */
 [hidden]{display:none!important}
@@ -1155,9 +1155,14 @@ body:has(#loginPanel:not([hidden])) .shell,
               <div class="reorder-actions"><button type="button" id="cancelReorderBtn" class="secondary-btn">Cancel</button><button type="button" id="saveReorderBtn" class="primary-btn">Save order</button></div>
             </div>
             <div id="accountBackupDetail" class="account-detail account-backup-detail" hidden>
-              <h3>Backup &amp; restore</h3>
-              <p class="account-explanation">Your habits sync automatically with Firebase. You can also download a separate backup.</p>
-              <button type="button" id="accountExport">↓ Export my data</button><label class="import-label" for="importFile">↑ Import a backup<input id="importFile" type="file" accept=".json,application/json" hidden /></label><div class="ms-config-entry"><p>Add goals, plans, checklists, habits and personal achievements from a configuration.</p><button type="button" id="accountConfigImport"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="m12 2 2.5 7.5L22 12l-7.5 2.5L12 22l-2.5-7.5L2 12l7.5-2.5Z"/></svg><span>Import from ChatGPT</span><span aria-hidden="true" style="flex:none">›</span></button></div>
+              <h3 class="ms-backup-desktop-title">Backup &amp; restore</h3>
+              <div class="ms-backup-actions">
+                <button type="button" id="accountExport" class="ms-backup-row"><svg class="ms-backup-symbol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 16v4h16v-4"/></svg><span class="ms-backup-copy"><strong>Export my data</strong></span><svg class="ms-backup-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
+                <button type="button" id="accountImportBackup" class="ms-backup-row"><svg class="ms-backup-symbol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4m-4 4 4-4 4 4M4 16v4h16v-4"/></svg><span class="ms-backup-copy"><strong>Import a backup</strong></span><svg class="ms-backup-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
+                <input id="importFile" type="file" accept=".json,application/json" hidden />
+                <div class="ms-backup-separator" aria-hidden="true"></div>
+                <button type="button" id="accountConfigImport" class="ms-backup-row"><svg class="ms-backup-symbol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m10 3 2.3 6.7L19 12l-6.7 2.3L10 21l-2.3-6.7L1 12l6.7-2.3L10 3ZM19 2v5m-2.5-2.5h5"/></svg><span class="ms-backup-copy"><strong>Import from ChatGPT</strong><small>Add a personalized configuration.</small></span><svg class="ms-backup-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
+              </div>
             </div>
           </div>
         </div>
@@ -1505,15 +1510,15 @@ body:has(#loginPanel:not([hidden])) .shell,
       }
     }
   </script>
-  <script defer src="updates.js?v=20261126-config-import1"></script>
-  <script defer src="touch.js?v=20261126-config-import1"></script>
-  <script defer src="ambient.js?v=20261126-config-import1"></script>
-  <script defer src="achievements.js?v=20261126-config-import1"></script>
-  <script defer src="icons.js?v=20261126-config-import1"></script>
-  <script defer src="config-import.js?v=20261126-config-import1"></script>
-  <script defer src="focus.js?v=20261126-config-import1"></script>
-  <script defer src="progress.js?v=20261126-config-import1"></script>
-  <script defer src="workspace.js?v=20261126-config-import1"></script>
-  <script type="module" src="app.js?v=20261126-config-import1"></script>
+  <script defer src="updates.js?v=20261126-backup-polish1"></script>
+  <script defer src="touch.js?v=20261126-backup-polish1"></script>
+  <script defer src="ambient.js?v=20261126-backup-polish1"></script>
+  <script defer src="achievements.js?v=20261126-backup-polish1"></script>
+  <script defer src="icons.js?v=20261126-backup-polish1"></script>
+  <script defer src="config-import.js?v=20261126-backup-polish1"></script>
+  <script defer src="focus.js?v=20261126-backup-polish1"></script>
+  <script defer src="progress.js?v=20261126-backup-polish1"></script>
+  <script defer src="workspace.js?v=20261126-backup-polish1"></script>
+  <script type="module" src="app.js?v=20261126-backup-polish1"></script>
 </body>
 </html>
