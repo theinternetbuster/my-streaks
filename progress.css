@@ -246,3 +246,31 @@ html[data-theme="light"] .ms-stat strong,html[data-theme="light"] .ms-stat-icon{
  .ms-focus-ring{width:min(67vw,36vh,300px)}
  .checklist-list-options button{min-height:90px}
 }
+
+/* Aligned checklist workspace and selective study trends. */
+#checklistOriginal{width:100%;max-width:890px;margin-inline:auto;box-sizing:border-box;min-width:0}
+#checklistOriginal .checklist-document{width:100%;max-width:none;margin:0;box-sizing:border-box}
+.checklist-list-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;overflow:visible;padding:2px 0 4px}
+.checklist-list-options button{width:100%;min-width:0;max-width:none;min-height:94px;overflow:hidden}
+.checklist-list-options button>span:nth-child(2){overflow-wrap:anywhere}
+.checklist-list-actions{margin:4px 0 1px}
+.ms-trend-row{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:14px 0 0}
+.ms-trend-row+.ms-trend-row{border-top:1px solid var(--ms-border);margin-top:14px}
+.ms-trend-row>div{flex:1;min-width:0}
+.ms-trend-row strong{font-size:14px}
+.ms-trend-row p{font-size:12px;line-height:1.5}
+.ms-trend-row>span{color:#a78bfa;font:700 21px 'Outfit',system-ui,sans-serif;flex:none}
+@media(min-width:800px){
+ #checklistOriginal .checklist-document{padding:24px 32px 36px!important}
+ #checklistOriginal .checklist-blocks{padding:0 0 0 28px;min-height:220px!important}
+ #checklistOriginal .checklist-line-tools{margin-left:-38px;min-width:35px;width:35px}
+ #checklistOriginal .checklist-insert,#checklistOriginal .checklist-handle{width:17px}
+ #checklistOriginal .checklist-list-bar{gap:14px;margin-bottom:14px}
+ #checklistOriginal .checklist-list-options{grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:12px}
+ #checklistOriginal .checklist-list-options button{min-height:98px;padding:15px}
+ #checklistOriginal .checklist-list-actions>span{font-size:24px}
+ #checklistOriginal .checklist-type-h1:not(:first-child){margin-top:12px}
+}
+@media(max-width:799px){
+ #checklistOriginal .checklist-list-options button{min-height:90px}
+}
