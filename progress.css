@@ -302,3 +302,47 @@ html[data-theme="light"] .ms-report-switch::before{background:#ede6fb}
 .ms-report-filter{display:flex;align-items:center;gap:12px;color:var(--ms-muted);font-size:13px}
 .ms-report-filter select{flex:1;min-width:0;padding:10px 13px;border:1px solid var(--ms-border);border-radius:12px;background:var(--ms-card);color:var(--ms-ink);font:inherit}
 @media(max-width:799px){.ms-mini-timer{bottom:calc(92px + env(safe-area-inset-bottom,0px));left:16px;right:16px;width:auto}.ms-plan-picker .checklist-list-options{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Simplified library and detail views, shared by Checklists and Focus Plans. */
+.ms-library{width:100%;max-width:760px;margin:0 auto;display:grid;gap:16px;color:var(--ms-ink)}
+.ms-library-heading{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.ms-library-heading h2,.ms-checklist-detail-heading h2{font:750 27px 'Outfit',system-ui,sans-serif;letter-spacing:-.035em;margin:0}
+#focusPlansRoot .ms-library-new,.ms-library .ms-library-new{border:1px solid var(--ms-border);border-radius:11px;background:var(--ms-card);color:var(--ms-ink);font:650 13px 'DM Sans',sans-serif;padding:9px 13px;cursor:pointer;white-space:nowrap}
+.ms-library-items{display:grid;gap:10px}
+#focusPlansRoot .ms-library-row,.ms-library .ms-library-row{display:flex;align-items:center;gap:13px;width:100%;min-height:78px;box-sizing:border-box;padding:14px 16px;border:1px solid var(--ms-border);border-radius:17px;background:var(--ms-card);color:var(--ms-ink);text-align:left;cursor:pointer;transition:background .18s,border-color .18s}
+.ms-library .ms-library-row:disabled{opacity:.5;cursor:default}
+.ms-library-row:hover{border-color:color-mix(in srgb,var(--list-color) 50%,var(--ms-border))!important}
+.ms-library-icon{width:42px;height:42px;flex:0 0 42px;display:grid;place-items:center;border-radius:12px;background:color-mix(in srgb,var(--list-color) 13%,var(--ms-card));color:var(--list-color)}
+.ms-library-icon svg{width:23px;height:23px}
+.ms-library-copy{flex:1;display:grid;gap:4px;min-width:0}
+.ms-library-copy strong{font:700 17px 'DM Sans',system-ui,sans-serif;color:var(--ms-ink);overflow-wrap:anywhere}
+.ms-library-copy small{font:450 12px 'DM Sans',sans-serif;color:var(--ms-muted)}
+.ms-library-row>svg{width:18px;height:18px;flex:none;color:var(--ms-muted)}
+#focusPlansRoot .ms-library-back,.checklist-list-bar .ms-library-back{display:inline-flex;align-items:center;gap:5px;width:max-content;min-height:40px;padding:7px 0;border:0;border-radius:0;background:transparent;color:var(--ms-muted);font:650 13px 'DM Sans',sans-serif;cursor:pointer}
+.ms-library-back svg{width:17px;height:17px}
+#checklistOriginal .checklist-document[hidden]{display:none!important}
+#checklistOriginal .checklist-document{background:transparent!important;border:0!important;border-radius:0!important;padding:8px 22px 32px!important}
+#checklistOriginal .checklist-blocks{min-height:200px!important}
+.ms-checklist-detail-heading{border-bottom:1px solid var(--ms-border);padding:4px 0 15px;margin:0}
+.ms-checklist-detail-heading button{min-width:40px}
+#focusPlansRoot .ms-plan-detail-heading{margin:8px 0 18px}
+#focusPlansRoot .ms-plan-detail-heading h2{font-size:clamp(24px,5vw,34px);margin:0}
+#focusPlansRoot .ms-three-stats{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:16px}
+#focusPlansRoot .ms-three-stats>div{padding:12px 10px;min-width:0;display:grid;gap:5px}
+#focusPlansRoot .ms-three-stats small{font-size:11px;line-height:1.3}
+#focusPlansRoot .ms-three-stats strong{font-size:clamp(17px,4.5vw,27px);white-space:nowrap;letter-spacing:-.04em}
+.ms-plan-lifetime{display:flex;justify-content:space-between;gap:10px;padding:12px 2px;color:var(--ms-muted);font-size:13px}
+.ms-plan-lifetime strong{color:var(--ms-ink);font-variant-numeric:tabular-nums}
+.ms-heat-focus{margin-top:14px;border:1px solid var(--ms-border);border-radius:14px;background:color-mix(in srgb,var(--ms-card) 82%,transparent);color:var(--ms-ink)}
+.ms-heat-focus summary,.ms-heat-plan summary{display:flex;align-items:center;gap:10px;cursor:pointer;list-style:none;padding:13px}
+.ms-heat-focus summary::-webkit-details-marker,.ms-heat-plan summary::-webkit-details-marker{display:none}
+.ms-heat-focus summary>span:first-child,.ms-heat-plan summary>span{flex:1;font-size:13px;font-weight:650}
+.ms-heat-focus summary>strong,.ms-heat-plan summary>strong{font-size:13px;color:var(--ms-ink)}
+.ms-heat-focus summary>span:last-child{color:var(--ms-muted);transition:transform .2s}
+.ms-heat-focus[open]>summary>span:last-child{transform:rotate(180deg)}
+.ms-heat-focus-plans{padding:0 12px 12px;display:grid;gap:6px}
+.ms-heat-plan{border-top:1px solid var(--ms-border)}
+.ms-heat-plan summary{padding:10px 2px}
+.ms-heat-plan summary i{width:8px;height:8px;border-radius:50%;background:var(--plan-color);flex:none}
+.ms-heat-plan .insight-german-breakdown{margin:0 0 6px}
+@media(max-width:799px){#checklistOriginal .checklist-document{padding:4px 5px 25px!important}.ms-library-heading h2,.ms-checklist-detail-heading h2{font-size:25px}#focusPlansRoot .ms-three-stats>div{padding:11px 8px}}
