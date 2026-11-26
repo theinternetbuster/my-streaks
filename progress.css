@@ -274,3 +274,15 @@ html[data-theme="light"] .ms-stat strong,html[data-theme="light"] .ms-stat-icon{
 @media(max-width:799px){
  #checklistOriginal .checklist-list-options button{min-height:90px}
 }
+
+/* Match the existing animated workspace segmented controls. */
+.ms-report-switch{position:relative;isolation:isolate;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;padding:4px}
+.ms-report-switch::before{content:"";position:absolute;z-index:0;pointer-events:none;left:4px;top:4px;bottom:4px;width:calc((100% - 8px)/3);border-radius:999px;background:#8b5cf62a;transform:translateX(0);transition:transform .34s cubic-bezier(.22,1,.36,1)}
+.ms-report-switch[data-selected="month"]::before{transform:translateX(100%)}
+.ms-report-switch[data-selected="year"]::before{transform:translateX(200%)}
+.ms-report-switch button,.ms-report-switch button[aria-pressed="true"],html[data-theme="light"] .ms-report-switch button[aria-pressed="true"]{position:relative;z-index:1;background:transparent;transition:color .23s ease}
+html[data-theme="light"] .ms-report-switch::before{background:#ede6fb}
+.ms-report-chart .ms-chart-readout,.ms-report-chart .ms-chart-readout:empty{display:block;min-height:16px;margin-top:8px}
+.ms-report-chart .ms-chart-column{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.ms-report-chart .ms-chart-track i{transition:background .16s ease}
+@media(prefers-reduced-motion:reduce){.ms-report-switch::before,.ms-report-switch button,.ms-report-chart .ms-chart-track i{transition:none}}
