@@ -938,4 +938,5 @@ el('deleteHabit').addEventListener('click',removeHabit);
 el('prevMonth').addEventListener('click',()=>{shownMonth=new Date(shownMonth.getFullYear(),shownMonth.getMonth()-1,1);renderDetail();});
 el('nextMonth').addEventListener('click',()=>{shownMonth=new Date(shownMonth.getFullYear(),shownMonth.getMonth()+1,1);renderDetail();});
 el('accountExport').addEventListener('click',exportBackup);
+el('accountImportBackup')?.addEventListener('click',()=>el('importFile').click());
 el('importFile').addEventListener('change',e=>{importBackup(e.target.files[0]);e.target.value='';});
