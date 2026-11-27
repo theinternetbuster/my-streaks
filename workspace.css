@@ -475,7 +475,7 @@ html[data-theme="light"] .checklist-page .checklist-line:first-child textarea[da
 .insight-freeze-flame{width:31px;height:31px;stroke:#79b8ff!important;fill:none!important;stroke-width:1.45}
 .insight-stat-icon.icy .insight-freeze-flame{stroke:#79b8ff!important;fill:none!important}
 .insight-milestone .insight-freeze-flame{stroke:#79b8ff!important;fill:none!important}
-.checklist-page .workspace-eyebrow,.checklist-page>.workspace-heading{display:none}
+/* Workspace header is visible, matching Insights and Goals. */
 .checklist-page .checklist-document{padding-top:20px!important}
 .checklist-page .checklist-document-top{
   border:0;margin-bottom:30px;padding-bottom:0;
