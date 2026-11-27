@@ -463,3 +463,5 @@ html[data-theme="light"] .ms-goal-switch::before{background:#ede6fb}
 .focus-week-day:disabled .focus-bar-fill{height:0!important}
 .ms-workspace-heading{margin-bottom:24px}
 @media(prefers-reduced-motion:reduce){.ms-goal-switch::before,.ms-goal-switch button{transition:none}}
+
+.ms-report-chart .ms-chart-column:disabled{opacity:.35;cursor:default;pointer-events:none}
