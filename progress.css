@@ -453,3 +453,13 @@ html[data-theme="light"] #accountBackupDetail #accountConfigImport .ms-backup-sy
 .ms-goal-actions .ms-delete-action,.focus-edit-actions .ms-delete-action{color:#f87171;border-color:#f8717140;background:transparent}
 .ms-goal-actions .ms-delete-action:hover,.focus-edit-actions .ms-delete-action:hover{background:#f8717114}
 html[data-theme="light"] .ms-goal-actions .ms-delete-action,html[data-theme="light"] .focus-edit-actions .ms-delete-action{color:#b42318;border-color:#e6b7b3}
+
+.ms-goal-switch{position:relative;isolation:isolate;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0;padding:4px}
+.ms-goal-switch::before{content:"";position:absolute;z-index:0;pointer-events:none;left:4px;top:4px;bottom:4px;width:calc((100% - 8px)/2);border-radius:999px;background:#8b5cf62a;transform:translateX(0);transition:transform .34s cubic-bezier(.22,1,.36,1)}
+.ms-goal-switch[data-selected="completed"]::before{transform:translateX(100%)}
+.ms-goal-switch button,.ms-goal-switch button[aria-pressed="true"],html[data-theme="light"] .ms-goal-switch button[aria-pressed="true"]{position:relative;z-index:1;background:transparent;transition:color .23s ease}
+html[data-theme="light"] .ms-goal-switch::before{background:#ede6fb}
+.focus-week-day:disabled{opacity:.35;cursor:default;pointer-events:none}
+.focus-week-day:disabled .focus-bar-fill{height:0!important}
+.ms-workspace-heading{margin-bottom:24px}
+@media(prefers-reduced-motion:reduce){.ms-goal-switch::before,.ms-goal-switch button{transition:none}}
