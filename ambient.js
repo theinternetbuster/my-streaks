@@ -26,7 +26,7 @@
  function persist(){
   try{localStorage.setItem(KEY,JSON.stringify(settings));}catch(_){}
  }
- /* Approximate civil sunrise/sunset calculated locally using solar geometry.
+ /* Approximate civil dawn/dusk calculated locally using solar geometry.
     The location (rounded to ~1 km) stays on this device; no weather service
     or remote request is necessary. Dates use the device's local time zone. */
  const RAD=Math.PI/180,DAY_MS=86400000,J1970=2440588,J2000=2451545;
@@ -41,7 +41,7 @@
     +RAD*102.9372+Math.PI;
   const dec=Math.asin(Math.sin(L)*Math.sin(23.4397*RAD));
   const solarJ=(t)=>J2000+t+0.0053*Math.sin(M)-0.0069*Math.sin(2*L);
-  const cosH=(Math.sin(-0.833*RAD)-Math.sin(phi)*Math.sin(dec))/(Math.cos(phi)*Math.cos(dec));
+  const cosH=(Math.sin(-6*RAD)-Math.sin(phi)*Math.sin(dec))/(Math.cos(phi)*Math.cos(dec));
   if(!Number.isFinite(cosH)||Math.abs(cosH)>1)return null; // Polar day/night fallback.
   const Jnoon=solarJ(ds),Jset=solarJ(transit(Math.acos(cosH),n)),Jrise=Jnoon-(Jset-Jnoon);
   const fromJulian=j=>new Date((j+0.5-J1970)*DAY_MS);
@@ -80,7 +80,7 @@
    return 'Night effects: '+format(settings.nightStart)+'–'+format(settings.nightEnd);
   }
   const times=getSolar();
-  return times?'Today: sunset '+formatClock(times.sunset)+' · sunrise '+formatClock(times.sunrise):
+  return times?'Today: last light '+formatClock(times.sunset)+' · first light '+formatClock(times.sunrise):
     'Using 8 PM–6 AM until location is enabled';
  }
  function requestSolarLocation(){
@@ -94,7 +94,7 @@
      lon:Math.round(position.coords.longitude*100)/100};
    solarCache.key='';
    try{localStorage.setItem(GEO_KEY,JSON.stringify(solarLocation));}catch(_){}
-   geoStatus='Automatic sunset and sunrise are ready on this device.';
+   geoStatus='Automatic first and last light times are ready on this device.';
    apply();
   },error=>{
    geoBusy=false;
@@ -159,7 +159,7 @@
   const geoText=$('ambientLocationStatus');
   if(geoText)geoText.textContent=geoStatus||
     (solarLocation?'Location saved on this device; refresh after traveling.':
-    'Enable location to calculate local sunrise and sunset. Otherwise, standard hours are used.');
+    'Enable location to calculate local first and last light. Otherwise, standard hours are used.');
   const geoButton=$('ambientEnableLocation');
   if(geoButton){geoButton.disabled=geoBusy;geoButton.textContent=geoBusy?'Checking…':
     solarLocation?'Refresh location':'Enable automatic times';}
