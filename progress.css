@@ -465,3 +465,12 @@ html[data-theme="light"] .ms-goal-switch::before{background:#ede6fb}
 @media(prefers-reduced-motion:reduce){.ms-goal-switch::before,.ms-goal-switch button{transition:none}}
 
 .ms-report-chart .ms-chart-column:disabled{opacity:.35;cursor:default;pointer-events:none}
+
+/* Desktop workspace follows the same left content edge as Insights.
+   Preserve the centered/full-width touch layout on iPad and phones. */
+@media(min-width:800px) and (pointer:fine){
+ html:not(.ipad-ios-layout) .checklist-page #checklistViewToggle.insight-section-tabs.focus-view-toggle{margin-left:0;margin-right:auto}
+ html:not(.ipad-ios-layout) #checklistPanel #checklistOriginal,
+ html:not(.ipad-ios-layout) #checklistPanel #focusPlansRoot{margin-left:0;margin-right:auto}
+ html:not(.ipad-ios-layout) #checklistPanel .ms-library{margin-left:0;margin-right:auto}
+}
